@@ -1,8 +1,41 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/api-lumbung-mesari/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/api-lumbung-mesari/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/api-lumbung-mesari",
+  "projects": {
+    "api-lumbung-mesari": {
+      "type": "application",
+      "root": "apps/api-lumbung-mesari",
+      "entryFile": "main",
+      "sourceRoot": "apps/api-lumbung-mesari/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api-lumbung-mesari/tsconfig.app.json"
+      }
+    },
+    "users": {
+      "type": "application",
+      "root": "apps/users",
+      "entryFile": "main",
+      "sourceRoot": "apps/users/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/users/tsconfig.app.json"
+      }
+    },
+    "debts": {
+      "type": "application",
+      "root": "apps/debts",
+      "entryFile": "main",
+      "sourceRoot": "apps/debts/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/debts/tsconfig.app.json"
+      }
+    }
   }
 }
