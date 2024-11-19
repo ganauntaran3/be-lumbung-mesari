@@ -16,7 +16,9 @@ describe('DebtsController', () => {
 
   describe('root', () => {
     it('should return "Hello World!"', () => {
-      expect(debtsController.getHello()).toBe('Hello World!');
+      expect(debtsController.getDebts(1)).toEqual([
+        { id: 1, userId: 1, amount: 500, dueDate: '2024-01-01' },
+      ]);
     });
   });
 });

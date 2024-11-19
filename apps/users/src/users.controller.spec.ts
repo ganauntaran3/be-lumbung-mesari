@@ -16,7 +16,10 @@ describe('UsersController', () => {
 
   describe('root', () => {
     it('should return "Hello World!"', () => {
-      expect(usersController.getHello()).toBe('Hello World!');
+      expect(usersController.getAllUsers()).toStrictEqual([
+        { id: 1, name: 'John Doe' },
+        { id: 2, name: 'Jane Smith' },
+      ]);
     });
   });
 });

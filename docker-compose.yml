@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: db_lumbung_mesari
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U admin']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lumbung_mesari
+
+  users-service:
+    build:
+      context: .
+      dockerfile: ./apps/users/Dockerfile
+    container_name: users_service
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: admin
+      DATABASE_PASSWORD: admin123
+      DATABASE_NAME: db_lumbung_mesari
+      USERS_SERVICE_PORT: 3005
+    depends_on:
+      - postgres
+    ports:
+      - '3005:3005'
+    networks:
+      - lumbung_mesari
+
+  debts-service:
+    build:
+      context: .
+      dockerfile: ./apps/debts/Dockerfile
+    container_name: debts_service
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: admin
+      DATABASE_PASSWORD: admin123
+      DATABASE_NAME: db_lumbung_mesari
+      DEBTS_SERVICE_PORT: 3006
+    depends_on:
+      - postgres
+    ports:
+      - '3006:3006'
+    networks:
+      - lumbung_mesari
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy_gateway
+    ports:
+      - '80:80'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - users-service
+      - debts-service
+    networks:
+      - lumbung_mesari
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  lumbung_mesari:
+    driver: bridge
