@@ -1,0 +1,7 @@
+:80 {
+    # Proxy users app
+    reverse_proxy /users/* users-service:3005
+
+    # Proxy debts app
+    reverse_proxy /debts/* debts-service:3006
+}
