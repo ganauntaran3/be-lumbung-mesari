@@ -1,14 +1,17 @@
 import type { Knex } from 'knex'
+import * as dotenv from 'dotenv'
+
+dotenv.config()
 
 const config: { [key: string]: Knex.Config } = {
   development: {
-    client: 'postgresql',
+    client: 'pg',
     connection: {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT, 10) || 5433,
-      database: process.env.DB_NAME || 'db_lumbung_mesari',
-      user: process.env.DB_USER || 'admin',
-      password: process.env.DB_PASSWORD || 'admin123'
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT, 10),
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD
     },
     pool: {
       min: 2,
@@ -21,14 +24,8 @@ const config: { [key: string]: Knex.Config } = {
   },
 
   test: {
-    client: 'postgresql',
-    connection: {
-      host: process.env.TEST_DB_HOST || 'localhost',
-      port: parseInt(process.env.TEST_DB_PORT, 10) || 5433,
-      database: process.env.TEST_DB_NAME || 'db_lumbung_mesari_test',
-      user: process.env.TEST_DB_USER || 'admin',
-      password: process.env.TEST_DB_PASSWORD || 'admin123'
-    },
+    client: 'pg',
+    connection: process.env.POSTGRES_URL,
     pool: {
       min: 2,
       max: 10
