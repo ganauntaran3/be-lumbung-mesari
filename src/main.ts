@@ -1,8 +1,40 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { NestFactory } from '@nestjs/core'
+import { AppModule } from './app.module'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import helmet from 'helmet'
+import * as compression from 'compression'
+import { VersioningType } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  await app.listen(8000);
+  const app = await NestFactory.create(AppModule)
+  const configService = app.get(ConfigService)
+  const apiVersion = configService.get<string>('API_VERSION')
+
+  // Security middleware
+  app.use(helmet())
+  app.use(compression())
+  app.enableCors()
+  app.setGlobalPrefix('api')
+
+  // Enable API versioning
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: apiVersion
+  })
+
+  // Swagger configuration
+  const config = new DocumentBuilder()
+    .setTitle('Lumbung Mesari API')
+    .setDescription('The Lumbung Mesari API documentation')
+    .setVersion(`${apiVersion}.0`)
+    .addBearerAuth()
+    .build()
+
+  const document = SwaggerModule.createDocument(app, config)
+  SwaggerModule.setup(`api/v${apiVersion}`, app, document)
+
+  const port = configService.get<number>('PORT', 8000)
+  await app.listen(port)
 }
-bootstrap();
+bootstrap()
