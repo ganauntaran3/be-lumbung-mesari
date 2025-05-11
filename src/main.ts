@@ -9,30 +9,35 @@ import { ConfigService } from '@nestjs/config'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   const configService = app.get(ConfigService)
-  const apiVersion = configService.get<string>('API_VERSION')
+  const apiVersion = configService.get<string>('API_DEFAULT_VERSION')
+  const enabledVersions = configService.get<string>('API_ENABLED_VERSION')
 
   // Security middleware
   app.use(helmet())
   app.use(compression())
   app.enableCors()
+
+  // Global prefix
   app.setGlobalPrefix('api')
 
-  // Enable API versioning
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: apiVersion
+  // Versioning
+  enabledVersions.split(',').forEach((version) => {
+    app.enableVersioning({
+      type: VersioningType.URI,
+      defaultVersion: apiVersion
+    })
+
+    // Swagger configuration
+    const config = new DocumentBuilder()
+      .setTitle('Lumbung Mesari API')
+      .setDescription('The Lumbung Mesari API documentation')
+      .setVersion(`${version}`)
+      .addBearerAuth()
+      .build()
+
+    const document = SwaggerModule.createDocument(app, config)
+    SwaggerModule.setup(`api/v${version}`, app, document)
   })
-
-  // Swagger configuration
-  const config = new DocumentBuilder()
-    .setTitle('Lumbung Mesari API')
-    .setDescription('The Lumbung Mesari API documentation')
-    .setVersion(`${apiVersion}.0`)
-    .addBearerAuth()
-    .build()
-
-  const document = SwaggerModule.createDocument(app, config)
-  SwaggerModule.setup(`api/v${apiVersion}`, app, document)
 
   const port = configService.get<number>('PORT', 8000)
   await app.listen(port)
