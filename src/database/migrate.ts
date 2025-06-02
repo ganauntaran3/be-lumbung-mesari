@@ -2,40 +2,65 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from '../app.module'
 import { DatabaseService } from './database.service'
 import { FileMigrationProvider, Migrator } from 'kysely'
-import { promises as fs } from 'fs'
-import path from 'path'
+import * as fs from 'node:fs/promises'
+import * as path from 'node:path'
 
-async function migrate() {
-  const app = await NestFactory.createApplicationContext(AppModule)
-
-  const db = app.get(DatabaseService)
-
-  const migrator = new Migrator({
-    db,
-    provider: new FileMigrationProvider({
-      fs,
-      path,
-      migrationFolder: path.join(__dirname, 'migrations')
-    })
+async function bootstrap() {
+  // Create a temporary app context for migrations
+  const app = await NestFactory.createApplicationContext(AppModule, {
+    logger: ['error', 'warn', 'log']
   })
 
-  const result = await migrator.migrateToLatest()
+  try {
+    // Get the database service
+    const db = app.get(DatabaseService)
 
-  if (result.error) {
-    console.error('❌ Migration failed')
-    console.error(result.error)
-    process.exit(1)
-  }
+    // Create migrator instance
+    const migrator = new Migrator({
+      db,
+      provider: new FileMigrationProvider({
+        fs,
+        path,
+        migrationFolder: path.join(__dirname, 'migrations')
+      })
+    })
 
-  for (const m of result?.results) {
-    if (m.status === 'Success') {
-      console.log(`✅ Migrated: ${m.migrationName}`)
+    // Run migrations
+    const { results, error } = await migrator.migrateToLatest()
+
+    if (error) {
+      console.error('❌ Migration failed')
+      console.error(error)
+      process.exit(1)
     }
-  }
 
-  await db.destroy()
-  await app.close()
-  console.log('🎉 Migration completed successfully')
+    // Log migration results
+    if (!results || results.length === 0) {
+      console.log('✅ No migrations to run')
+    } else {
+      for (const m of results) {
+        if (m.status === 'Success') {
+          console.log(`✅ Migrated: ${m.migrationName}`)
+        } else if (m.status === 'Error') {
+          console.error(`❌ Failed to run migration: ${m.migrationName}`)
+        }
+      }
+    }
+
+    console.log('🎉 Migration completed successfully')
+  } catch (err) {
+    console.error('❌ Unexpected error during migration:')
+    console.error(err)
+    process.exit(1)
+  } finally {
+    // Close the app context
+    await app.close()
+  }
 }
 
-migrate()
+// Run the migration
+bootstrap().catch((err) => {
+  console.error('❌ Fatal error during migration:')
+  console.error(err)
+  process.exit(1)
+})

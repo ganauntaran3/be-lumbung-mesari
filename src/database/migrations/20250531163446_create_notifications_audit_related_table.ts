@@ -48,7 +48,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('user_id', 'varchar(36)', (col) =>
       col.references('users.id').onDelete('cascade').notNull()
     )
-    .addColumn('notification_type_id', 'uuid', (col) =>
+    .addColumn('notification_type_id', 'varchar(36)', (col) =>
       col.references('notification_types.id').onDelete('restrict').notNull()
     )
     .addColumn('title', 'varchar', (col) => col.notNull())
