@@ -1,10 +1,10 @@
 import { Injectable, ConflictException } from '@nestjs/common'
 import { NewUser } from '../database/types/users'
-import { UserRepository } from '../users/user.repository'
+import { UsersRepository } from './users.repository'
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UserRepository) {}
+  constructor(private usersRepository: UsersRepository) {}
 
   async findByEmail(email: string) {
     return await this.usersRepository.findByEmail(email)

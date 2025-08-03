@@ -4,7 +4,7 @@ import { DatabaseService } from '../database/database.service'
 import { User, NewUser, UpdateUser } from '../database/types/users'
 
 @Injectable()
-export class UserRepository extends BaseRepository<User> {
+export class UsersRepository extends BaseRepository<User> {
   constructor(protected readonly databaseService: DatabaseService) {
     super(databaseService, 'users')
   }
