@@ -1,14 +1,14 @@
-import { Kysely, sql } from 'kysely'
+import { Knex } from 'knex'
 
-export async function up(db: Kysely<any>): Promise<void> {
-  await sql`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`.execute(db)
-  await db.schema
-    .createTable('roles')
-    .addColumn('id', 'varchar(16)', (col) => col.primaryKey())
-    .addColumn('name', 'varchar(64)', (col) => col.notNull().unique())
-    .execute()
+export async function up(knex: Knex): Promise<void> {
+  await knex.raw('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+  
+  await knex.schema.createTable('roles', (table) => {
+    table.string('id', 16).primary()
+    table.string('name', 64).notNullable().unique()
+  })
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
-  await db.schema.dropTable('roles').execute()
+export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTable('roles')
 }

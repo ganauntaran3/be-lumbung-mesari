@@ -21,7 +21,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api')
 
   // Versioning
-  enabledVersions.split(',').forEach((version) => {
+  enabledVersions?.split(',').forEach((version) => {
     app.enableVersioning({
       type: VersioningType.URI,
       defaultVersion: apiVersion
