@@ -1,43 +1,46 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common'
-import { Kysely, PostgresDialect } from 'kysely'
-import { Pool } from 'pg'
+import {
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+  Logger
+} from '@nestjs/common'
+import { Knex, knex } from 'knex'
 import { ConfigService } from '@nestjs/config'
-import { Database } from './types/database'
+import { getDatabaseConfig } from './database.config'
 
 @Injectable()
-export class DatabaseService
-  extends Kysely<Database>
-  implements OnModuleDestroy
-{
-  private readonly pool: Pool
+export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  private readonly knex: Knex
   private isDestroyed = false
+  private readonly logger = new Logger(DatabaseService.name)
 
-  constructor(configService: ConfigService) {
-    const pool = new Pool({
-      database: configService.get<string>('DB_NAME'),
-      host: configService.get<string>('DB_HOST'),
-      user: configService.get<string>('DB_USER'),
-      password: configService.get<string>('DB_PASSWORD'),
-      port: configService.get<number>('DB_PORT', 5432),
-      min: configService.get<number>('DB_POOL_MIN', 2),
-      max: configService.get<number>('DB_POOL_MAX', 10),
-      // SSL for production
-      ssl:
-        configService.get<string>('NODE_ENV') === 'production'
-          ? { rejectUnauthorized: false } // Set to true in production with proper certs
-          : false,
+  constructor(private configService: ConfigService) {
+    this.knex = knex(getDatabaseConfig(this.configService))
+  }
 
-      // Timeouts
-      statement_timeout: 30000,
-      query_timeout: 30000,
-      application_name: configService.get<string>('APPLICATION_NAME')
-    })
+  async onModuleInit() {
+    try {
+      // Test the connection
+      await this.knex.raw('SELECT 1')
+      this.logger.log('Database connected successfully')
+    } catch (error) {
+      this.logger.error('Database connection failed:', error)
+      throw error
+    }
+  }
 
-    super({
-      dialect: new PostgresDialect({ pool })
-    })
+  getKnex(): Knex {
+    if (this.isDestroyed) {
+      throw new Error('Database connection has been destroyed')
+    }
+    return this.knex
+  }
 
-    this.pool = pool
+  table(tableName: string): Knex.QueryBuilder {
+    if (this.isDestroyed) {
+      throw new Error('Database connection has been destroyed')
+    }
+    return this.knex(tableName)
   }
 
   async onModuleDestroy() {
@@ -48,10 +51,10 @@ export class DatabaseService
     this.isDestroyed = true
 
     try {
-      // Only destroy the Kysely instance, which will handle the pool
-      await this.destroy()
+      await this.knex.destroy()
+      this.logger.log('Database connection closed successfully')
     } catch (error) {
-      console.error('Error during database cleanup:', error)
+      this.logger.error('Error during database cleanup:', error)
     }
   }
 }
