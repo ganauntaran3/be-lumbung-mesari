@@ -26,9 +26,7 @@ export abstract class BaseRepository<T> {
    * Find a record by ID
    */
   async findById(id: string): Promise<T | undefined> {
-    const result = await this.knex(this.tableName)
-      .where('id', id)
-      .first()
+    const result = await this.knex(this.tableName).where('id', id).first()
 
     return result as T | undefined
   }
@@ -37,9 +35,7 @@ export abstract class BaseRepository<T> {
    * Create a new record
    */
   async create(data: Partial<T>): Promise<T> {
-    const [result] = await this.knex(this.tableName)
-      .insert(data)
-      .returning('*')
+    const [result] = await this.knex(this.tableName).insert(data).returning('*')
 
     return result as T
   }
@@ -84,8 +80,7 @@ export abstract class BaseRepository<T> {
       .offset(offset)
 
     // Get total count
-    const [{ count }] = await this.knex(this.tableName)
-      .count('* as count')
+    const [{ count }] = await this.knex(this.tableName).count('* as count')
 
     const total = parseInt(count as string, 10)
     const totalPage = Math.ceil(total / perPage)

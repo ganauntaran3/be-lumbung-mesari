@@ -1,5 +1,4 @@
 import { Injectable, ConflictException } from '@nestjs/common'
-import { DatabaseService } from '../database/database.service'
 import { NewUser } from '../database/types/users'
 import { UserRepository } from '../users/user.repository'
 

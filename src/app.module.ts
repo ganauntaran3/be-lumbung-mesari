@@ -3,7 +3,6 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { UsersModule } from './users/users.module'
 import { ConfigModule } from '@nestjs/config'
-import { DatabaseModule } from './database/database.module'
 import { AuthModule } from './auth/auth.module'
 
 @Module({
@@ -12,7 +11,6 @@ import { AuthModule } from './auth/auth.module'
       isGlobal: true,
       envFilePath: '.env'
     }),
-    DatabaseModule,
     UsersModule,
     AuthModule
   ],
