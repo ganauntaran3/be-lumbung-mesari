@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Get,
-  Version,
-  VERSION_NEUTRAL
-} from '@nestjs/common'
+import { Controller, Get, Version, VERSION_NEUTRAL } from '@nestjs/common'
 import { UsersService } from './users.service'
 
 @Controller('/users')
