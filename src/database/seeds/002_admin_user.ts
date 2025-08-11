@@ -2,13 +2,8 @@ import { Knex } from 'knex'
 import { hash } from 'bcrypt'
 
 export async function seed(knex: Knex): Promise<void> {
-  // Deletes ALL existing entries for admin user
-  await knex('users').where('email', 'admin@lumbungmesari.com').del()
-
-  // Hash the password
   const hashedPassword = await hash('admin123', 10)
 
-  // Inserts seed entries
   await knex('users').insert([
     {
       id: 'admin-001',
