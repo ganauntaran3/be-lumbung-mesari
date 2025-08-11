@@ -1,15 +1,13 @@
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
-
 export interface LoanPeriodTable {
-  id: Generated<string>
+  id: string
   months: number
   interest_rate: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface LoanTable {
-  id: Generated<string>
+  id: string
   user_id: string
   loan_number: string
   amount: string
@@ -19,37 +17,48 @@ export interface LoanTable {
   monthly_payment: string
   start_date: Date | null
   end_date: Date | null
-  purpose: string
   status: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  approved_by: string | null
+  approved_at: Date | null
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface InstallmentTable {
-  id: Generated<string>
+  id: string
   loan_id: string
   installment_number: number
-  due_date: Date
   amount: string
-  principal_amount: string
-  interest_amount: string
-  penalty_amount: string
-  paid_amount: string
+  due_date: Date
   paid_date: Date | null
+  paid_amount: string | null
+  late_fee: string | null
   status: string
-  payment_transaction_id: string | null
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
-export type LoanPeriod = Selectable<LoanPeriodTable>
-export type NewLoanPeriod = Insertable<LoanPeriodTable>
-export type UpdateLoanPeriod = Updateable<LoanPeriodTable>
+// Export types
+export type LoanPeriod = LoanPeriodTable
+export type NewLoanPeriod = Omit<
+  LoanPeriodTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateLoanPeriod = Partial<
+  Omit<LoanPeriodTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type Loan = Selectable<LoanTable>
-export type NewLoan = Insertable<LoanTable>
-export type UpdateLoan = Updateable<LoanTable>
+export type Loan = LoanTable
+export type NewLoan = Omit<LoanTable, 'id' | 'created_at' | 'updated_at'>
+export type UpdateLoan = Partial<
+  Omit<LoanTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type Installment = Selectable<InstallmentTable>
-export type NewInstallment = Insertable<InstallmentTable>
-export type UpdateInstallment = Updateable<InstallmentTable>
+export type Installment = InstallmentTable
+export type NewInstallment = Omit<
+  InstallmentTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateInstallment = Partial<
+  Omit<InstallmentTable, 'id' | 'created_at' | 'updated_at'>
+>

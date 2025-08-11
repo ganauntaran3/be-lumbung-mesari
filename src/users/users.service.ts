@@ -1,18 +1,29 @@
-import { Injectable } from '@nestjs/common'
-import { User } from 'src/interface/users'
+import { Injectable, ConflictException } from '@nestjs/common'
+import { NewUser } from '../database/types/users'
+import { UsersRepository } from './users.repository'
 
 @Injectable()
 export class UsersService {
-  private readonly users = [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Doe' }
-  ]
+  constructor(private usersRepository: UsersRepository) {}
 
-  create(user: User) {
-    this.users.push(user)
+  async findByEmail(email: string) {
+    return await this.usersRepository.findByEmail(email)
   }
 
-  findAll(): User[] {
-    return this.users
+  async findByEmailWithRole(email: string) {
+    return await this.usersRepository.findByEmailWithRole(email)
+  }
+
+  async create(userData: NewUser) {
+    const existingUser = await this.findByEmail(userData.email)
+    if (existingUser) {
+      throw new ConflictException('Email already exists')
+    }
+
+    return await this.usersRepository.create(userData)
+  }
+
+  async findAll() {
+    return await this.usersRepository.findAll()
   }
 }

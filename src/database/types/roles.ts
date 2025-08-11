@@ -1,11 +1,12 @@
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
-
 export interface RoleTable {
-  id: Generated<string>
+  id: string
   name: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
-export type Role = Selectable<RoleTable>
-export type NewRole = Insertable<RoleTable>
-export type UpdateRole = Updateable<RoleTable>
+
+export type Role = RoleTable
+export type NewRole = Omit<RoleTable, 'id' | 'created_at' | 'updated_at'>
+export type UpdateRole = Partial<
+  Omit<RoleTable, 'id' | 'created_at' | 'updated_at'>
+>

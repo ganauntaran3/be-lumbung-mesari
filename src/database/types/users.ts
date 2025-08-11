@@ -1,7 +1,5 @@
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
-
 export interface UserTable {
-  id: Generated<string>
+  id: string
   email: string
   fullname: string
   username: string
@@ -10,11 +8,13 @@ export interface UserTable {
   address: string
   status: string
   role_id: string
-  id_card_image: string
-  selfie_image: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  deposit_image_url?: string
+  created_at?: Date
+  updated_at?: Date
 }
-export type User = Selectable<UserTable>
-export type NewUser = Insertable<UserTable>
-export type UpdateUser = Updateable<UserTable>
+
+export type User = UserTable
+export type NewUser = Omit<UserTable, 'id' | 'created_at' | 'updated_at'>
+export type UpdateUser = Partial<
+  Omit<UserTable, 'id' | 'created_at' | 'updated_at'>
+>
