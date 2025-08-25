@@ -1,58 +1,596 @@
 Directory structure:
-└── src/
-    ├── app.controller.spec.ts
-    ├── app.controller.ts
-    ├── app.module.ts
-    ├── app.service.ts
-    ├── main.ts
-    ├── auth/
-    │   ├── auth.controller.ts
-    │   ├── auth.module.ts
-    │   ├── auth.service.ts
-    │   ├── decorators/
-    │   │   ├── current-user.decorator.ts
-    │   │   └── roles.decorator.ts
-    │   ├── dto/
-    │   │   ├── login.dto.ts
-    │   │   └── register.dto.ts
-    │   ├── enums/
-    │   │   └── role.enum.ts
-    │   ├── guards/
-    │   │   ├── auth.guard.ts
-    │   │   └── roles.guard.ts
-    │   └── strategies/
-    │       └── jwt.strategy.ts
-    ├── database/
-    │   ├── base.repository.ts
-    │   ├── database.config.ts
-    │   ├── database.module.ts
-    │   ├── database.service.ts
-    │   ├── migrations/
-    │   │   ├── 20250531154634_create_roles_table.ts
-    │   │   ├── 20250531160815_create_users_table.ts
-    │   │   └── 20250531163446_create_notifications_audit_related_table.ts
-    │   ├── seeds/
-    │   │   ├── 001_roles.ts
-    │   │   └── 002_admin_user.ts
-    │   └── types/
-    │       ├── audit.ts
-    │       ├── database.ts
-    │       ├── loans.ts
-    │       ├── roles.ts
-    │       ├── savings.ts
-    │       └── users.ts
-    ├── interface/
-    │   ├── jwt.ts
-    │   └── users.ts
-    └── users/
-        ├── users.controller.spec.ts
-        ├── users.controller.ts
-        ├── users.module.ts
-        ├── users.repository.ts
-        └── users.service.ts
+└── be-lumbung-mesari/
+    ├── README.md
+    ├── docker-compose-dev.yml
+    ├── knexfile.ts
+    ├── nest-cli.json
+    ├── package.json
+    ├── Pedoman_Wawancara_Stakeholder_Koperasi.md
+    ├── tsconfig.build.json
+    ├── tsconfig.json
+    ├── .env.example
+    ├── .eslintrc.js
+    ├── .prettierrc
+    └── src/
+        ├── app.controller.spec.ts
+        ├── app.controller.ts
+        ├── app.module.ts
+        ├── app.service.ts
+        ├── main.ts
+        ├── auth/
+        │   ├── auth.controller.ts
+        │   ├── auth.module.ts
+        │   ├── auth.service.ts
+        │   ├── decorators/
+        │   │   ├── current-user.decorator.ts
+        │   │   └── roles.decorator.ts
+        │   ├── dto/
+        │   │   ├── login.dto.ts
+        │   │   └── register.dto.ts
+        │   ├── enums/
+        │   │   └── role.enum.ts
+        │   ├── guards/
+        │   │   ├── auth.guard.ts
+        │   │   └── roles.guard.ts
+        │   └── strategies/
+        │       └── jwt.strategy.ts
+        ├── database/
+        │   ├── base.repository.ts
+        │   ├── database.config.ts
+        │   ├── database.module.ts
+        │   ├── database.service.ts
+        │   ├── migrations/
+        │   │   ├── 20250531154634_create_roles_table.ts
+        │   │   ├── 20250531160815_create_users_table.ts
+        │   │   └── 20250531163446_create_notifications_audit_related_table.ts
+        │   ├── seeds/
+        │   │   ├── 001_roles.ts
+        │   │   └── 002_admin_user.ts
+        │   └── types/
+        │       ├── audit.ts
+        │       ├── database.ts
+        │       ├── loans.ts
+        │       ├── roles.ts
+        │       ├── savings.ts
+        │       └── users.ts
+        ├── interface/
+        │   ├── jwt.ts
+        │   └── users.ts
+        └── users/
+            ├── users.controller.spec.ts
+            ├── users.controller.ts
+            ├── users.module.ts
+            ├── users.repository.ts
+            └── users.service.ts
 
 ================================================
-FILE: app.controller.spec.ts
+FILE: README.md
+================================================
+# Backend API for Seka Lumbung Mesari
+
+## Description
+
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+## Project setup
+
+```bash
+# install node
+$ node -v
+# Version used: >22.x
+
+# If you don't have node, install it from https://nodejs.org/en/download/
+# If you don't have npm, install it from https://www.npmjs.com/get-npm
+
+# Install node version 22.x
+$ nvm install 22.x
+$ nvm use 22.x
+
+
+# install dependencies
+$ npm install
+```
+
+## Run the project
+
+### Docker
+
+```bash
+# Run project dependencies with docker (postgresql)
+$ docker-compose -f docker-compose-dev.yml up -d
+
+# Connect with the database
+psql -h localhost -p 5432 -U admin -d db_lumbung_mesari
+```
+
+### Local
+
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+## Run tests
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+
+================================================
+FILE: docker-compose-dev.yml
+================================================
+version: '3.8'
+services:
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: db_lumbung_mesari
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - '8080:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DEFAULT_USER: admin
+      ADMINER_DEFAULT_PASSWORD: admin123
+      ADMINER_DEFAULT_DB: db_lumbung_mesari
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U admin']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+
+
+
+================================================
+FILE: knexfile.ts
+================================================
+import { configDotenv } from 'dotenv'
+
+configDotenv()
+
+const config = {
+  development: {
+    client: 'pg',
+    connection: {
+      database: process.env.DB_NAME,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 5432
+    },
+    pool: {
+      min: parseInt(process.env.DB_POOL_MIN || '2'),
+      max: parseInt(process.env.DB_POOL_MAX || '10')
+    },
+    migrations: {
+      directory: './src/database/migrations',
+      tableName: 'knex_migrations'
+    },
+    seeds: {
+      directory: './src/database/seeds'
+    }
+  },
+  staging: {
+    client: 'pg',
+    connection: {
+      database: process.env.DB_NAME,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 5432,
+      ssl: { rejectUnauthorized: false }
+    },
+    pool: {
+      min: parseInt(process.env.DB_POOL_MIN || '2'),
+      max: parseInt(process.env.DB_POOL_MAX || '10')
+    },
+    migrations: {
+      directory: './src/database/migrations',
+      tableName: 'knex_migrations'
+    },
+    seeds: {
+      directory: './src/database/seeds'
+    }
+  },
+  production: {
+    client: 'pg',
+    connection: {
+      database: process.env.DB_NAME,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 5432,
+      ssl: { rejectUnauthorized: false }
+    },
+    pool: {
+      min: parseInt(process.env.DB_POOL_MIN || '2'),
+      max: parseInt(process.env.DB_POOL_MAX || '10')
+    },
+    migrations: {
+      directory: './src/database/migrations',
+      tableName: 'knex_migrations'
+    },
+    seeds: {
+      directory: './src/database/seeds'
+    }
+  }
+}
+
+export default config
+
+
+
+================================================
+FILE: nest-cli.json
+================================================
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}
+
+
+
+================================================
+FILE: package.json
+================================================
+{
+  "name": "api-lumbung-mesari",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Backend Application for Lumbung Mesari",
+  "license": "MIT",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/jest/bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "make:migration": "knex migrate:make",
+    "migrate:latest": "knex migrate:latest",
+    "migrate:up": "knex migrate:up",
+    "migrate:down": "knex migrate:down",
+    "migrate:rollback": "knex migrate:rollback",
+    "migrate:status": "knex migrate:status",
+    "seed:run": "knex seed:run",
+    "seed:make": "knex seed:make"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/config": "^4.0.0",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^10.4.15",
+    "@nestjs/schedule": "^5.0.1",
+    "@nestjs/swagger": "^8.1.1",
+    "@nestjs/throttler": "^6.4.0",
+    "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "compression": "^1.8.0",
+    "decimal.js": "^10.6.0",
+    "helmet": "^8.0.0",
+    "knex": "^3.1.0",
+    "module": "^1.2.5",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/testing": "^10.4.15",
+    "@types/bcrypt": "^5.0.2",
+    "@types/compression": "^1.7.5",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^20.17.57",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/pg": "^8.15.5",
+    "@types/supertest": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.4.3",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.1.3"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  }
+}
+
+
+
+================================================
+FILE: Pedoman_Wawancara_Stakeholder_Koperasi.md
+================================================
+# Pedoman Wawancara Penggalian Kebutuhan Sistem Informasi Koperasi Simpan Pinjam
+
+Pedoman ini digunakan untuk melakukan wawancara terstruktur dengan stakeholder koperasi guna menggali permasalahan nyata yang akan menjadi dasar revisi proposal tugas akhir.
+
+---
+
+## 🧑‍💼 1. Ketua / Pengelola Koperasi
+
+### Tujuan:
+
+- Mengetahui visi-misi koperasi
+- Memahami tantangan strategis
+- Mengetahui laporan-laporan wajib koperasi
+
+### Pertanyaan:
+
+1. Layanan apa saja yang disediakan oleh koperasi? (simpan, pinjam, etc)
+2. Apakah layanan tersebut terbagi lagi ke dalam beberapa jenis? (misal: simpanan → pokok, wajib, sukarela)
+3. Dari layanan yang ada, mana yang paling sering digunakan oleh anggota?
+4. Bagaimana proses seseorang bisa menjadi anggota koperasi ini? (Output: sequence)
+5. Bagaimana proses simpanan dilakukan oleh anggota? (Output: sequence)
+6. Bagaimana proses pengajuan pinjaman dilakukan oleh anggota? (Output: sequence)
+7. Bagaimana perhitungan angsuran pinjaman dilakukan oleh koperasi?
+8. Apakah ada batasan jumlah pinjaman yang dapat diambil oleh anggota?
+9. Apa saja jenis laporan rutin yang diwajibkan untuk dibuat oleh koperasi?
+10. Kepada siapa saja laporan-laporan tersebut dikirimkan?
+11. Seperti apa rencana koperasi men-digitalisasi proses operasionalnya?
+
+---
+
+## 💰 2. Bendahara Koperasi
+
+### Tujuan:
+
+- Memahami detail alur pencatatan transaksi
+- Mengetahui struktur dan siklus laporan keuangan
+- Mengidentifikasi kendala teknis pelaporan
+
+### Pertanyaan:
+
+1. Apa saja dokumen yang perlu dikelola atau kewajiban lain yang perlu dilakukan bendahara?
+2. Apakah ada laporan yang perlu disusun secara rutin (harian, bulanan, tahunan)?
+3. Bagaimana data - data tersebut disimpan?
+4. Apakah data - data tersebut perlu di-distribusikan kepada pengurus lain?
+5. Jika ada, berapa lama waktu yang dibutuhkan untuk menyusun laporan tersebut?
+6. Apa media yang digunakan? (kertas, Excel, aplikasi?)
+7. Tantangan apa yang paling sering dirasakan dalam menjalankan pekerjaan?
+
+---
+
+## 🗂️ 3. Sekretaris Koperasi
+
+### Tujuan:
+
+- Memahami proses administrasi dan dokumentasi anggota
+- Mengetahui alur pendaftaran dan pengelolaan data keanggotaan
+- Mengidentifikasi kebutuhan pengarsipan dan akses data
+
+### Pertanyaan:
+
+1. Apa saja dokumen atau proses yang perlu dikelola oleh sekretaris?
+2. Apakah ada data yang perlu diperbarui secara rutin? Jika iya, sebutkan masing - masing prosesnya.
+3. Apakah data - data tersebut perlu di-distribusikan kepada pengurus lain?
+4. Apakah Anda pernah kesulitan mencari data historikal tertentu?
+5. Tantangan apa yang paling sering dirasakan dalam menjalankan pekerjaan?
+
+---
+
+## 🧾 4 . Admin / Petugas Operasional
+
+### Tujuan:
+
+- Mengetahui alur input data harian
+- Memahami kendala penggunaan sistem manual
+
+### Pertanyaan:
+
+1. Apa saja pekerjaan harian yang biasa Anda lakukan di koperasi?
+2. Transaksi apa saja yang Anda catat? (misalnya: simpanan, angsuran, pengambilan dana)
+3. Media apa yang digunakan untuk mencatat transaksi? (buku, Excel, form fisik, dll)
+4. Apakah Anda pernah mengalami kesulitan saat mencatat transaksi atau proses lainnya? Jika ya, dalam hal apa?
+5. Apakah ada laporan atau data yang perlu disusun secara rutin (harian, bulanan, tahunan)?
+6. Apakah ada laporan atau data yang harus disiapkan untuk Rapat Anggota Tahunan (RAT)?
+7. Apa kendala yang sering Anda temui dalam pekerjaan Anda sehari-hari?
+8. Jika tersedia sistem digital, bagian mana dari pekerjaan Anda yang paling ingin Anda otomatisasi?
+
+---
+
+## 👥 4. Anggota Koperasi
+
+### Tujuan:
+
+- Memahami pengalaman anggota terhadap layanan
+- Menilai kebutuhan transparansi dan akses data
+
+### Pertanyaan:
+
+1. Bagaimana proses Anda saat ingin menyetor simpanan atau mengajukan pinjaman?
+2. Apakah Anda selalu menerima bukti transaksi atau catatan keuangan dari koperasi?
+3. Apakah Anda bisa mengakses informasi tentang status pinjaman, saldo simpanan atau informasi lain Anda dengan mudah?
+4. Apakah Anda pernah mengalami kesulitan atau keterlambatan informasi dari pihak koperasi?
+5. Jika disediakan sistem online atau aplikasi, apakah Anda tertarik menggunakannya untuk mengecek data pribadi Anda? Apa ekspektasi anda terhadap fitur-fitur yang perlu disediakan?
+6. Menurut Anda, apa hal yang perlu ditingkatkan dari layanan koperasi saat ini?
+
+---
+
+## 📌 Catatan Wawancara
+
+Selalu minta izin untuk mencatat atau merekam percakapan. Simpan hasil wawancara sebagai data pendukung untuk memperkuat proposal.
+
+
+
+================================================
+FILE: tsconfig.build.json
+================================================
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}
+
+
+
+================================================
+FILE: tsconfig.json
+================================================
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true
+  }
+}
+
+
+
+================================================
+FILE: .env.example
+================================================
+#Global
+PORT=8000   
+
+#Environment
+NODE_ENV=
+APPLICATION_NAME=
+
+# Database
+DB_HOST=
+DB_PORT=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_POOL_MIN=
+DB_POOL_MAX=
+
+#JWT
+JWT_SECRET=""
+JWT_EXPIRES_IN=1h
+
+
+
+================================================
+FILE: .eslintrc.js
+================================================
+module.exports = {
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    project: 'tsconfig.json',
+    tsconfigRootDir: __dirname,
+    sourceType: 'module',
+  },
+  plugins: ['@typescript-eslint/eslint-plugin'],
+  extends: [
+    'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended',
+  ],
+  root: true,
+  env: {
+    node: true,
+    jest: true,
+  },
+  ignorePatterns: ['.eslintrc.js'],
+  rules: {
+    '@typescript-eslint/interface-name-prefix': 'off',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+  },
+};
+
+
+
+================================================
+FILE: .prettierrc
+================================================
+{
+  "singleQuote": true,
+  "trailingComma": "none",
+  "semi": false
+}
+
+
+
+================================================
+FILE: src/app.controller.spec.ts
 ================================================
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
@@ -79,25 +617,20 @@ describe('AppController', () => {
 
 
 ================================================
-FILE: app.controller.ts
+FILE: src/app.controller.ts
 ================================================
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller } from '@nestjs/common'
+import { AppService } from './app.service'
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
-
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
 }
 
 
 
 ================================================
-FILE: app.module.ts
+FILE: src/app.module.ts
 ================================================
 import { Module } from '@nestjs/common'
 import { AppController } from './app.controller'
@@ -123,7 +656,7 @@ export class AppModule {}
 
 
 ================================================
-FILE: app.service.ts
+FILE: src/app.service.ts
 ================================================
 import { Injectable } from '@nestjs/common';
 
@@ -137,64 +670,70 @@ export class AppService {
 
 
 ================================================
-FILE: main.ts
+FILE: src/main.ts
 ================================================
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
 import * as compression from 'compression'
-import { VersioningType } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { ValidationPipe } from '@nestjs/common'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   const configService = app.get(ConfigService)
-  const apiVersion = configService.get<string>('API_DEFAULT_VERSION')
-  const enabledVersions = configService.get<string>('API_ENABLED_VERSION')
 
-  // Security middleware
+  // Class Validator Pipeline
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true
+    })
+  )
+
+  // Security Middleware
   app.use(helmet())
   app.use(compression())
   app.enableCors()
 
-  // Global prefix
   app.setGlobalPrefix('api')
 
-  // Versioning
-  enabledVersions?.split(',').forEach((version) => {
-    app.enableVersioning({
-      type: VersioningType.URI,
-      defaultVersion: apiVersion
-    })
+  // Swagger Configuration (Non-Versioned)
+  const config = new DocumentBuilder()
+    .setTitle('Lumbung Mesari API')
+    .setDescription('The Lumbung Mesari API documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build()
 
-    // Swagger configuration
-    const config = new DocumentBuilder()
-      .setTitle('Lumbung Mesari API')
-      .setDescription('The Lumbung Mesari API documentation')
-      .setVersion(`${version}`)
-      .addBearerAuth()
-      .build()
-
-    const document = SwaggerModule.createDocument(app, config)
-    SwaggerModule.setup(`api/v${version}`, app, document)
+  const document = SwaggerModule.createDocument(app, config)
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: 'none',
+      filter: true,
+      showRequestHeaders: true
+    }
   })
 
   const port = configService.get<number>('PORT', 8000)
   await app.listen(port)
 }
+
 bootstrap()
 
 
 
 ================================================
-FILE: auth/auth.controller.ts
+FILE: src/auth/auth.controller.ts
 ================================================
 import { Body, Controller, Post, UseGuards, Request, Get } from '@nestjs/common'
-import { AuthGuard } from '@nestjs/passport'
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
+import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger'
 import { AuthService } from './auth.service'
-import { LoginDto } from './dto/login.dto'
+import { LoginRequestDto, LoginResponseDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { JwtAuthGuard } from './guards/auth.guard'
 import { Roles } from './decorators/roles.decorator'
@@ -202,22 +741,46 @@ import { RolesGuard } from './guards/roles.guard'
 import { UserRole } from './enums/role.enum'
 import { CurrentUser } from './decorators/current-user.decorator'
 
-@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
-  @ApiOperation({ summary: 'User login' })
-  @ApiResponse({ status: 201, description: 'Successfully logged in' })
+  @ApiOperation({ summary: 'User login with email or username' })
+  @ApiResponse({
+    status: 201,
+    description: 'Successfully logged in',
+    type: LoginResponseDto
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async login(@Body() loginDto: LoginDto) {
+  @ApiBody({
+    type: LoginRequestDto,
+    examples: {
+      'Login with email': {
+        value: {
+          identifier: 'admin@lumbungmesari.com',
+          password: 'admin123'
+        }
+      },
+      'Login with username': {
+        value: {
+          identifier: 'admin',
+          password: 'admin123'
+        }
+      }
+    }
+  })
+  async login(@Body() loginDto: LoginRequestDto) {
     return this.authService.login(loginDto)
   }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User registered successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully',
+    type: LoginResponseDto
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto)
@@ -226,12 +789,17 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token' })
-  @ApiResponse({ status: 201, description: 'Token refreshed' })
+  @ApiResponse({
+    status: 201,
+    description: 'Token refreshed',
+    type: LoginResponseDto
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async refresh(@Request() req: { user: any }) {
     return this.authService.refreshToken(req.user)
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('profile')
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
@@ -264,7 +832,7 @@ export class AuthController {
 
 
 ================================================
-FILE: auth/auth.module.ts
+FILE: src/auth/auth.module.ts
 ================================================
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
@@ -302,13 +870,13 @@ export class AuthModule {}
 
 
 ================================================
-FILE: auth/auth.service.ts
+FILE: src/auth/auth.service.ts
 ================================================
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { compare, hash } from 'bcrypt'
 import { UsersService } from '../users/users.service'
-import { LoginDto } from './dto/login.dto'
+import { LoginRequestDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { JwtPayload } from '../interface/jwt'
 
@@ -319,8 +887,8 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByEmailWithRole(email)
+  async validateUser(identifier: string, password: string): Promise<any> {
+    const user = await this.usersService.findByIdentifierWithRole(identifier)
     if (user && (await compare(password, user.password))) {
       const { password, ...result } = user
       return result
@@ -328,8 +896,8 @@ export class AuthService {
     return null
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password)
+  async login(loginDto: LoginRequestDto) {
+    const user = await this.validateUser(loginDto.identifier, loginDto.password)
     if (!user) {
       throw new UnauthorizedException('Invalid credentials')
     }
@@ -363,12 +931,12 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role_name || user.role || 'member'
+      role: user.role || 'member'
     }
 
     return {
       access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' })
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '1d' })
     }
   }
 }
@@ -376,7 +944,7 @@ export class AuthService {
 
 
 ================================================
-FILE: auth/decorators/current-user.decorator.ts
+FILE: src/auth/decorators/current-user.decorator.ts
 ================================================
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
@@ -390,7 +958,7 @@ export const CurrentUser = createParamDecorator(
 
 
 ================================================
-FILE: auth/decorators/roles.decorator.ts
+FILE: src/auth/decorators/roles.decorator.ts
 ================================================
 import { SetMetadata } from '@nestjs/common';
 import { UserRole } from '../enums/role.enum';
@@ -401,69 +969,114 @@ export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 
 
 ================================================
-FILE: auth/dto/login.dto.ts
+FILE: src/auth/dto/login.dto.ts
 ================================================
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger'
+import { IsString, IsNotEmpty } from 'class-validator'
 
-export class LoginDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  email = '';
-
-  @ApiProperty({ example: 'password123' })
+export class LoginRequestDto {
+  @ApiProperty({
+    description: 'Email or Username',
+    example: 'admin@lumbungmesari.com',
+    required: true
+  })
   @IsString()
   @IsNotEmpty()
-  password = '';
+  identifier = ''
+
+  @ApiProperty({
+    description: 'Password',
+    example: 'admin123',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  password = ''
+}
+
+export class LoginResponseDto {
+  @ApiProperty({
+    description: 'JWT access token for authentication',
+    example:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi0wMDEiLCJlbWFpbCI6ImFkbWluQGx1bWJ1bmdtZXNhcmkuY29tIiwicm9sZSI6ImFkbWluaXN0cmF0b3IiLCJpYXQiOjE3MDQwNjcyMDAsImV4cCI6MTcwNDA3MDgwMH0.example'
+  })
+  access_token = ''
+
+  @ApiProperty({
+    description: 'JWT refresh token for token renewal',
+    example:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi0wMDEiLCJlbWFpbCI6ImFkbWluQGx1bWJ1bmdtZXNhcmkuY29tIiwicm9sZSI6ImFkbWluaXN0cmF0b3IiLCJpYXQiOjE3MDQwNjcyMDAsImV4cCI6MTcwNDY3MjAwMH0.example'
+  })
+  refresh_token = ''
 }
 
 
 
 ================================================
-FILE: auth/dto/register.dto.ts
+FILE: src/auth/dto/register.dto.ts
 ================================================
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger'
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator'
 
 export class RegisterDto {
-  @ApiProperty({ example: 'user@example.com' })
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'User email address',
+    type: String,
+    required: true
+  })
   @IsEmail()
   @IsNotEmpty()
-  email = '';
+  email!: string
 
-  @ApiProperty({ example: 'password123', minLength: 6 })
+  @ApiProperty({
+    example: 'password123',
+    description: 'User password (minimum 6 characters)',
+    type: String,
+    minLength: 6,
+    required: true
+  })
   @IsString()
   @MinLength(6)
   @IsNotEmpty()
-  password = '';
+  password!: string
 
-  @ApiProperty({ example: 'John' })
+  @ApiProperty({
+    example: 'John',
+    description: 'User first name',
+    type: String,
+    required: true
+  })
   @IsString()
   @IsNotEmpty()
-  firstName = '';
+  firstName!: string
 
-  @ApiProperty({ example: 'Doe' })
+  @ApiProperty({
+    example: 'Doe',
+    description: 'User last name',
+    type: String,
+    required: true
+  })
   @IsString()
   @IsNotEmpty()
-  lastName = '';
+  lastName!: string
 }
 
 
 
 ================================================
-FILE: auth/enums/role.enum.ts
+FILE: src/auth/enums/role.enum.ts
 ================================================
 export enum UserRole {
+  SUPERADMIN = 'superadministrator',
   ADMIN = 'admin',
-  MEMBER = 'member',
-  STAFF = 'staff',
+  MEMBER = 'member'
 }
 
 
 
 ================================================
-FILE: auth/guards/auth.guard.ts
+FILE: src/auth/guards/auth.guard.ts
 ================================================
 import {
   Injectable,
@@ -501,7 +1114,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
 
 ================================================
-FILE: auth/guards/roles.guard.ts
+FILE: src/auth/guards/roles.guard.ts
 ================================================
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
@@ -543,7 +1156,7 @@ export class RolesGuard implements CanActivate {
 
 
 ================================================
-FILE: auth/strategies/jwt.strategy.ts
+FILE: src/auth/strategies/jwt.strategy.ts
 ================================================
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -576,7 +1189,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
 
 ================================================
-FILE: database/base.repository.ts
+FILE: src/database/base.repository.ts
 ================================================
 import { Knex } from 'knex'
 import { DatabaseService } from './database.service'
@@ -677,7 +1290,7 @@ export abstract class BaseRepository<T> {
 
 
 ================================================
-FILE: database/database.config.ts
+FILE: src/database/database.config.ts
 ================================================
 import { ConfigService } from '@nestjs/config'
 import { Knex } from 'knex'
@@ -713,7 +1326,7 @@ export const getDatabaseConfig = (
 
 
 ================================================
-FILE: database/database.module.ts
+FILE: src/database/database.module.ts
 ================================================
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
@@ -729,7 +1342,7 @@ export class DatabaseModule {}
 
 
 ================================================
-FILE: database/database.service.ts
+FILE: src/database/database.service.ts
 ================================================
 import {
   Injectable,
@@ -795,7 +1408,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
 
 ================================================
-FILE: database/migrations/20250531154634_create_roles_table.ts
+FILE: src/database/migrations/20250531154634_create_roles_table.ts
 ================================================
 import { Knex } from 'knex'
 
@@ -815,7 +1428,7 @@ export async function down(knex: Knex): Promise<void> {
 
 
 ================================================
-FILE: database/migrations/20250531160815_create_users_table.ts
+FILE: src/database/migrations/20250531160815_create_users_table.ts
 ================================================
 import { Knex } from 'knex'
 
@@ -853,7 +1466,7 @@ export async function down(knex: Knex): Promise<void> {
 
 
 ================================================
-FILE: database/migrations/20250531163446_create_notifications_audit_related_table.ts
+FILE: src/database/migrations/20250531163446_create_notifications_audit_related_table.ts
 ================================================
 import { Knex } from 'knex'
 
@@ -1000,12 +1613,16 @@ export async function down(knex: Knex): Promise<void> {
 
 
 ================================================
-FILE: database/seeds/001_roles.ts
+FILE: src/database/seeds/001_roles.ts
 ================================================
 import { Knex } from 'knex'
 
 export async function seed(knex: Knex): Promise<void> {
   await knex('roles').insert([
+    {
+      id: 'superadministrator',
+      name: 'Super Administrator'
+    },
     {
       id: 'administrator',
       name: 'Administrator'
@@ -1020,7 +1637,7 @@ export async function seed(knex: Knex): Promise<void> {
 
 
 ================================================
-FILE: database/seeds/002_admin_user.ts
+FILE: src/database/seeds/002_admin_user.ts
 ================================================
 import { Knex } from 'knex'
 import { hash } from 'bcrypt'
@@ -1047,7 +1664,7 @@ export async function seed(knex: Knex): Promise<void> {
 
 
 ================================================
-FILE: database/types/audit.ts
+FILE: src/database/types/audit.ts
 ================================================
 export interface AuditLogTable {
   id: string
@@ -1132,7 +1749,7 @@ export type UpdateEmailLog = Partial<
 
 
 ================================================
-FILE: database/types/database.ts
+FILE: src/database/types/database.ts
 ================================================
 import { UserTable } from './users'
 import { RoleTable } from './roles'
@@ -1171,7 +1788,7 @@ export interface Database {
 
 
 ================================================
-FILE: database/types/loans.ts
+FILE: src/database/types/loans.ts
 ================================================
 export interface LoanPeriodTable {
   id: string
@@ -1241,7 +1858,7 @@ export type UpdateInstallment = Partial<
 
 
 ================================================
-FILE: database/types/roles.ts
+FILE: src/database/types/roles.ts
 ================================================
 export interface RoleTable {
   id: string
@@ -1259,7 +1876,7 @@ export type UpdateRole = Partial<
 
 
 ================================================
-FILE: database/types/savings.ts
+FILE: src/database/types/savings.ts
 ================================================
 export interface SavingsAccountTable {
   id: string
@@ -1327,7 +1944,7 @@ export type UpdateTransaction = Partial<
 
 
 ================================================
-FILE: database/types/users.ts
+FILE: src/database/types/users.ts
 ================================================
 export interface UserTable {
   id: string
@@ -1353,7 +1970,7 @@ export type UpdateUser = Partial<
 
 
 ================================================
-FILE: interface/jwt.ts
+FILE: src/interface/jwt.ts
 ================================================
 export interface JwtPayload {
   sub: string
@@ -1364,7 +1981,7 @@ export interface JwtPayload {
 
 
 ================================================
-FILE: interface/users.ts
+FILE: src/interface/users.ts
 ================================================
 export type User = {
   id: string
@@ -1384,7 +2001,7 @@ export type User = {
 
 
 ================================================
-FILE: users/users.controller.spec.ts
+FILE: src/users/users.controller.spec.ts
 ================================================
 import { Test, TestingModule } from '@nestjs/testing'
 import { UsersController } from './users.controller'
@@ -1407,7 +2024,7 @@ describe('UsersController', () => {
   })
 
   it('should return all users', async () => {
-    const result = await controller.findAllV1()
+    const result = await controller.findAll()
     expect(result).toBe('Hello World')
   })
 })
@@ -1415,30 +2032,17 @@ describe('UsersController', () => {
 
 
 ================================================
-FILE: users/users.controller.ts
+FILE: src/users/users.controller.ts
 ================================================
-import { Controller, Get, Version, VERSION_NEUTRAL } from '@nestjs/common'
+import { Controller, Get } from '@nestjs/common'
 import { UsersService } from './users.service'
 
 @Controller('/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Version(VERSION_NEUTRAL)
   @Get()
-  async findAllNeutral() {
-    return this.findAllV1()
-  }
-
-  @Version('1')
-  @Get()
-  async findAllV1() {
-    return this.usersService.findAll()
-  }
-
-  @Version('2')
-  @Get()
-  async findAllV2() {
+  async findAll() {
     return this.usersService.findAll()
   }
 }
@@ -1446,7 +2050,7 @@ export class UsersController {
 
 
 ================================================
-FILE: users/users.module.ts
+FILE: src/users/users.module.ts
 ================================================
 import { Module } from '@nestjs/common'
 import { UsersController } from './users.controller'
@@ -1465,7 +2069,7 @@ export class UsersModule {}
 
 
 ================================================
-FILE: users/users.repository.ts
+FILE: src/users/users.repository.ts
 ================================================
 import { Injectable } from '@nestjs/common'
 import { BaseRepository } from '../database/base.repository'
@@ -1502,9 +2106,62 @@ export class UsersRepository extends BaseRepository<User> {
         'users.deposit_image_url',
         'users.created_at',
         'users.updated_at',
-        'roles.name as role_name'
+        'roles.id as role'
       ])
       .where('users.email', email)
+      .first()
+
+    return result as (User & { role_name: string }) | undefined
+  }
+
+  async findByUsernameWithRole(
+    username: string
+  ): Promise<(User & { role_name: string }) | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role'
+      ])
+      .where('users.username', username)
+      .first()
+
+    return result as (User & { role_name: string }) | undefined
+  }
+
+  async findByIdentifierWithRole(
+    identifier: string
+  ): Promise<(User & { role_name: string }) | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role'
+      ])
+      .where('users.email', identifier)
+      .orWhere('users.username', identifier)
       .first()
 
     return result as (User & { role_name: string }) | undefined
@@ -1574,7 +2231,7 @@ export class UsersRepository extends BaseRepository<User> {
 
 
 ================================================
-FILE: users/users.service.ts
+FILE: src/users/users.service.ts
 ================================================
 import { Injectable, ConflictException } from '@nestjs/common'
 import { NewUser } from '../database/types/users'
@@ -1592,6 +2249,10 @@ export class UsersService {
     return await this.usersRepository.findByEmailWithRole(email)
   }
 
+  async findByIdentifierWithRole(identifier: string) {
+    return await this.usersRepository.findByIdentifierWithRole(identifier)
+  }
+
   async create(userData: NewUser) {
     const existingUser = await this.findByEmail(userData.email)
     if (existingUser) {
@@ -1605,3 +2266,5 @@ export class UsersService {
     return await this.usersRepository.findAll()
   }
 }
+
+
