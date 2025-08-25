@@ -19,7 +19,7 @@ describe('UsersController', () => {
   })
 
   it('should return all users', async () => {
-    const result = await controller.findAllV1()
+    const result = await controller.findAll()
     expect(result).toBe('Hello World')
   })
 })

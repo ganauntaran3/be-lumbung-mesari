@@ -35,7 +35,7 @@ def ingest_task(task_list=None):
         # Await the async function call instead of using asyncio.run
         ingest(
             task["source"],
-            exclude_patterns={"*.env"},
+            exclude_patterns={"*.env", "node_modules", "dist", "docs", "test"},
             output=task["output"]
         )
 

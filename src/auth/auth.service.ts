@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { compare, hash } from 'bcrypt'
 import { UsersService } from '../users/users.service'
-import { LoginDto } from './dto/login.dto'
+import { LoginRequestDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { JwtPayload } from '../interface/jwt'
 
@@ -13,8 +13,8 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByEmailWithRole(email)
+  async validateUser(identifier: string, password: string): Promise<any> {
+    const user = await this.usersService.findByIdentifierWithRole(identifier)
     if (user && (await compare(password, user.password))) {
       const { password, ...result } = user
       return result
@@ -22,8 +22,8 @@ export class AuthService {
     return null
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password)
+  async login(loginDto: LoginRequestDto) {
+    const user = await this.validateUser(loginDto.identifier, loginDto.password)
     if (!user) {
       throw new UnauthorizedException('Invalid credentials')
     }
@@ -57,12 +57,12 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role_name || user.role || 'member'
+      role: user.role || 'member'
     }
 
     return {
       access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' })
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '1d' })
     }
   }
 }
