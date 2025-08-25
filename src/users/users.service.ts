@@ -14,6 +14,10 @@ export class UsersService {
     return await this.usersRepository.findByEmailWithRole(email)
   }
 
+  async findByIdentifierWithRole(identifier: string) {
+    return await this.usersRepository.findByIdentifierWithRole(identifier)
+  }
+
   async create(userData: NewUser) {
     const existingUser = await this.findByEmail(userData.email)
     if (existingUser) {
