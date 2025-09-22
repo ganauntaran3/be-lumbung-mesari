@@ -33,9 +33,62 @@ export class UsersRepository extends BaseRepository<User> {
         'users.deposit_image_url',
         'users.created_at',
         'users.updated_at',
-        'roles.name as role_name'
+        'roles.id as role'
       ])
       .where('users.email', email)
+      .first()
+
+    return result as (User & { role_name: string }) | undefined
+  }
+
+  async findByUsernameWithRole(
+    username: string
+  ): Promise<(User & { role_name: string }) | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role'
+      ])
+      .where('users.username', username)
+      .first()
+
+    return result as (User & { role_name: string }) | undefined
+  }
+
+  async findByIdentifierWithRole(
+    identifier: string
+  ): Promise<(User & { role_name: string }) | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role'
+      ])
+      .where('users.email', identifier)
+      .orWhere('users.username', identifier)
       .first()
 
     return result as (User & { role_name: string }) | undefined

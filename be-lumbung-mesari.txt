@@ -2,83 +2,71 @@ Directory structure:
 └── be-lumbung-mesari/
     ├── README.md
     ├── docker-compose-dev.yml
-    ├── ingest.py
-    ├── kysely-ctl.config.ts
+    ├── knexfile.ts
     ├── nest-cli.json
     ├── package.json
+    ├── Pedoman_Wawancara_Stakeholder_Koperasi.md
     ├── tsconfig.build.json
     ├── tsconfig.json
     ├── .env.example
     ├── .eslintrc.js
     ├── .prettierrc
-    ├── docs/
-    │   ├── requirement.md
-    │   └── decisions/
-    │       └── backend/
-    │           └── 001-use-postgresql.md
-    ├── src/
-    │   ├── app.controller.spec.ts
-    │   ├── app.controller.ts
-    │   ├── app.module.ts
-    │   ├── app.service.ts
-    │   ├── main.ts
-    │   ├── database/
-    │   │   ├── base.repository.ts
-    │   │   ├── database.module.ts
-    │   │   ├── database.ts
-    │   │   ├── migrate.ts
-    │   │   ├── migrations/
-    │   │   │   ├── 001_initial_schema.ts
-    │   │   │   ├── 002_savings_accounts.ts
-    │   │   │   ├── 003_loans.ts
-    │   │   │   └── 004_audit_notifications.ts
-    │   │   ├── seeds/
-    │   │   └── types/
-    │   │       ├── audit.ts
-    │   │       ├── database.ts
-    │   │       ├── loans.ts
-    │   │       ├── roles.ts
-    │   │       ├── savings.ts
-    │   │       └── users.ts
-    │   ├── interface/
-    │   │   └── users.ts
-    │   └── users/
-    │       ├── users.controller.spec.ts
-    │       ├── users.controller.ts
-    │       ├── users.module.ts
-    │       ├── users.service.ts
-    │       └── repositories/
-    │           └── user.repository.ts
-    └── test/
-        ├── app.e2e-spec.ts
-        └── jest-e2e.json
+    └── src/
+        ├── app.controller.spec.ts
+        ├── app.controller.ts
+        ├── app.module.ts
+        ├── app.service.ts
+        ├── main.ts
+        ├── auth/
+        │   ├── auth.controller.ts
+        │   ├── auth.module.ts
+        │   ├── auth.service.ts
+        │   ├── decorators/
+        │   │   ├── current-user.decorator.ts
+        │   │   └── roles.decorator.ts
+        │   ├── dto/
+        │   │   ├── login.dto.ts
+        │   │   └── register.dto.ts
+        │   ├── enums/
+        │   │   └── role.enum.ts
+        │   ├── guards/
+        │   │   ├── auth.guard.ts
+        │   │   └── roles.guard.ts
+        │   └── strategies/
+        │       └── jwt.strategy.ts
+        ├── database/
+        │   ├── base.repository.ts
+        │   ├── database.config.ts
+        │   ├── database.module.ts
+        │   ├── database.service.ts
+        │   ├── migrations/
+        │   │   ├── 20250531154634_create_roles_table.ts
+        │   │   ├── 20250531160815_create_users_table.ts
+        │   │   └── 20250531163446_create_notifications_audit_related_table.ts
+        │   ├── seeds/
+        │   │   ├── 001_roles.ts
+        │   │   └── 002_admin_user.ts
+        │   └── types/
+        │       ├── audit.ts
+        │       ├── database.ts
+        │       ├── loans.ts
+        │       ├── roles.ts
+        │       ├── savings.ts
+        │       └── users.ts
+        ├── interface/
+        │   ├── jwt.ts
+        │   └── users.ts
+        └── users/
+            ├── users.controller.spec.ts
+            ├── users.controller.ts
+            ├── users.module.ts
+            ├── users.repository.ts
+            └── users.service.ts
 
 ================================================
-File: README.md
+FILE: README.md
 ================================================
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+# Backend API for Seka Lumbung Mesari
 
 ## Description
 
@@ -87,10 +75,35 @@ File: README.md
 ## Project setup
 
 ```bash
+# install node
+$ node -v
+# Version used: >22.x
+
+# If you don't have node, install it from https://nodejs.org/en/download/
+# If you don't have npm, install it from https://www.npmjs.com/get-npm
+
+# Install node version 22.x
+$ nvm install 22.x
+$ nvm use 22.x
+
+
+# install dependencies
 $ npm install
 ```
 
-## Compile and run the project
+## Run the project
+
+### Docker
+
+```bash
+# Run project dependencies with docker (postgresql)
+$ docker-compose -f docker-compose-dev.yml up -d
+
+# Connect with the database
+psql -h localhost -p 5432 -U admin -d db_lumbung_mesari
+```
+
+### Local
 
 ```bash
 # development
@@ -116,28 +129,6 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
@@ -145,12 +136,12 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 
 ================================================
-File: docker-compose-dev.yml
+FILE: docker-compose-dev.yml
 ================================================
 version: '3.8'
 services:
   postgres:
-    image: postgres:15
+    image: postgres:17
     container_name: postgres
     environment:
       POSTGRES_USER: admin
@@ -160,6 +151,18 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - '8080:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DEFAULT_USER: admin
+      ADMINER_DEFAULT_PASSWORD: admin123
+      ADMINER_DEFAULT_DB: db_lumbung_mesari
+    depends_on:
+      - postgres
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U admin']
       interval: 10s
@@ -173,92 +176,86 @@ volumes:
 
 
 ================================================
-File: ingest.py
+FILE: knexfile.ts
 ================================================
-from gitingest import ingest
-import os
+import { configDotenv } from 'dotenv'
 
-# Get the directory where the script is located
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+configDotenv()
 
-tasks = [
-    {
-        # Use os.path.join to create absolute path relative to script location
-        "source": os.path.join(SCRIPT_DIR),
-        "output": os.path.join(SCRIPT_DIR, "be-lumbung-mesari.txt")
+const config = {
+  development: {
+    client: 'pg',
+    connection: {
+      database: process.env.DB_NAME,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 5432
     },
-]
-
-def ingest_task(task_list=None):
-    """
-    Process the given tasks or default tasks if none provided
-    
-    Args:
-        task_list (list, optional): List of tasks to process. Each task should be a dict
-            with 'source' and 'output' keys. Defaults to None.
-    """
-    tasks_to_process = task_list if task_list is not None else tasks
-    
-    for task in tasks_to_process:
-        print("Processing task:")
-        print(f"  Source: {task['source']}")
-        print(f"  Output: {task['output']}")
-        
-        # Delete the output file if it exists
-        if os.path.exists(task["output"]):
-            os.remove(task["output"])
-            print(f"Deleted existing file: {task['output']}")
-        
-        # Await the async function call instead of using asyncio.run
-        ingest(
-            task["source"],
-            exclude_patterns={"*.env"},
-            output=task["output"]
-        )
-
-if __name__ == "__main__":
-    # Only run this when script is run directly, not when imported
-    ingest_task()
-
-
-================================================
-File: kysely-ctl.config.ts
-================================================
-import { config } from 'dotenv';
-import { resolve } from 'path';
-
-// Load environment variables
-config();
-
-const {
-  DB_HOST = 'localhost',
-  DB_PORT = '5432',
-  DB_NAME = 'db_lumbung_mesari',
-  DB_USER = 'admin',
-  DB_PASSWORD = 'admin123',
-} = process.env;
-
-export default {
-  // Database connection configuration
-  db: {
-    host: DB_HOST,
-    port: parseInt(DB_PORT, 10),
-    database: DB_NAME,
-    user: DB_USER,
-    password: DB_PASSWORD,
+    pool: {
+      min: parseInt(process.env.DB_POOL_MIN || '2'),
+      max: parseInt(process.env.DB_POOL_MAX || '10')
+    },
+    migrations: {
+      directory: './src/database/migrations',
+      tableName: 'knex_migrations'
+    },
+    seeds: {
+      directory: './src/database/seeds'
+    }
   },
-  
-  // Migration configuration
-  migrationFolder: resolve(__dirname, './src/database/migrations'),
-  
-  // Migration table name
-  migrationTableName: 'kysely_migrations',
-};
+  staging: {
+    client: 'pg',
+    connection: {
+      database: process.env.DB_NAME,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 5432,
+      ssl: { rejectUnauthorized: false }
+    },
+    pool: {
+      min: parseInt(process.env.DB_POOL_MIN || '2'),
+      max: parseInt(process.env.DB_POOL_MAX || '10')
+    },
+    migrations: {
+      directory: './src/database/migrations',
+      tableName: 'knex_migrations'
+    },
+    seeds: {
+      directory: './src/database/seeds'
+    }
+  },
+  production: {
+    client: 'pg',
+    connection: {
+      database: process.env.DB_NAME,
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: process.env.DB_PORT || 5432,
+      ssl: { rejectUnauthorized: false }
+    },
+    pool: {
+      min: parseInt(process.env.DB_POOL_MIN || '2'),
+      max: parseInt(process.env.DB_POOL_MAX || '10')
+    },
+    migrations: {
+      directory: './src/database/migrations',
+      tableName: 'knex_migrations'
+    },
+    seeds: {
+      directory: './src/database/seeds'
+    }
+  }
+}
+
+export default config
 
 
 
 ================================================
-File: nest-cli.json
+FILE: nest-cli.json
 ================================================
 {
   "$schema": "https://json.schemastore.org/nest-cli",
@@ -272,7 +269,7 @@ File: nest-cli.json
 
 
 ================================================
-File: package.json
+FILE: package.json
 ================================================
 {
   "name": "api-lumbung-mesari",
@@ -296,11 +293,14 @@ File: package.json
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/jest/bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migrate": "ts-node src/database/migrate.ts",
-    "migrate:latest": "npx kysely-ctl --config=kysely-ctl.config.ts migrate --to-latest",
-    "migrate:up": "npx kysely-ctl --config=kysely-ctl.config.ts migrate --one-up",
-    "migrate:down": "npx kysely-ctl --config=kysely-ctl.config.ts migrate --one-down",
-    "migrate:info": "npx kysely-ctl --config=kysely-ctl.config.ts migrate --info"
+    "make:migration": "knex migrate:make",
+    "migrate:latest": "knex migrate:latest",
+    "migrate:up": "knex migrate:up",
+    "migrate:down": "knex migrate:down",
+    "migrate:rollback": "knex migrate:rollback",
+    "migrate:status": "knex migrate:status",
+    "seed:run": "knex seed:run",
+    "seed:make": "knex seed:make"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -313,13 +313,16 @@ File: package.json
     "@nestjs/swagger": "^8.1.1",
     "@nestjs/throttler": "^6.4.0",
     "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
     "compression": "^1.8.0",
+    "decimal.js": "^10.6.0",
     "helmet": "^8.0.0",
     "knex": "^3.1.0",
-    "kysely": "^0.28.2",
+    "module": "^1.2.5",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
-    "pg": "^8.16.0",
+    "pg": "^8.16.3",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
   },
@@ -331,9 +334,9 @@ File: package.json
     "@types/compression": "^1.7.5",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.2",
-    "@types/node": "^20.3.1",
+    "@types/node": "^20.17.57",
     "@types/passport-jwt": "^4.0.1",
-    "@types/pg": "^8.15.2",
+    "@types/pg": "^8.15.5",
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
@@ -341,7 +344,6 @@ File: package.json
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.7.0",
-    "kysely-ctl": "^0.13.1",
     "prettier": "^3.0.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
@@ -373,7 +375,122 @@ File: package.json
 
 
 ================================================
-File: tsconfig.build.json
+FILE: Pedoman_Wawancara_Stakeholder_Koperasi.md
+================================================
+# Pedoman Wawancara Penggalian Kebutuhan Sistem Informasi Koperasi Simpan Pinjam
+
+Pedoman ini digunakan untuk melakukan wawancara terstruktur dengan stakeholder koperasi guna menggali permasalahan nyata yang akan menjadi dasar revisi proposal tugas akhir.
+
+---
+
+## 🧑‍💼 1. Ketua / Pengelola Koperasi
+
+### Tujuan:
+
+- Mengetahui visi-misi koperasi
+- Memahami tantangan strategis
+- Mengetahui laporan-laporan wajib koperasi
+
+### Pertanyaan:
+
+1. Layanan apa saja yang disediakan oleh koperasi? (simpan, pinjam, etc)
+2. Apakah layanan tersebut terbagi lagi ke dalam beberapa jenis? (misal: simpanan → pokok, wajib, sukarela)
+3. Dari layanan yang ada, mana yang paling sering digunakan oleh anggota?
+4. Bagaimana proses seseorang bisa menjadi anggota koperasi ini? (Output: sequence)
+5. Bagaimana proses simpanan dilakukan oleh anggota? (Output: sequence)
+6. Bagaimana proses pengajuan pinjaman dilakukan oleh anggota? (Output: sequence)
+7. Bagaimana perhitungan angsuran pinjaman dilakukan oleh koperasi?
+8. Apakah ada batasan jumlah pinjaman yang dapat diambil oleh anggota?
+9. Apa saja jenis laporan rutin yang diwajibkan untuk dibuat oleh koperasi?
+10. Kepada siapa saja laporan-laporan tersebut dikirimkan?
+11. Seperti apa rencana koperasi men-digitalisasi proses operasionalnya?
+
+---
+
+## 💰 2. Bendahara Koperasi
+
+### Tujuan:
+
+- Memahami detail alur pencatatan transaksi
+- Mengetahui struktur dan siklus laporan keuangan
+- Mengidentifikasi kendala teknis pelaporan
+
+### Pertanyaan:
+
+1. Apa saja dokumen yang perlu dikelola atau kewajiban lain yang perlu dilakukan bendahara?
+2. Apakah ada laporan yang perlu disusun secara rutin (harian, bulanan, tahunan)?
+3. Bagaimana data - data tersebut disimpan?
+4. Apakah data - data tersebut perlu di-distribusikan kepada pengurus lain?
+5. Jika ada, berapa lama waktu yang dibutuhkan untuk menyusun laporan tersebut?
+6. Apa media yang digunakan? (kertas, Excel, aplikasi?)
+7. Tantangan apa yang paling sering dirasakan dalam menjalankan pekerjaan?
+
+---
+
+## 🗂️ 3. Sekretaris Koperasi
+
+### Tujuan:
+
+- Memahami proses administrasi dan dokumentasi anggota
+- Mengetahui alur pendaftaran dan pengelolaan data keanggotaan
+- Mengidentifikasi kebutuhan pengarsipan dan akses data
+
+### Pertanyaan:
+
+1. Apa saja dokumen atau proses yang perlu dikelola oleh sekretaris?
+2. Apakah ada data yang perlu diperbarui secara rutin? Jika iya, sebutkan masing - masing prosesnya.
+3. Apakah data - data tersebut perlu di-distribusikan kepada pengurus lain?
+4. Apakah Anda pernah kesulitan mencari data historikal tertentu?
+5. Tantangan apa yang paling sering dirasakan dalam menjalankan pekerjaan?
+
+---
+
+## 🧾 4 . Admin / Petugas Operasional
+
+### Tujuan:
+
+- Mengetahui alur input data harian
+- Memahami kendala penggunaan sistem manual
+
+### Pertanyaan:
+
+1. Apa saja pekerjaan harian yang biasa Anda lakukan di koperasi?
+2. Transaksi apa saja yang Anda catat? (misalnya: simpanan, angsuran, pengambilan dana)
+3. Media apa yang digunakan untuk mencatat transaksi? (buku, Excel, form fisik, dll)
+4. Apakah Anda pernah mengalami kesulitan saat mencatat transaksi atau proses lainnya? Jika ya, dalam hal apa?
+5. Apakah ada laporan atau data yang perlu disusun secara rutin (harian, bulanan, tahunan)?
+6. Apakah ada laporan atau data yang harus disiapkan untuk Rapat Anggota Tahunan (RAT)?
+7. Apa kendala yang sering Anda temui dalam pekerjaan Anda sehari-hari?
+8. Jika tersedia sistem digital, bagian mana dari pekerjaan Anda yang paling ingin Anda otomatisasi?
+
+---
+
+## 👥 4. Anggota Koperasi
+
+### Tujuan:
+
+- Memahami pengalaman anggota terhadap layanan
+- Menilai kebutuhan transparansi dan akses data
+
+### Pertanyaan:
+
+1. Bagaimana proses Anda saat ingin menyetor simpanan atau mengajukan pinjaman?
+2. Apakah Anda selalu menerima bukti transaksi atau catatan keuangan dari koperasi?
+3. Apakah Anda bisa mengakses informasi tentang status pinjaman, saldo simpanan atau informasi lain Anda dengan mudah?
+4. Apakah Anda pernah mengalami kesulitan atau keterlambatan informasi dari pihak koperasi?
+5. Jika disediakan sistem online atau aplikasi, apakah Anda tertarik menggunakannya untuk mengecek data pribadi Anda? Apa ekspektasi anda terhadap fitur-fitur yang perlu disediakan?
+6. Menurut Anda, apa hal yang perlu ditingkatkan dari layanan koperasi saat ini?
+
+---
+
+## 📌 Catatan Wawancara
+
+Selalu minta izin untuk mencatat atau merekam percakapan. Simpan hasil wawancara sebagai data pendukung untuk memperkuat proposal.
+
+
+
+================================================
+FILE: tsconfig.build.json
 ================================================
 {
   "extends": "./tsconfig.json",
@@ -383,7 +500,7 @@ File: tsconfig.build.json
 
 
 ================================================
-File: tsconfig.json
+FILE: tsconfig.json
 ================================================
 {
   "compilerOptions": {
@@ -406,11 +523,14 @@ File: tsconfig.json
 
 
 ================================================
-File: .env.example
+FILE: .env.example
 ================================================
-# Versioning
-API_DEFAULT_VERSION=1
-API_ENABLED_VERSION=1,2
+#Global
+PORT=8000   
+
+#Environment
+NODE_ENV=
+APPLICATION_NAME=
 
 # Database
 DB_HOST=
@@ -418,11 +538,17 @@ DB_PORT=
 DB_NAME=
 DB_USER=
 DB_PASSWORD=
+DB_POOL_MIN=
+DB_POOL_MAX=
+
+#JWT
+JWT_SECRET=""
+JWT_EXPIRES_IN=1h
 
 
 
 ================================================
-File: .eslintrc.js
+FILE: .eslintrc.js
 ================================================
 module.exports = {
   parser: '@typescript-eslint/parser',
@@ -453,7 +579,7 @@ module.exports = {
 
 
 ================================================
-File: .prettierrc
+FILE: .prettierrc
 ================================================
 {
   "singleQuote": true,
@@ -464,358 +590,7 @@ File: .prettierrc
 
 
 ================================================
-File: docs/requirement.md
-================================================
-# Lumbung Mesari - Savings and Loans Cooperative System Requirements
-
-## 1. System Overview
-
-The Lumbung Mesari system is a REST API backend service for a savings and loans cooperative. The system will handle member management, savings operations, loan management, and various financial transactions.
-
-## 2. User Management
-
-### 2.1 User Types
-
-- **Administrator**: Manages all cooperative operations
-- **Members**: Regular cooperative members who can save and request loans
-
-### 2.2 Authentication & Security
-
-- JWT-based authentication
-- Two-Factor Authentication (2FA) via email
-- Password Requirements:
-  - Minimum 8 characters
-  - Must contain numbers
-  - Must contain special characters
-- Session Management:
-  - Auto logout on inactivity
-  - Token expiration handling
-  - Session tracking
-
-## 3. Member Management
-
-### 3.1 Member Registration
-
-- Required Information:
-  - Username
-  - Full Name
-  - Email
-  - Password
-  - ID Card Image
-  - Selfie Image
-- Status tracking (Pending, Approved, Rejected)
-- Admin approval workflow
-- Email notifications for status changes
-
-### 3.2 Member Profile
-
-- Profile management
-- Account status viewing
-- Transaction history
-- Current balance viewing
-- Active loans overview
-
-## 4. Savings Management
-
-### 4.1 Features
-
-- Minimum balance: 100,000 IDR
-- Configurable interest rate
-- Transaction types:
-  - Deposits
-  - Withdrawals
-- Balance tracking
-- Transaction history
-
-### 4.2 Transaction Processing
-
-- Integration with Midtrans payment gateway
-  - Bank transfer support
-  - E-wallet support
-- Transaction status tracking
-- Admin approval workflow
-- Email notifications
-
-## 5. Loan Management
-
-### 5.1 Loan Features
-
-- Flexible loan amounts (no maximum limit)
-- Installment periods:
-  - 6 months
-  - 12 months
-  - 18 months
-- Variable interest rates based on duration
-- Late payment penalties (0.5% additional interest)
-
-### 5.2 Loan Processing
-
-- Loan application workflow
-- Admin approval process
-- Installment scheduling
-- Automatic installment calculations
-- Late payment handling
-- Email notifications for:
-  - Loan approval/rejection
-  - Upcoming payments
-  - Late payments
-
-## 6. Reporting System
-
-### 6.1 Member Reports
-
-- Monthly account statements
-- Savings balance reports
-- Loan status reports
-- Payment history
-
-### 6.2 Administrative Reports
-
-- Monthly transaction summaries
-- Member status reports
-- Loan performance reports
-- System audit trails
-- Financial statements
-
-## 7. Technical Requirements
-
-### 7.1 Database
-
-- PostgreSQL database
-- Implementation of database locking for financial transactions
-- Concurrent transaction handling
-- Data integrity measures
-
-### 7.2 Performance Requirements
-
-- Support for 70+ concurrent users
-- Minimum 18 hours daily uptime
-- Optimized query performance
-- Caching implementation where appropriate
-
-### 7.3 Backup and Recovery
-
-- Daily automated backups
-- Point-in-time recovery capability
-- Backup encryption
-- Regular backup testing
-- Recovery procedures documentation
-
-### 7.4 Security Measures
-
-- Data encryption at rest
-- SSL/TLS encryption for data in transit
-- Regular security audits
-- Input validation
-- XSS protection
-- SQL injection prevention
-- CORS configuration
-- Rate limiting
-
-### 7.5 Audit Trail
-
-- Logging of all administrative actions
-- Transaction logging
-- User activity logging
-- System event logging
-
-## 8. Integration Requirements
-
-### 8.1 Payment Gateway
-
-- Midtrans integration
-  - Bank transfer implementation
-  - E-wallet implementation
-- Transaction status synchronization
-- Error handling
-- Payment reconciliation
-
-### 8.2 Email System
-
-- Transactional email service integration
-- Email templates for:
-  - Registration confirmation
-  - Account approval
-  - Transaction notifications
-  - Loan notifications
-  - Monthly statements
-  - 2FA codes
-
-## 9. Non-functional Requirements
-
-### 9.1 Scalability
-
-- Horizontal scaling capability
-- Load balancing support
-- Database replication support
-
-### 9.2 Maintainability
-
-- Code documentation
-- API documentation
-- Logging standards
-- Error handling standards
-- Deployment documentation
-
-### 9.3 Monitoring
-
-- System health monitoring
-- Performance monitoring
-- Error tracking
-- User activity monitoring
-- Transaction monitoring
-
-## 10. Development Guidelines
-
-### 10.1 API Standards
-
-- RESTful API design
-- JSON response format
-- Proper HTTP status codes
-- API versioning
-- Request/Response validation
-
-### 10.2 Code Quality
-
-- TypeScript/NestJS best practices
-- Unit testing requirements
-- Integration testing requirements
-- Code review process
-- Code style guide
-
-## Implementation Phase
-
-Based on the project structure and the implementation roadmap from requirements.md, here's where we stand:
-
-Phase 1: Project Setup & Infrastructure ✓ (Partially Complete)
-
-- [x] PostgreSQL container setup (docker-compose-dev.yml exists)
-- [x] Basic project structure setup (NestJS structure is in place)
-- [x] Environment configuration (.gitignore suggests .env usage)
-- [x] API Documentation Setup (OpenAPI/Swagger)
-
-Phase 2: Database Design & Setup 🚧 (In Progress)
-
-- [ ] Database migrations implementation (Started with users table)
-- [ ] Knex query builder setup (knexfile.ts exists)
-- [ ] Most of the required tables still need to be created
-
-Phase 3: Authentication & Authorization 🚧 (Early Stages)
-
-- [ ] Started users module implementation
-- [ ] Most authentication features
-- [ ] Two-Factor Authentication
-- [ ] Role-based authorization
-
-Phases 4-7: Not Started Yet
-
-- Core Modules Implementation (Savings, Loans, etc.)
-- Integration & Features
-- Testing & Security
-- Documentation & Deployment
-
-Summary of Current State:
-The project is in its early stages, primarily in Phase 1 and beginning of Phase 2
-Basic infrastructure is set up with:
-NestJS framework
-PostgreSQL database configuration
-Basic project structure
-Initial database migration setup
-Next immediate steps should be:
-Complete the database migrations for all required tables
-Implement the authentication system
-Set up API documentation with Swagger
-Begin implementing core modules (Members, Savings, Loans)
-
-
-
-================================================
-File: docs/decisions/backend/001-use-postgresql.md
-================================================
----
-# Configuration for the Jekyll template "Just the Docs"
-parent: Decisions
-nav_order: 100
-title: Use PostgreSQL as Database
-# These are optional elements. Feel free to remove any of them.
-# status: "{proposed | rejected | accepted | deprecated | … | superseded by ADR-0123"
-# date: {YYYY-MM-DD when the decision was last updated}
-# decision-makers: {list everyone involved in the decision}
-# consulted: {list everyone whose opinions are sought (typically subject-matter experts); and with whom there is a two-way communication}
-# informed: {list everyone who is kept up-to-date on progress; and with whom there is a one-way communication}
----
-
-<!-- we need to disable MD025, because we use the different heading "ADR Template" in the homepage (see above) than it is foreseen in the template -->
-<!-- markdownlint-disable-next-line MD025 -->
-
-# PostgreSQL as Database
-
-## Context and Problem Statement
-
-Our application requires a robust, scalable, and feature-rich database management system to handle transactional data and analytical queries. The system must support ACID compliance, advanced querying capabilities, and extensibility while being cost-effective and open-source. This decision evaluates whether PostgreSQL is the best fit for our needs.
-
-## Decision Drivers
-
-- The need for an open-source solution to avoid licensing costs.
-- Requirements for ACID compliance to ensure transactional integrity.
-- The ability to handle complex queries, including analytical workloads.
-- Native support for structured and semi-structured data (e.g., JSONB).
-- Community support and ecosystem maturity for extensions and tooling.
-
-## Considered Options
-
-- PostgreSQL
-- MySQL
-- MongoDB
-
-## Decision Outcome
-
-Chosen option: **PostgreSQL**, because it meets all key requirements, including ACID compliance, rich query capabilities, and support for both structured and semi-structured data. It also has strong community backing and extensibility options.
-
-### Consequences
-
-- **Good**, because PostgreSQL provides advanced features like window functions, full-text search, and JSONB, which streamline development and reduce reliance on external tools.
-- **Good**, because it ensures data integrity and supports high concurrency for transactional operations.
-- **Bad**, because it may have a steeper learning curve for team members unfamiliar with its advanced features and configurations.
-
-### Confirmation
-
-The decision will be confirmed by implementing a prototype using PostgreSQL and evaluating its performance, reliability, and suitability for the application's needs during the development phase.
-
-## Pros and Cons of the Options
-
-### PostgreSQL
-
-- **Good**, because it supports ACID transactions, ensuring data integrity.
-- **Good**, because it has advanced querying capabilities (CTEs, window functions).
-- **Good**, because of its support for JSONB, enabling hybrid relational and NoSQL use cases.
-- **Neutral**, because it requires more fine-tuning for optimal performance at scale.
-- **Bad**, because it has a steeper learning curve for complex configurations.
-
-### MySQL
-
-- **Good**, because it is simple and fast for basic CRUD operations.
-- **Good**, because it has broad community support and a familiar syntax.
-- **Neutral**, because its JSON support is less robust compared to PostgreSQL.
-- **Bad**, because it lacks advanced features like window functions and CTEs.
-- **Bad**, because replication and clustering can be less flexible.
-
-### MongoDB
-
-- **Good**, because it excels at handling unstructured data.
-- **Good**, because it provides a flexible schema, making it easy to adapt to changing requirements.
-- **Neutral**, because it is better suited for NoSQL workloads than transactional use cases.
-- **Bad**, because it is not fully ACID-compliant for multi-document transactions.
-- **Bad**, because it may require additional effort to integrate with relational data needs.
-
-## More Information
-
-The team will monitor PostgreSQL performance in staging environments and benchmark it against typical use cases. Feedback from database architects and DevOps teams will validate the choice, and adjustments will be made if scalability or performance issues arise. For further details, refer to the PostgreSQL documentation and internal benchmarks.
-
-
-
-================================================
-File: src/app.controller.spec.ts
+FILE: src/app.controller.spec.ts
 ================================================
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
@@ -842,32 +617,27 @@ describe('AppController', () => {
 
 
 ================================================
-File: src/app.controller.ts
+FILE: src/app.controller.ts
 ================================================
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller } from '@nestjs/common'
+import { AppService } from './app.service'
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
-
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
 }
 
 
 
 ================================================
-File: src/app.module.ts
+FILE: src/app.module.ts
 ================================================
 import { Module } from '@nestjs/common'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { UsersModule } from './users/users.module'
 import { ConfigModule } from '@nestjs/config'
-import { DatabaseModule } from './database/database.module'
+import { AuthModule } from './auth/auth.module'
 
 @Module({
   imports: [
@@ -875,8 +645,8 @@ import { DatabaseModule } from './database/database.module'
       isGlobal: true,
       envFilePath: '.env'
     }),
-    DatabaseModule,
-    UsersModule
+    UsersModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService]
@@ -886,7 +656,7 @@ export class AppModule {}
 
 
 ================================================
-File: src/app.service.ts
+FILE: src/app.service.ts
 ================================================
 import { Injectable } from '@nestjs/common';
 
@@ -900,780 +670,1004 @@ export class AppService {
 
 
 ================================================
-File: src/main.ts
+FILE: src/main.ts
 ================================================
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
 import * as compression from 'compression'
-import { VersioningType } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { ValidationPipe } from '@nestjs/common'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   const configService = app.get(ConfigService)
-  const apiVersion = configService.get<string>('API_DEFAULT_VERSION')
-  const enabledVersions = configService.get<string>('API_ENABLED_VERSION')
 
-  // Security middleware
+  // Class Validator Pipeline
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true
+    })
+  )
+
+  // Security Middleware
   app.use(helmet())
   app.use(compression())
   app.enableCors()
 
-  // Global prefix
   app.setGlobalPrefix('api')
 
-  // Versioning
-  enabledVersions.split(',').forEach((version) => {
-    app.enableVersioning({
-      type: VersioningType.URI,
-      defaultVersion: apiVersion
-    })
+  // Swagger Configuration (Non-Versioned)
+  const config = new DocumentBuilder()
+    .setTitle('Lumbung Mesari API')
+    .setDescription('The Lumbung Mesari API documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build()
 
-    // Swagger configuration
-    const config = new DocumentBuilder()
-      .setTitle('Lumbung Mesari API')
-      .setDescription('The Lumbung Mesari API documentation')
-      .setVersion(`${version}`)
-      .addBearerAuth()
-      .build()
-
-    const document = SwaggerModule.createDocument(app, config)
-    SwaggerModule.setup(`api/v${version}`, app, document)
+  const document = SwaggerModule.createDocument(app, config)
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: 'none',
+      filter: true,
+      showRequestHeaders: true
+    }
   })
 
   const port = configService.get<number>('PORT', 8000)
   await app.listen(port)
 }
+
 bootstrap()
 
 
 
 ================================================
-File: src/database/base.repository.ts
+FILE: src/auth/auth.controller.ts
 ================================================
-import { Kysely, Selectable, Insertable, Updateable } from 'kysely';
-import { Database } from './types/database';
+import { Body, Controller, Post, UseGuards, Request, Get } from '@nestjs/common'
+import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger'
+import { AuthService } from './auth.service'
+import { LoginRequestDto, LoginResponseDto } from './dto/login.dto'
+import { RegisterDto } from './dto/register.dto'
+import { JwtAuthGuard } from './guards/auth.guard'
+import { Roles } from './decorators/roles.decorator'
+import { RolesGuard } from './guards/roles.guard'
+import { UserRole } from './enums/role.enum'
+import { CurrentUser } from './decorators/current-user.decorator'
 
-/**
- * Base repository class that provides common database operations
- * using Kysely for type-safety and performance
- */
-export abstract class BaseRepository<T extends keyof Database> {
-  protected readonly db: Kysely<Database>;
-  protected readonly tableName: T;
+@Controller('auth')
+export class AuthController {
+  constructor(private authService: AuthService) {}
 
-  constructor(db: Kysely<Database>, tableName: T) {
-    this.db = db;
-    this.tableName = tableName;
+  @Post('login')
+  @ApiOperation({ summary: 'User login with email or username' })
+  @ApiResponse({
+    status: 201,
+    description: 'Successfully logged in',
+    type: LoginResponseDto
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBody({
+    type: LoginRequestDto,
+    examples: {
+      'Login with email': {
+        value: {
+          identifier: 'admin@lumbungmesari.com',
+          password: 'admin123'
+        }
+      },
+      'Login with username': {
+        value: {
+          identifier: 'admin',
+          password: 'admin123'
+        }
+      }
+    }
+  })
+  async login(@Body() loginDto: LoginRequestDto) {
+    return this.authService.login(loginDto)
   }
 
-  /**
-   * Find all records with pagination
-   */
-  async findAll<S extends Selectable<Database[T]>>(
-    page = 1, 
-    limit = 10
-  ): Promise<{ data: S[]; total: number; page: number; limit: number }> {
-    const offset = (page - 1) * limit;
-    
-    const countResult = await this.db
-      .selectFrom(this.tableName)
-      .select(this.db.fn.count<number>('id').as('count'))
-      .executeTakeFirstOrThrow();
-      
-    const data = await this.db
-      .selectFrom(this.tableName)
-      .selectAll()
-      .limit(limit)
-      .offset(offset)
-      .execute() as S[];
-    
+  @Post('register')
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully',
+    type: LoginResponseDto
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({
+    status: 201,
+    description: 'Token refreshed',
+    type: LoginResponseDto
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async refresh(@Request() req: { user: any }) {
+    return this.authService.refreshToken(req.user)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  @ApiOperation({ summary: 'Get user profile' })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getProfile(@CurrentUser() user: any) {
+    return user
+  }
+
+  @UseGuards(RolesGuard, JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('admin')
+  @ApiOperation({ summary: 'Admin only endpoint' })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin data retrieved successfully'
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions'
+  })
+  getAdminData(@CurrentUser() user: any) {
     return {
-      data,
-      total: Number(countResult.count),
-      page,
-      limit
-    };
-  }
-
-  /**
-   * Find record by ID
-   */
-  async findById<S extends Selectable<Database[T]>>(id: string): Promise<S | undefined> {
-    return this.db
-      .selectFrom(this.tableName)
-      .selectAll()
-      .where('id', '=', id)
-      .executeTakeFirst() as Promise<S | undefined>;
-  }
-
-  /**
-   * Create a new record
-   */
-  async create<I extends Insertable<Database[T]>, S extends Selectable<Database[T]>>(
-    data: I
-  ): Promise<S> {
-    return this.db
-      .insertInto(this.tableName)
-      .values(data)
-      .returningAll()
-      .executeTakeFirstOrThrow() as Promise<S>;
-  }
-
-  /**
-   * Update a record
-   */
-  async update<U extends Updateable<Database[T]>, S extends Selectable<Database[T]>>(
-    id: string, 
-    data: U
-  ): Promise<S> {
-    return this.db
-      .updateTable(this.tableName)
-      .set(data)
-      .where('id', '=', id)
-      .returningAll()
-      .executeTakeFirstOrThrow() as Promise<S>;
-  }
-
-  /**
-   * Delete a record
-   */
-  async delete<S extends Selectable<Database[T]>>(id: string): Promise<S> {
-    return this.db
-      .deleteFrom(this.tableName)
-      .where('id', '=', id)
-      .returningAll()
-      .executeTakeFirstOrThrow() as Promise<S>;
+      message: 'This is admin only data',
+      user
+    }
   }
 }
 
 
 
 ================================================
-File: src/database/database.module.ts
+FILE: src/auth/auth.module.ts
 ================================================
-import { Module, Global } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { db } from './database';
+import { Module } from '@nestjs/common'
+import { JwtModule } from '@nestjs/jwt'
+import { PassportModule } from '@nestjs/passport'
+import { ConfigModule, ConfigService } from '@nestjs/config'
+import { UsersModule } from '../users/users.module'
+import { AuthService } from './auth.service'
+import { AuthController } from './auth.controller'
+import { JwtStrategy } from './strategies/jwt.strategy'
 
-@Global()
+@Module({
+  imports: [
+    UsersModule,
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>(
+          'JWT_SECRET',
+          'your-default-secret-key'
+        ),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1h')
+        }
+      }),
+      inject: [ConfigService]
+    })
+  ],
+  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController],
+  exports: [AuthService]
+})
+export class AuthModule {}
+
+
+
+================================================
+FILE: src/auth/auth.service.ts
+================================================
+import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
+import { compare, hash } from 'bcrypt'
+import { UsersService } from '../users/users.service'
+import { LoginRequestDto } from './dto/login.dto'
+import { RegisterDto } from './dto/register.dto'
+import { JwtPayload } from '../interface/jwt'
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService
+  ) {}
+
+  async validateUser(identifier: string, password: string): Promise<any> {
+    const user = await this.usersService.findByIdentifierWithRole(identifier)
+    if (user && (await compare(password, user.password))) {
+      const { password, ...result } = user
+      return result
+    }
+    return null
+  }
+
+  async login(loginDto: LoginRequestDto) {
+    const user = await this.validateUser(loginDto.identifier, loginDto.password)
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials')
+    }
+    return this.generateTokens(user)
+  }
+
+  async register(registerDto: RegisterDto) {
+    const hashedPassword = await hash(registerDto.password, 10)
+    const user = await this.usersService.create({
+      email: registerDto.email,
+      password: hashedPassword,
+      fullname: `${registerDto.firstName} ${registerDto.lastName}`,
+      username: registerDto.email.split('@')[0],
+      phone_number: '', // These can be updated later
+      address: '', // These can be updated later
+      status: 'waiting_deposit', // Default status from migration
+      role_id: 'member', // Member role ID (will be created in seeds)
+      deposit_image_url: undefined // Optional field
+    })
+
+    // Get user with role information for token generation
+    const userWithRole = await this.usersService.findByEmailWithRole(user.email)
+    return this.generateTokens(userWithRole)
+  }
+
+  async refreshToken(user: any) {
+    return this.generateTokens(user)
+  }
+
+  private generateTokens(user: any) {
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role || 'member'
+    }
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '1d' })
+    }
+  }
+}
+
+
+
+================================================
+FILE: src/auth/decorators/current-user.decorator.ts
+================================================
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export const CurrentUser = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.user;
+  },
+);
+
+
+
+================================================
+FILE: src/auth/decorators/roles.decorator.ts
+================================================
+import { SetMetadata } from '@nestjs/common';
+import { UserRole } from '../enums/role.enum';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
+
+
+
+================================================
+FILE: src/auth/dto/login.dto.ts
+================================================
+import { ApiProperty } from '@nestjs/swagger'
+import { IsString, IsNotEmpty } from 'class-validator'
+
+export class LoginRequestDto {
+  @ApiProperty({
+    description: 'Email or Username',
+    example: 'admin@lumbungmesari.com',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  identifier = ''
+
+  @ApiProperty({
+    description: 'Password',
+    example: 'admin123',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  password = ''
+}
+
+export class LoginResponseDto {
+  @ApiProperty({
+    description: 'JWT access token for authentication',
+    example:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi0wMDEiLCJlbWFpbCI6ImFkbWluQGx1bWJ1bmdtZXNhcmkuY29tIiwicm9sZSI6ImFkbWluaXN0cmF0b3IiLCJpYXQiOjE3MDQwNjcyMDAsImV4cCI6MTcwNDA3MDgwMH0.example'
+  })
+  access_token = ''
+
+  @ApiProperty({
+    description: 'JWT refresh token for token renewal',
+    example:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi0wMDEiLCJlbWFpbCI6ImFkbWluQGx1bWJ1bmdtZXNhcmkuY29tIiwicm9sZSI6ImFkbWluaXN0cmF0b3IiLCJpYXQiOjE3MDQwNjcyMDAsImV4cCI6MTcwNDY3MjAwMH0.example'
+  })
+  refresh_token = ''
+}
+
+
+
+================================================
+FILE: src/auth/dto/register.dto.ts
+================================================
+import { ApiProperty } from '@nestjs/swagger'
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator'
+
+export class RegisterDto {
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'User email address',
+    type: String,
+    required: true
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  email!: string
+
+  @ApiProperty({
+    example: 'password123',
+    description: 'User password (minimum 6 characters)',
+    type: String,
+    minLength: 6,
+    required: true
+  })
+  @IsString()
+  @MinLength(6)
+  @IsNotEmpty()
+  password!: string
+
+  @ApiProperty({
+    example: 'John',
+    description: 'User first name',
+    type: String,
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  firstName!: string
+
+  @ApiProperty({
+    example: 'Doe',
+    description: 'User last name',
+    type: String,
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  lastName!: string
+}
+
+
+
+================================================
+FILE: src/auth/enums/role.enum.ts
+================================================
+export enum UserRole {
+  SUPERADMIN = 'superadministrator',
+  ADMIN = 'admin',
+  MEMBER = 'member'
+}
+
+
+
+================================================
+FILE: src/auth/guards/auth.guard.ts
+================================================
+import {
+  Injectable,
+  ExecutionContext,
+  UnauthorizedException
+} from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
+import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken'
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  canActivate(context: ExecutionContext) {
+    // Add your custom logic here if needed
+    return super.canActivate(context)
+  }
+
+  handleRequest(err: any, user: any, info: any) {
+    // You can throw custom exceptions based on specific errors
+    if (info instanceof TokenExpiredError) {
+      throw new UnauthorizedException('Token expired')
+    }
+
+    if (info instanceof JsonWebTokenError) {
+      throw new UnauthorizedException('Invalid token')
+    }
+
+    if (err || !user) {
+      throw new UnauthorizedException('Unauthorized')
+    }
+
+    return user
+  }
+}
+
+
+
+================================================
+FILE: src/auth/guards/roles.guard.ts
+================================================
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
+import { ROLES_KEY } from '../decorators/roles.decorator'
+import { UserRole } from '../enums/role.enum'
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ])
+
+    // If no roles are required, allow access
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true
+    }
+
+    const { user } = context.switchToHttp().getRequest()
+    
+    // Ensure user exists and has a role
+    if (!user || !user.role) {
+      throw new ForbiddenException('User has no role assigned')
+    }
+
+    // Check if user's role is in the required roles
+    const hasRole = requiredRoles.some(role => user.role === role)
+    
+    if (!hasRole) {
+      throw new ForbiddenException(`User with role ${user.role} does not have sufficient permissions`)
+    }
+    
+    return true
+  }
+}
+
+
+================================================
+FILE: src/auth/strategies/jwt.strategy.ts
+================================================
+import { Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { PassportStrategy } from '@nestjs/passport'
+import { ExtractJwt, Strategy } from 'passport-jwt'
+import { JwtPayload } from '../../interface/jwt'
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(private configService: ConfigService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>(
+        'JWT_SECRET',
+        'your-default-secret-key'
+      )
+    })
+  }
+
+  async validate(payload: JwtPayload) {
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role
+    }
+  }
+}
+
+
+
+================================================
+FILE: src/database/base.repository.ts
+================================================
+import { Knex } from 'knex'
+import { DatabaseService } from './database.service'
+
+/**
+ * Generic base repository class that provides common CRUD operations
+ * Uses a generic approach with Knex query builder
+ * - T: The entity type (e.g., User)
+ */
+export abstract class BaseRepository<T> {
+  protected readonly knex: Knex
+
+  constructor(
+    protected readonly databaseService: DatabaseService,
+    protected readonly tableName: string
+  ) {
+    this.knex = databaseService.getKnex()
+  }
+
+  async findAll(): Promise<T[]> {
+    const result = await this.knex(this.tableName).select()
+
+    return result as T[]
+  }
+
+  /**
+   * Find a record by ID
+   */
+  async findById(id: string): Promise<T | undefined> {
+    const result = await this.knex(this.tableName).where('id', id).first()
+
+    return result as T | undefined
+  }
+
+  /**
+   * Create a new record
+   */
+  async create(data: Partial<T>): Promise<T> {
+    const [result] = await this.knex(this.tableName).insert(data).returning('*')
+
+    return result as T
+  }
+
+  /**
+   * Update a record by ID
+   */
+  async updateById(id: string, data: Partial<T>): Promise<T> {
+    const [result] = await this.knex(this.tableName)
+      .where('id', id)
+      .update(data)
+      .returning('*')
+
+    return result as T
+  }
+
+  /**
+   * Delete a record by ID
+   */
+  async deleteById(id: string): Promise<T> {
+    const [result] = await this.knex(this.tableName)
+      .where('id', id)
+      .del()
+      .returning('*')
+
+    return result as T
+  }
+
+  /**
+   * Get paginated results
+   */
+  async paginate(
+    page = 1,
+    perPage = 10
+  ): Promise<{ data: T[]; page: number; total: number; totalPage: number }> {
+    const offset = (page - 1) * perPage
+
+    // Get paginated data
+    const data = await this.knex(this.tableName)
+      .select('*')
+      .limit(perPage)
+      .offset(offset)
+
+    // Get total count
+    const [{ count }] = await this.knex(this.tableName).count('* as count')
+
+    const total = parseInt(count as string, 10)
+    const totalPage = Math.ceil(total / perPage)
+
+    return {
+      data: data as T[],
+      page,
+      total,
+      totalPage
+    }
+  }
+}
+
+
+
+================================================
+FILE: src/database/database.config.ts
+================================================
+import { ConfigService } from '@nestjs/config'
+import { Knex } from 'knex'
+
+export const getDatabaseConfig = (
+  configService: ConfigService
+): Knex.Config => ({
+  client: 'pg',
+  connection: {
+    host: configService.get<string>('DB_HOST'),
+    port: configService.get<number>('DB_PORT', 5432),
+    user: configService.get<string>('DB_USER'),
+    password: configService.get<string>('DB_PASSWORD'),
+    database: configService.get<string>('DB_NAME'),
+    ssl:
+      configService.get<string>('NODE_ENV') === 'production'
+        ? { rejectUnauthorized: false }
+        : false
+  },
+  pool: {
+    min: parseInt(configService.get<string>('DB_POOL_MIN', '2'), 10),
+    max: parseInt(configService.get<string>('DB_POOL_MAX', '10'), 10)
+  },
+  migrations: {
+    directory: './src/database/migrations',
+    tableName: 'knex_migrations'
+  },
+  seeds: {
+    directory: './src/database/seeds'
+  }
+})
+
+
+
+================================================
+FILE: src/database/database.module.ts
+================================================
+import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
+import { DatabaseService } from './database.service'
+
 @Module({
   imports: [ConfigModule],
-  providers: [
-    {
-      provide: 'DATABASE',
-      useValue: db,
-    },
-  ],
-  exports: ['DATABASE'],
+  providers: [DatabaseService],
+  exports: [DatabaseService]
 })
 export class DatabaseModule {}
 
 
 
 ================================================
-File: src/database/database.ts
+FILE: src/database/database.service.ts
 ================================================
-import { Database } from './types/database'
-import { Pool } from 'pg'
-import { Kysely, PostgresDialect } from 'kysely'
-import { config } from 'dotenv'
+import {
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+  Logger
+} from '@nestjs/common'
+import { Knex, knex } from 'knex'
+import { ConfigService } from '@nestjs/config'
+import { getDatabaseConfig } from './database.config'
 
-// Load environment variables
-config()
+@Injectable()
+export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  private readonly knex: Knex
+  private isDestroyed = false
+  private readonly logger = new Logger(DatabaseService.name)
 
-const { 
-  DB_HOST = 'localhost',
-  DB_PORT = '5432',
-  DB_NAME = 'db_lumbung_mesari',
-  DB_USER = 'admin',
-  DB_PASSWORD = 'admin123'
-} = process.env
+  constructor(private configService: ConfigService) {
+    this.knex = knex(getDatabaseConfig(this.configService))
+  }
 
-const dialect = new PostgresDialect({
-  pool: new Pool({
-    database: DB_NAME,
-    host: DB_HOST,
-    user: DB_USER,
-    password: DB_PASSWORD,
-    port: parseInt(DB_PORT || '5432', 10),
-    max: 10
+  async onModuleInit() {
+    try {
+      // Test the connection
+      await this.knex.raw('SELECT 1')
+      this.logger.log('Database connected successfully')
+    } catch (error) {
+      this.logger.error('Database connection failed:', error)
+      throw error
+    }
+  }
+
+  getKnex(): Knex {
+    if (this.isDestroyed) {
+      throw new Error('Database connection has been destroyed')
+    }
+    return this.knex
+  }
+
+  table(tableName: string): Knex.QueryBuilder {
+    if (this.isDestroyed) {
+      throw new Error('Database connection has been destroyed')
+    }
+    return this.knex(tableName)
+  }
+
+  async onModuleDestroy() {
+    if (this.isDestroyed) {
+      return
+    }
+
+    this.isDestroyed = true
+
+    try {
+      await this.knex.destroy()
+      this.logger.log('Database connection closed successfully')
+    } catch (error) {
+      this.logger.error('Error during database cleanup:', error)
+    }
+  }
+}
+
+
+
+================================================
+FILE: src/database/migrations/20250531154634_create_roles_table.ts
+================================================
+import { Knex } from 'knex'
+
+export async function up(knex: Knex): Promise<void> {
+  await knex.raw('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+
+  await knex.schema.createTable('roles', (table) => {
+    table.string('id', 16).primary()
+    table.string('name', 64).notNullable().unique()
   })
-})
-
-// Database interface is passed to Kysely's constructor, and from now on, Kysely
-// knows your database structure.
-// Dialect is passed to Kysely's constructor, and from now on, Kysely knows how
-// to communicate with your database.
-export const db = new Kysely<Database>({
-  dialect
-})
-
-
-
-================================================
-File: src/database/migrate.ts
-================================================
-import { promises as fs } from 'fs';
-import { resolve } from 'path';
-import { FileMigrationProvider, Kysely, Migrator, PostgresDialect } from 'kysely';
-import { Pool } from 'pg';
-import { config } from 'dotenv';
-
-// Load environment variables
-config();
-
-const {
-  DB_HOST = 'localhost',
-  DB_PORT = '5432',
-  DB_NAME = 'db_lumbung_mesari',
-  DB_USER = 'admin',
-  DB_PASSWORD = 'admin123',
-} = process.env;
-
-async function migrateToLatest() {
-  // Database connection
-  const db = new Kysely({
-    dialect: new PostgresDialect({
-      pool: new Pool({
-        host: DB_HOST,
-        port: parseInt(DB_PORT, 10),
-        database: DB_NAME,
-        user: DB_USER,
-        password: DB_PASSWORD,
-      }),
-    }),
-  });
-
-  // Migrator
-  const migrator = new Migrator({
-    db,
-    provider: new FileMigrationProvider({
-      fs,
-      path: resolve(__dirname, 'migrations'),
-    }),
-  });
-
-  const { error, results } = await migrator.migrateToLatest();
-
-  // Close the connection
-  await db.destroy();
-
-  if (error) {
-    console.error('Migration failed:');
-    console.error(error);
-    process.exit(1);
-  }
-
-  if (results && results.length > 0) {
-    console.log('Migrations completed:');
-    results.forEach((migration) => {
-      console.log(`- ${migration.migrationName}: ${migration.status}`);
-    });
-  } else {
-    console.log('No migrations to run - database is up to date');
-  }
 }
 
-// Run the migration
-migrateToLatest().catch((error) => {
-  console.error('Migration error:');
-  console.error(error);
-  process.exit(1);
-});
-
-
-
-================================================
-File: src/database/migrations/001_initial_schema.ts
-================================================
-import { Kysely, sql } from 'kysely';
-
-export async function up(db: Kysely<any>): Promise<void> {
-  // Create roles table
-  await db.schema
-    .createTable('roles')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('name', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
-
-  // Create users table
-  await db.schema
-    .createTable('users')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('email', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('fullname', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('username', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('password', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('phone_number', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('address', 'text', (col) => 
-      col.notNull()
-    )
-    .addColumn('status', 'varchar', (col) => 
-      col.notNull().defaultTo('pending')
-    )
-    .addColumn('role_id', 'uuid', (col) => 
-      col.references('roles.id').onDelete('restrict').notNull()
-    )
-    .addColumn('id_card_image', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('selfie_image', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
-
-  // Insert default roles
-  await db
-    .insertInto('roles')
-    .values([
-      { name: 'administrator' },
-      { name: 'member' }
-    ])
-    .execute();
-}
-
-export async function down(db: Kysely<any>): Promise<void> {
-  // Drop tables in reverse order
-  await db.schema.dropTable('users').execute();
-  await db.schema.dropTable('roles').execute();
+export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTable('roles')
 }
 
 
 
 ================================================
-File: src/database/migrations/002_savings_accounts.ts
+FILE: src/database/migrations/20250531160815_create_users_table.ts
 ================================================
-import { Kysely, sql } from 'kysely';
+import { Knex } from 'knex'
 
-export async function up(db: Kysely<any>): Promise<void> {
-  // Create savings_accounts table
-  await db.schema
-    .createTable('savings_accounts')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('user_id', 'uuid', (col) => 
-      col.references('users.id').onDelete('cascade').notNull()
-    )
-    .addColumn('account_number', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('balance', 'decimal(15, 2)', (col) => 
-      col.notNull().defaultTo('0.00')
-    )
-    .addColumn('interest_rate', 'decimal(5, 2)', (col) => 
-      col.notNull().defaultTo('0.00')
-    )
-    .addColumn('status', 'varchar', (col) => 
-      col.notNull().defaultTo('active')
-    )
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
+const userStatus = ['waiting_deposit', 'active', 'suspended', 'pending']
 
-  // Create transaction_types table
-  await db.schema
-    .createTable('transaction_types')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('name', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('description', 'text')
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
-
-  // Create transactions table
-  await db.schema
-    .createTable('transactions')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('savings_account_id', 'uuid', (col) => 
-      col.references('savings_accounts.id').onDelete('restrict').notNull()
-    )
-    .addColumn('transaction_type_id', 'uuid', (col) => 
-      col.references('transaction_types.id').onDelete('restrict').notNull()
-    )
-    .addColumn('amount', 'decimal(15, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('description', 'text')
-    .addColumn('reference_number', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('status', 'varchar', (col) => 
-      col.notNull().defaultTo('pending')
-    )
-    .addColumn('payment_method', 'varchar')
-    .addColumn('payment_details', 'jsonb')
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
-
-  // Insert default transaction types
-  await db
-    .insertInto('transaction_types')
-    .values([
-      { name: 'deposit', description: 'Deposit into savings account' },
-      { name: 'withdrawal', description: 'Withdrawal from savings account' },
-      { name: 'interest', description: 'Interest earned on savings' },
-      { name: 'fee', description: 'Fee charged on account' }
-    ])
-    .execute();
+export async function up(knex: Knex): Promise<void> {
+  await knex.schema.createTable('users', (table) => {
+    table
+      .string('id', 36)
+      .primary()
+      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
+    table.string('email').notNullable().unique()
+    table.string('fullname').notNullable()
+    table.string('username').notNullable().unique()
+    table.string('password').notNullable()
+    table.string('phone_number').notNullable()
+    table.text('address').notNullable()
+    table.enum('status', userStatus).notNullable().defaultTo(userStatus[0])
+    table
+      .string('role_id')
+      .references('id')
+      .inTable('roles')
+      .onDelete('RESTRICT')
+      .notNullable()
+    table.string('deposit_image_url').nullable()
+    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+  })
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
-  // Drop tables in reverse order
-  await db.schema.dropTable('transactions').execute();
-  await db.schema.dropTable('transaction_types').execute();
-  await db.schema.dropTable('savings_accounts').execute();
+export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTable('users')
 }
 
 
 
 ================================================
-File: src/database/migrations/003_loans.ts
+FILE: src/database/migrations/20250531163446_create_notifications_audit_related_table.ts
 ================================================
-import { Kysely, sql } from 'kysely';
+import { Knex } from 'knex'
 
-export async function up(db: Kysely<any>): Promise<void> {
-  // Create loan_periods table
-  await db.schema
-    .createTable('loan_periods')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('months', 'integer', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('interest_rate', 'decimal(5, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
-
-  // Create loans table
-  await db.schema
-    .createTable('loans')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('user_id', 'uuid', (col) => 
-      col.references('users.id').onDelete('restrict').notNull()
-    )
-    .addColumn('loan_number', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('amount', 'decimal(15, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('loan_period_id', 'uuid', (col) => 
-      col.references('loan_periods.id').onDelete('restrict').notNull()
-    )
-    .addColumn('interest_rate', 'decimal(5, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('total_amount', 'decimal(15, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('monthly_payment', 'decimal(15, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('start_date', 'date')
-    .addColumn('end_date', 'date')
-    .addColumn('purpose', 'text', (col) => 
-      col.notNull()
-    )
-    .addColumn('status', 'varchar', (col) => 
-      col.notNull().defaultTo('pending')
-    )
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
-
-  // Create installments table
-  await db.schema
-    .createTable('installments')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('loan_id', 'uuid', (col) => 
-      col.references('loans.id').onDelete('cascade').notNull()
-    )
-    .addColumn('installment_number', 'integer', (col) => 
-      col.notNull()
-    )
-    .addColumn('due_date', 'date', (col) => 
-      col.notNull()
-    )
-    .addColumn('amount', 'decimal(15, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('principal_amount', 'decimal(15, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('interest_amount', 'decimal(15, 2)', (col) => 
-      col.notNull()
-    )
-    .addColumn('penalty_amount', 'decimal(15, 2)', (col) => 
-      col.notNull().defaultTo('0.00')
-    )
-    .addColumn('paid_amount', 'decimal(15, 2)', (col) => 
-      col.notNull().defaultTo('0.00')
-    )
-    .addColumn('paid_date', 'date')
-    .addColumn('status', 'varchar', (col) => 
-      col.notNull().defaultTo('pending')
-    )
-    .addColumn('payment_transaction_id', 'uuid', (col) => 
-      col.references('transactions.id').onDelete('set null')
-    )
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
-
-  // Insert default loan periods with their interest rates
-  await db
-    .insertInto('loan_periods')
-    .values([
-      { months: 6, interest_rate: 5.00 },
-      { months: 12, interest_rate: 7.50 },
-      { months: 18, interest_rate: 10.00 }
-    ])
-    .execute();
-}
-
-export async function down(db: Kysely<any>): Promise<void> {
-  // Drop tables in reverse order
-  await db.schema.dropTable('installments').execute();
-  await db.schema.dropTable('loans').execute();
-  await db.schema.dropTable('loan_periods').execute();
-}
-
-
-
-================================================
-File: src/database/migrations/004_audit_notifications.ts
-================================================
-import { Kysely, sql } from 'kysely';
-
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(knex: Knex): Promise<void> {
   // Create audit_logs table for tracking all administrative actions
-  await db.schema
-    .createTable('audit_logs')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('user_id', 'uuid', (col) => 
-      col.references('users.id').onDelete('set null')
-    )
-    .addColumn('action', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('entity_type', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('entity_id', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('old_values', 'jsonb')
-    .addColumn('new_values', 'jsonb')
-    .addColumn('ip_address', 'varchar')
-    .addColumn('user_agent', 'varchar')
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
+  await knex.schema.createTable('audit_logs', (table) => {
+    table
+      .string('id', 36)
+      .primary()
+      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
+    table
+      .string('user_id', 36)
+      .references('id')
+      .inTable('users')
+      .onDelete('SET NULL')
+    table.string('action').notNullable()
+    table.string('entity_type').notNullable()
+    table.string('entity_id').notNullable()
+    table.jsonb('old_values')
+    table.jsonb('new_values')
+    table.string('ip_address')
+    table.string('user_agent')
+    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+  })
 
   // Create notification_types table
-  await db.schema
-    .createTable('notification_types')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('name', 'varchar', (col) => 
-      col.notNull().unique()
-    )
-    .addColumn('description', 'text')
-    .addColumn('template', 'text', (col) => 
-      col.notNull()
-    )
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
+  await knex.schema.createTable('notification_types', (table) => {
+    table
+      .string('id', 36)
+      .primary()
+      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
+    table.string('name').notNullable().unique()
+    table.text('description')
+    table.text('template').notNullable()
+    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+  })
 
   // Create notifications table
-  await db.schema
-    .createTable('notifications')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('user_id', 'uuid', (col) => 
-      col.references('users.id').onDelete('cascade').notNull()
-    )
-    .addColumn('notification_type_id', 'uuid', (col) => 
-      col.references('notification_types.id').onDelete('restrict').notNull()
-    )
-    .addColumn('title', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('message', 'text', (col) => 
-      col.notNull()
-    )
-    .addColumn('data', 'jsonb')
-    .addColumn('is_read', 'boolean', (col) => 
-      col.notNull().defaultTo(false)
-    )
-    .addColumn('read_at', 'timestamp')
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .addColumn('updated_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
+  await knex.schema.createTable('notifications', (table) => {
+    table
+      .string('id', 36)
+      .primary()
+      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
+    table
+      .string('user_id', 36)
+      .references('id')
+      .inTable('users')
+      .onDelete('CASCADE')
+      .notNullable()
+    table
+      .string('notification_type_id', 36)
+      .references('id')
+      .inTable('notification_types')
+      .onDelete('RESTRICT')
+      .notNullable()
+    table.string('title').notNullable()
+    table.text('message').notNullable()
+    table.jsonb('data')
+    table.boolean('is_read').notNullable().defaultTo(false)
+    table.timestamp('read_at')
+    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+  })
 
   // Create email_logs table for tracking all sent emails
-  await db.schema
-    .createTable('email_logs')
-    .addColumn('id', 'uuid', (col) => 
-      col.primaryKey().defaultTo(sql`gen_random_uuid()`)
-    )
-    .addColumn('user_id', 'uuid', (col) => 
-      col.references('users.id').onDelete('set null')
-    )
-    .addColumn('email', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('subject', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('body', 'text', (col) => 
-      col.notNull()
-    )
-    .addColumn('status', 'varchar', (col) => 
-      col.notNull()
-    )
-    .addColumn('error', 'text')
-    .addColumn('created_at', 'timestamp', (col) => 
-      col.notNull().defaultTo(sql`now()`)
-    )
-    .execute();
+  await knex.schema.createTable('email_logs', (table) => {
+    table
+      .string('id', 36)
+      .primary()
+      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
+    table
+      .string('user_id', 36)
+      .references('id')
+      .inTable('users')
+      .onDelete('SET NULL')
+    table.string('email').notNullable()
+    table.string('subject').notNullable()
+    table.text('body').notNullable()
+    table.string('status').notNullable()
+    table.text('error')
+    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+  })
 
   // Insert default notification types
-  await db
-    .insertInto('notification_types')
-    .values([
-      { 
-        name: 'account_approval', 
-        description: 'Account approval notification',
-        template: 'Your account has been approved. You can now access all features.'
-      },
-      { 
-        name: 'transaction_confirmation', 
-        description: 'Transaction confirmation notification',
-        template: 'Your transaction of {{amount}} has been {{status}}.'
-      },
-      { 
-        name: 'loan_approval', 
-        description: 'Loan approval notification',
-        template: 'Your loan application for {{amount}} has been {{status}}.'
-      },
-      { 
-        name: 'payment_reminder', 
-        description: 'Payment reminder notification',
-        template: 'Reminder: Your loan payment of {{amount}} is due on {{due_date}}.'
-      },
-      { 
-        name: 'late_payment', 
-        description: 'Late payment notification',
-        template: 'Your loan payment of {{amount}} was due on {{due_date}} and is now overdue.'
-      }
-    ])
-    .execute();
+  await knex('notification_types').insert([
+    {
+      name: 'account_approval',
+      description: 'Account approval notification',
+      template:
+        'Your account has been approved. You can now access all features.'
+    },
+    {
+      name: 'transaction_confirmation',
+      description: 'Transaction confirmation notification',
+      template: 'Your transaction of {{amount}} has been {{status}}.'
+    },
+    {
+      name: 'loan_approval',
+      description: 'Loan approval notification',
+      template: 'Your loan application for {{amount}} has been {{status}}.'
+    },
+    {
+      name: 'payment_reminder',
+      description: 'Payment reminder notification',
+      template:
+        'Reminder: Your loan payment of {{amount}} is due on {{due_date}}.'
+    },
+    {
+      name: 'late_payment',
+      description: 'Late payment notification',
+      template:
+        'Your loan payment of {{amount}} was due on {{due_date}} and is now overdue.'
+    }
+  ])
+
+  // Create indexes
+  await knex.raw(
+    'CREATE INDEX notifications_user_id_idx ON notifications (user_id)'
+  )
+  await knex.raw(
+    'CREATE INDEX notifications_type_id_idx ON notifications (notification_type_id)'
+  )
+  await knex.raw(
+    'CREATE INDEX notifications_unread_idx ON notifications (user_id) WHERE is_read = false'
+  )
+  await knex.raw('CREATE INDEX audit_logs_user_id_idx ON audit_logs (user_id)')
+  await knex.raw('CREATE INDEX email_logs_user_id_idx ON email_logs (user_id)')
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
-  // Drop tables in reverse order
-  await db.schema.dropTable('email_logs').execute();
-  await db.schema.dropTable('notifications').execute();
-  await db.schema.dropTable('notification_types').execute();
-  await db.schema.dropTable('audit_logs').execute();
-}
+export async function down(knex: Knex): Promise<void> {
+  await knex.raw('DROP INDEX IF EXISTS notifications_unread_idx')
+  await knex.raw('DROP INDEX IF EXISTS notifications_user_id_idx')
+  await knex.raw('DROP INDEX IF EXISTS notifications_type_id_idx')
+  await knex.raw('DROP INDEX IF EXISTS audit_logs_user_id_idx')
+  await knex.raw('DROP INDEX IF EXISTS email_logs_user_id_idx')
 
+  await knex.schema.dropTable('email_logs')
+  await knex.schema.dropTable('notifications')
+  await knex.schema.dropTable('notification_types')
+  await knex.schema.dropTable('audit_logs')
+}
 
 
 
 ================================================
-File: src/database/types/audit.ts
+FILE: src/database/seeds/001_roles.ts
 ================================================
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
+import { Knex } from 'knex'
 
+export async function seed(knex: Knex): Promise<void> {
+  await knex('roles').insert([
+    {
+      id: 'superadministrator',
+      name: 'Super Administrator'
+    },
+    {
+      id: 'administrator',
+      name: 'Administrator'
+    },
+    {
+      id: 'member',
+      name: 'Member'
+    }
+  ])
+}
+
+
+
+================================================
+FILE: src/database/seeds/002_admin_user.ts
+================================================
+import { Knex } from 'knex'
+import { hash } from 'bcrypt'
+
+export async function seed(knex: Knex): Promise<void> {
+  const hashedPassword = await hash('admin123', 10)
+
+  await knex('users').insert([
+    {
+      id: 'admin-001',
+      email: 'admin@lumbungmesari.com',
+      fullname: 'System Administrator',
+      username: 'admin',
+      password: hashedPassword,
+      phone_number: '+62812345678',
+      address: 'Lumbung Mesari Office',
+      status: 'active',
+      role_id: 'administrator',
+      deposit_image_url: null
+    }
+  ])
+}
+
+
+
+================================================
+FILE: src/database/types/audit.ts
+================================================
 export interface AuditLogTable {
-  id: Generated<string>
+  id: string
   user_id: string | null
   action: string
   entity_type: string
@@ -1682,84 +1676,108 @@ export interface AuditLogTable {
   new_values: unknown | null
   ip_address: string | null
   user_agent: string | null
-  created_at: Generated<Date>
+  created_at?: Date
 }
 
 export interface NotificationTypeTable {
-  id: Generated<string>
+  id: string
   name: string
   description: string | null
   template: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface NotificationTable {
-  id: Generated<string>
+  id: string
   user_id: string
   notification_type_id: string
   title: string
   message: string
   data: unknown | null
-  is_read: boolean
   read_at: Date | null
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface EmailLogTable {
-  id: Generated<string>
+  id: string
   user_id: string | null
   email: string
   subject: string
-  body: string
+  template: string
+  data: unknown | null
   status: string
-  error: string | null
-  created_at: Generated<Date>
+  sent_at: Date | null
+  error_message: string | null
+  created_at?: Date
+  updated_at?: Date
 }
 
-export type AuditLog = Selectable<AuditLogTable>
-export type NewAuditLog = Insertable<AuditLogTable>
-export type UpdateAuditLog = Updateable<AuditLogTable>
+// Export types
+export type AuditLog = AuditLogTable
+export type NewAuditLog = Omit<AuditLogTable, 'id' | 'created_at'>
+export type UpdateAuditLog = Partial<Omit<AuditLogTable, 'id' | 'created_at'>>
 
-export type NotificationType = Selectable<NotificationTypeTable>
-export type NewNotificationType = Insertable<NotificationTypeTable>
-export type UpdateNotificationType = Updateable<NotificationTypeTable>
+export type NotificationType = NotificationTypeTable
+export type NewNotificationType = Omit<
+  NotificationTypeTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateNotificationType = Partial<
+  Omit<NotificationTypeTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type Notification = Selectable<NotificationTable>
-export type NewNotification = Insertable<NotificationTable>
-export type UpdateNotification = Updateable<NotificationTable>
+export type Notification = NotificationTable
+export type NewNotification = Omit<
+  NotificationTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateNotification = Partial<
+  Omit<NotificationTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type EmailLog = Selectable<EmailLogTable>
-export type NewEmailLog = Insertable<EmailLogTable>
-export type UpdateEmailLog = Updateable<EmailLogTable>
+export type EmailLog = EmailLogTable
+export type NewEmailLog = Omit<
+  EmailLogTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateEmailLog = Partial<
+  Omit<EmailLogTable, 'id' | 'created_at' | 'updated_at'>
+>
 
 
 
 ================================================
-File: src/database/types/database.ts
+FILE: src/database/types/database.ts
 ================================================
 import { UserTable } from './users'
 import { RoleTable } from './roles'
-import { SavingsAccountTable, TransactionTable, TransactionTypeTable } from './savings'
+import {
+  SavingsAccountTable,
+  TransactionTable,
+  TransactionTypeTable
+} from './savings'
 import { LoanTable, LoanPeriodTable, InstallmentTable } from './loans'
-import { AuditLogTable, NotificationTable, NotificationTypeTable, EmailLogTable } from './audit'
+import {
+  AuditLogTable,
+  NotificationTable,
+  NotificationTypeTable,
+  EmailLogTable
+} from './audit'
 
 export interface Database {
   // User management
   users: UserTable
   roles: RoleTable
-  
   // Savings management
   savings_accounts: SavingsAccountTable
   transaction_types: TransactionTypeTable
   transactions: TransactionTable
-  
   // Loan management
   loan_periods: LoanPeriodTable
   loans: LoanTable
   installments: InstallmentTable
-  
   // Audit and notifications
   audit_logs: AuditLogTable
   notification_types: NotificationTypeTable
@@ -1770,20 +1788,18 @@ export interface Database {
 
 
 ================================================
-File: src/database/types/loans.ts
+FILE: src/database/types/loans.ts
 ================================================
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
-
 export interface LoanPeriodTable {
-  id: Generated<string>
+  id: string
   months: number
   interest_rate: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface LoanTable {
-  id: Generated<string>
+  id: string
   user_id: string
   loan_number: string
   amount: string
@@ -1793,119 +1809,145 @@ export interface LoanTable {
   monthly_payment: string
   start_date: Date | null
   end_date: Date | null
-  purpose: string
   status: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  approved_by: string | null
+  approved_at: Date | null
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface InstallmentTable {
-  id: Generated<string>
+  id: string
   loan_id: string
   installment_number: number
-  due_date: Date
   amount: string
-  principal_amount: string
-  interest_amount: string
-  penalty_amount: string
-  paid_amount: string
+  due_date: Date
   paid_date: Date | null
+  paid_amount: string | null
+  late_fee: string | null
   status: string
-  payment_transaction_id: string | null
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
-export type LoanPeriod = Selectable<LoanPeriodTable>
-export type NewLoanPeriod = Insertable<LoanPeriodTable>
-export type UpdateLoanPeriod = Updateable<LoanPeriodTable>
+// Export types
+export type LoanPeriod = LoanPeriodTable
+export type NewLoanPeriod = Omit<
+  LoanPeriodTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateLoanPeriod = Partial<
+  Omit<LoanPeriodTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type Loan = Selectable<LoanTable>
-export type NewLoan = Insertable<LoanTable>
-export type UpdateLoan = Updateable<LoanTable>
+export type Loan = LoanTable
+export type NewLoan = Omit<LoanTable, 'id' | 'created_at' | 'updated_at'>
+export type UpdateLoan = Partial<
+  Omit<LoanTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type Installment = Selectable<InstallmentTable>
-export type NewInstallment = Insertable<InstallmentTable>
-export type UpdateInstallment = Updateable<InstallmentTable>
+export type Installment = InstallmentTable
+export type NewInstallment = Omit<
+  InstallmentTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateInstallment = Partial<
+  Omit<InstallmentTable, 'id' | 'created_at' | 'updated_at'>
+>
 
 
 
 ================================================
-File: src/database/types/roles.ts
+FILE: src/database/types/roles.ts
 ================================================
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
-
 export interface RoleTable {
-  id: Generated<string>
+  id: string
   name: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
-export type Role = Selectable<RoleTable>
-export type NewRole = Insertable<RoleTable>
-export type UpdateRole = Updateable<RoleTable>
+
+export type Role = RoleTable
+export type NewRole = Omit<RoleTable, 'id' | 'created_at' | 'updated_at'>
+export type UpdateRole = Partial<
+  Omit<RoleTable, 'id' | 'created_at' | 'updated_at'>
+>
 
 
 
 ================================================
-File: src/database/types/savings.ts
+FILE: src/database/types/savings.ts
 ================================================
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
-
 export interface SavingsAccountTable {
-  id: Generated<string>
+  id: string
   user_id: string
   account_number: string
   balance: string
   interest_rate: string
   status: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface TransactionTypeTable {
-  id: Generated<string>
+  id: string
   name: string
   description: string | null
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface TransactionTable {
-  id: Generated<string>
+  id: string
+  user_id: string
   savings_account_id: string
   transaction_type_id: string
   amount: string
+  balance_before: string
+  balance_after: string
   description: string | null
   reference_number: string
   status: string
-  payment_method: string | null
-  payment_details: unknown | null
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  processed_at: Date | null
+  created_at?: Date
+  updated_at?: Date
 }
 
-export type SavingsAccount = Selectable<SavingsAccountTable>
-export type NewSavingsAccount = Insertable<SavingsAccountTable>
-export type UpdateSavingsAccount = Updateable<SavingsAccountTable>
+// Export types
+export type SavingsAccount = SavingsAccountTable
+export type NewSavingsAccount = Omit<
+  SavingsAccountTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateSavingsAccount = Partial<
+  Omit<SavingsAccountTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type TransactionType = Selectable<TransactionTypeTable>
-export type NewTransactionType = Insertable<TransactionTypeTable>
-export type UpdateTransactionType = Updateable<TransactionTypeTable>
+export type TransactionType = TransactionTypeTable
+export type NewTransactionType = Omit<
+  TransactionTypeTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateTransactionType = Partial<
+  Omit<TransactionTypeTable, 'id' | 'created_at' | 'updated_at'>
+>
 
-export type Transaction = Selectable<TransactionTable>
-export type NewTransaction = Insertable<TransactionTable>
-export type UpdateTransaction = Updateable<TransactionTable>
+export type Transaction = TransactionTable
+export type NewTransaction = Omit<
+  TransactionTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateTransaction = Partial<
+  Omit<TransactionTable, 'id' | 'created_at' | 'updated_at'>
+>
 
 
 
 ================================================
-File: src/database/types/users.ts
+FILE: src/database/types/users.ts
 ================================================
-import { Selectable, Insertable, Updateable, Generated } from 'kysely'
-
 export interface UserTable {
-  id: Generated<string>
+  id: string
   email: string
   fullname: string
   username: string
@@ -1914,29 +1956,52 @@ export interface UserTable {
   address: string
   status: string
   role_id: string
-  id_card_image: string
-  selfie_image: string
-  created_at: Generated<Date>
-  updated_at: Generated<Date>
+  deposit_image_url?: string
+  created_at?: Date
+  updated_at?: Date
 }
-export type User = Selectable<UserTable>
-export type NewUser = Insertable<UserTable>
-export type UpdateUser = Updateable<UserTable>
+
+export type User = UserTable
+export type NewUser = Omit<UserTable, 'id' | 'created_at' | 'updated_at'>
+export type UpdateUser = Partial<
+  Omit<UserTable, 'id' | 'created_at' | 'updated_at'>
+>
 
 
 
 ================================================
-File: src/interface/users.ts
+FILE: src/interface/jwt.ts
+================================================
+export interface JwtPayload {
+  sub: string
+  email: string
+  role: string
+}
+
+
+
+================================================
+FILE: src/interface/users.ts
 ================================================
 export type User = {
-  id: number
-  name: string
+  id: string
+  email: string
+  fullname: string
+  username: string
+  password: string
+  phone_number: string
+  address: string
+  status: string
+  role_id: string
+  deposit_image_url: string
+  created_at: Date
+  updated_at: Date
 }
 
 
 
 ================================================
-File: src/users/users.controller.spec.ts
+FILE: src/users/users.controller.spec.ts
 ================================================
 import { Test, TestingModule } from '@nestjs/testing'
 import { UsersController } from './users.controller'
@@ -1959,7 +2024,7 @@ describe('UsersController', () => {
   })
 
   it('should return all users', async () => {
-    const result = await controller.findAllV1()
+    const result = await controller.findAll()
     expect(result).toBe('Hello World')
   })
 })
@@ -1967,37 +2032,17 @@ describe('UsersController', () => {
 
 
 ================================================
-File: src/users/users.controller.ts
+FILE: src/users/users.controller.ts
 ================================================
-import {
-  Controller,
-  Get,
-  Inject,
-  Version,
-  VERSION_NEUTRAL
-} from '@nestjs/common'
+import { Controller, Get } from '@nestjs/common'
 import { UsersService } from './users.service'
 
 @Controller('/users')
 export class UsersController {
-  @Inject()
-  private readonly usersService: UsersService
+  constructor(private readonly usersService: UsersService) {}
 
-  @Version(VERSION_NEUTRAL)
   @Get()
-  async findAllNeutral() {
-    return this.findAllV1()
-  }
-
-  @Version('1')
-  @Get()
-  async findAllV1() {
-    return this.usersService.findAll()
-  }
-
-  @Version('2')
-  @Get()
-  async findAllV2() {
+  async findAll() {
     return this.usersService.findAll()
   }
 }
@@ -2005,97 +2050,146 @@ export class UsersController {
 
 
 ================================================
-File: src/users/users.module.ts
+FILE: src/users/users.module.ts
 ================================================
 import { Module } from '@nestjs/common'
 import { UsersController } from './users.controller'
 import { UsersService } from './users.service'
+import { UsersRepository } from './users.repository'
+import { DatabaseModule } from '../database/database.module'
 
 @Module({
+  imports: [DatabaseModule],
   controllers: [UsersController],
-  providers: [UsersService]
+  providers: [UsersService, UsersRepository],
+  exports: [UsersService]
 })
 export class UsersModule {}
 
 
 
 ================================================
-File: src/users/users.service.ts
+FILE: src/users/users.repository.ts
 ================================================
 import { Injectable } from '@nestjs/common'
-import { User } from 'src/interface/users'
+import { BaseRepository } from '../database/base.repository'
+import { DatabaseService } from '../database/database.service'
+import { User, NewUser, UpdateUser } from '../database/types/users'
 
 @Injectable()
-export class UsersService {
-  private readonly users = [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Doe' }
-  ]
-
-  create(user: User) {
-    this.users.push(user)
+export class UsersRepository extends BaseRepository<User> {
+  constructor(protected readonly databaseService: DatabaseService) {
+    super(databaseService, 'users')
   }
 
-  findAll(): User[] {
-    return this.users
-  }
-}
-
-
-
-================================================
-File: src/users/repositories/user.repository.ts
-================================================
-import { Injectable, Inject } from '@nestjs/common';
-import { Kysely } from 'kysely';
-import { Database } from '../../database/types/database';
-import { BaseRepository } from '../../database/base.repository';
-import { User, NewUser, UpdateUser } from '../../database/types/users';
-
-@Injectable()
-export class UserRepository extends BaseRepository<'users'> {
-  constructor(@Inject('DATABASE') protected readonly db: Kysely<Database>) {
-    super(db, 'users');
-  }
-
-  /**
-   * Find user by email
-   */
   async findByEmail(email: string): Promise<User | undefined> {
-    return this.db
-      .selectFrom('users')
-      .selectAll()
-      .where('email', '=', email)
-      .executeTakeFirst() as Promise<User | undefined>;
+    const result = await this.knex('users').where('email', email).first()
+
+    return result as User | undefined
   }
 
-  /**
-   * Find user by username
-   */
-  async findByUsername(username: string): Promise<User | undefined> {
-    return this.db
-      .selectFrom('users')
-      .selectAll()
-      .where('username', '=', username)
-      .executeTakeFirst() as Promise<User | undefined>;
+  async findByEmailWithRole(
+    email: string
+  ): Promise<(User & { role_name: string }) | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role'
+      ])
+      .where('users.email', email)
+      .first()
+
+    return result as (User & { role_name: string }) | undefined
   }
-  
-  /**
-   * Find users with role information
-   */
-  async findAllWithRoles(page = 1, limit = 10): Promise<{ data: (User & { role_name: string })[]; total: number; page: number; limit: number }> {
-    const offset = (page - 1) * limit;
-    
+
+  async findByUsernameWithRole(
+    username: string
+  ): Promise<(User & { role_name: string }) | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role'
+      ])
+      .where('users.username', username)
+      .first()
+
+    return result as (User & { role_name: string }) | undefined
+  }
+
+  async findByIdentifierWithRole(
+    identifier: string
+  ): Promise<(User & { role_name: string }) | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role'
+      ])
+      .where('users.email', identifier)
+      .orWhere('users.username', identifier)
+      .first()
+
+    return result as (User & { role_name: string }) | undefined
+  }
+
+  async findByUsername(username: string): Promise<User | undefined> {
+    const result = await this.knex('users').where('username', username).first()
+
+    return result as User | undefined
+  }
+
+  async findAllWithRoles(
+    page = 1,
+    limit = 10
+  ): Promise<{
+    data: (User & { role_name: string })[]
+    total: number
+    page: number
+    limit: number
+  }> {
+    const offset = (page - 1) * limit
+
     // Get total count
-    const countResult = await this.db
-      .selectFrom('users')
-      .select(this.db.fn.count<number>('id').as('count'))
-      .executeTakeFirstOrThrow();
-      
+    const [{ count }] = await this.knex('users').count('id as count')
+
     // Get users with role information
-    const data = await this.db
-      .selectFrom('users')
-      .innerJoin('roles', 'roles.id', 'users.role_id')
+    const data = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
       .select([
         'users.id',
         'users.email',
@@ -2105,90 +2199,71 @@ export class UserRepository extends BaseRepository<'users'> {
         'users.address',
         'users.status',
         'users.role_id',
+        'users.deposit_image_url',
         'users.created_at',
         'users.updated_at',
         'roles.name as role_name'
       ])
       .limit(limit)
       .offset(offset)
-      .execute() as (User & { role_name: string })[];
-    
+
     return {
-      data,
-      total: Number(countResult.count),
+      data: data as (User & { role_name: string })[],
+      total: Number(count),
       page,
       limit
-    };
+    }
   }
 
-  /**
-   * Create a new user
-   */
   async createUser(data: NewUser): Promise<User> {
-    return this.create<NewUser, User>(data);
+    return this.create(data as User)
   }
 
-  /**
-   * Update a user
-   */
   async updateUser(id: string, data: UpdateUser): Promise<User> {
-    return this.update<UpdateUser, User>(id, data);
+    return this.updateById(id, data as User)
   }
 
-  /**
-   * Update user status
-   */
   async updateStatus(id: string, status: string): Promise<User> {
-    return this.update<UpdateUser, User>(id, { status } as UpdateUser);
+    return this.updateById(id, { status } as any)
   }
 }
 
 
 
 ================================================
-File: test/app.e2e-spec.ts
+FILE: src/users/users.service.ts
 ================================================
-import * as request from 'supertest';
-import { Test } from '@nestjs/testing';
-import { AppModule } from './../src/app.module';
-import { INestApplication } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common'
+import { NewUser } from '../database/types/users'
+import { UsersRepository } from './users.repository'
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication;
+@Injectable()
+export class UsersService {
+  constructor(private usersRepository: UsersRepository) {}
 
-  beforeAll(async () => {
-    const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+  async findByEmail(email: string) {
+    return await this.usersRepository.findByEmail(email)
+  }
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
+  async findByEmailWithRole(email: string) {
+    return await this.usersRepository.findByEmailWithRole(email)
+  }
 
-  afterAll(async () => {
-    await app.close();
-  });
+  async findByIdentifierWithRole(identifier: string) {
+    return await this.usersRepository.findByIdentifierWithRole(identifier)
+  }
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-});
+  async create(userData: NewUser) {
+    const existingUser = await this.findByEmail(userData.email)
+    if (existingUser) {
+      throw new ConflictException('Email already exists')
+    }
 
+    return await this.usersRepository.create(userData)
+  }
 
-
-================================================
-File: test/jest-e2e.json
-================================================
-{
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
-  "testEnvironment": "node",
-  "testRegex": "\\.e2e-spec\\.ts$",
-  "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+  async findAll() {
+    return await this.usersRepository.findAll()
   }
 }
 
