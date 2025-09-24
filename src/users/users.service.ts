@@ -30,4 +30,8 @@ export class UsersService {
   async findAll() {
     return await this.usersRepository.findAll()
   }
+
+  async findAllWithPagination(page = 1, limit = 10, role?: string) {
+    return await this.usersRepository.findAllWithRoles(page, limit, role)
+  }
 }

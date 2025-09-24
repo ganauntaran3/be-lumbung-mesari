@@ -1,0 +1,1216 @@
+openapi: 3.0.3
+info:
+  title: Lumbung Mesari API
+  description: |
+    REST API for Lumbung Mesari Savings and Loans Cooperative System
+
+    ## Features
+    - JWT-based authentication with refresh tokens
+    - Role-based access control (Member, Administrator, Super Administrator)
+    - User management and registration
+    - Savings management with transaction tracking
+    - Loan management with installment scheduling
+    - Expense management with approval workflow
+    - Treasury system for cooperative balance management
+
+    ## Authentication
+    This API uses JWT Bearer tokens for authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+
+    ## Base URL
+    All endpoints are prefixed with `/api`
+  version: 1.0.0
+  contact:
+    name: Lumbung Mesari Development Team
+    email: dev@lumbungmesari.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.lumbungmesari.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Users
+    description: User management operations
+  - name: Expenses
+    description: Expense management and approval workflow
+  - name: Treasury
+    description: Cooperative treasury and balance management
+  - name: Savings
+    description: Member savings and transaction management
+  - name: Loans
+    description: Loan management and installment tracking
+
+paths:
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user with email or username and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              email_login:
+                summary: Login with email
+                value:
+                  identifier: admin@lumbungmesari.com
+                  password: admin123
+              username_login:
+                summary: Login with username
+                value:
+                  identifier: admin
+                  password: admin123
+      responses:
+        '201':
+          description: Successfully logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Register a new member account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad request - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: Valid refresh token
+              required:
+                - refresh_token
+      responses:
+        '201':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Retrieve authenticated user's profile information
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # User Management Endpoints
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get users with filtering and pagination
+      description: Retrieve list of users with role filtering and pagination (admin only)
+      parameters:
+        - name: role
+          in: query
+          description: Filter by user role
+          schema:
+            type: string
+            enum: [member, administrator, superadministrator]
+          example: member
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Expense Management Endpoints
+  /expenses:
+    get:
+      tags:
+        - Expenses
+      summary: Get expenses
+      description: |
+        Retrieve expenses based on user role:
+        - Administrators see their own expenses
+        - Super Administrators see all expenses
+      parameters:
+        - name: status
+          in: query
+          description: Filter by expense status
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Expenses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Expense'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Expenses
+      summary: Create new expense
+      description: Submit a new expense request (Administrator and Super Administrator only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExpenseRequest'
+      responses:
+        '201':
+          description: Expense created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          description: Bad request - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /expenses/{id}:
+    get:
+      tags:
+        - Expenses
+      summary: Get expense by ID
+      description: Retrieve specific expense (owner or Super Administrator only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Expense ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Expense retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Expense not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /expenses/{id}/approve:
+    post:
+      tags:
+        - Expenses
+      summary: Approve expense
+      description: Approve an expense request (Super Administrator only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Expense ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Expense approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Expense not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /expenses/{id}/reject:
+    post:
+      tags:
+        - Expenses
+      summary: Reject expense
+      description: Reject an expense request (Super Administrator only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Expense ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for rejection
+                  minLength: 1
+                  maxLength: 500
+              required:
+                - reason
+      responses:
+        '200':
+          description: Expense rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          description: Bad request - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Expense not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Treasury Management Endpoints
+  /treasury/balance:
+    get:
+      tags:
+        - Treasury
+      summary: Get cooperative balance
+      description: Retrieve current cooperative treasury balance (Administrator only)
+      responses:
+        '200':
+          description: Balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreasuryBalance'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /treasury/transactions:
+    get:
+      tags:
+        - Treasury
+      summary: Get treasury transactions
+      description: Retrieve treasury transaction history (Administrator only)
+      parameters:
+        - name: type
+          in: query
+          description: Filter by transaction type
+          schema:
+            type: string
+            enum: [income, expense]
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TreasuryTransaction'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+
+    post:
+      tags:
+        - Treasury
+      summary: Add treasury transaction
+      description: Add funds to or withdraw from treasury (Administrator only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TreasuryTransactionRequest'
+      responses:
+        '201':
+          description: Transaction added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreasuryTransaction'
+
+  # Savings Management Endpoints
+  /savings/principal:
+    get:
+      tags:
+        - Savings
+      summary: Get principal savings
+      description: Retrieve principal savings information
+      responses:
+        '200':
+          description: Principal savings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrincipalSaving'
+
+    post:
+      tags:
+        - Savings
+      summary: Pay principal savings
+      description: Make a principal savings payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrincipalSavingRequest'
+      responses:
+        '201':
+          description: Principal savings payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalSaving'
+
+  /savings/mandatory:
+    get:
+      tags:
+        - Savings
+      summary: Get mandatory savings
+      description: Retrieve mandatory savings information
+      responses:
+        '200':
+          description: Mandatory savings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MandatorySaving'
+
+    post:
+      tags:
+        - Savings
+      summary: Pay mandatory savings
+      description: Make a mandatory savings payment for a specific period
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MandatorySavingRequest'
+      responses:
+        '201':
+          description: Mandatory savings payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MandatorySaving'
+
+  # Loan Management Endpoints (Planned)
+  /loans:
+    get:
+      tags:
+        - Loans
+      summary: Get loans
+      description: Retrieve loan information based on user role
+      parameters:
+        - name: status
+          in: query
+          description: Filter by loan status
+          schema:
+            type: string
+            enum: [pending, approved, active, completed, defaulted]
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Loans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Loan'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+
+    post:
+      tags:
+        - Loans
+      summary: Apply for loan
+      description: Submit a new loan application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanApplicationRequest'
+      responses:
+        '201':
+          description: Loan application submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Authentication Schemas
+    LoginRequest:
+      type: object
+      required:
+        - identifier
+        - password
+      properties:
+        identifier:
+          type: string
+          description: Email or username
+          example: admin@lumbungmesari.com
+        password:
+          type: string
+          description: User password
+          example: admin123
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          minLength: 6
+          description: User password (minimum 6 characters)
+          example: password123
+        firstName:
+          type: string
+          description: User first name
+          example: John
+        lastName:
+          type: string
+          description: User last name
+          example: Doe
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
+          type: string
+          description: JWT refresh token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        _links:
+          type: object
+          properties:
+            self:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: /api/auth/profile
+            refresh:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: /api/auth/refresh
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID
+        email:
+          type: string
+          format: email
+          description: User email
+        fullname:
+          type: string
+          description: Full name of the user
+          example: John Doe
+        username:
+          type: string
+          description: Username
+        phone_number:
+          type: string
+          description: Phone number
+          example: '+628123456789'
+        address:
+          type: string
+          description: User address
+          example: 'Jl. Merdeka No. 123, Jakarta'
+        status:
+          type: string
+          enum: [waiting_deposit, active, inactive, suspended]
+          description: User status
+
+    UserProfile:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            balance:
+              type: number
+              format: decimal
+              description: Current balance
+            totalSavings:
+              type: number
+              format: decimal
+              description: Total savings amount
+            activeLoans:
+              type: integer
+              description: Number of active loans
+
+    # Expense Schemas
+    CreateExpenseRequest:
+      type: object
+      required:
+        - title
+        - amount
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 128
+          description: Expense title
+          example: Office supplies purchase
+        description:
+          type: string
+          maxLength: 1000
+          description: Expense description
+          example: Monthly office supplies including paper, pens, and printer ink
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Expense amount
+          example: 250000
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: IDR
+          description: Currency code (ISO 4217)
+          example: IDR
+
+    Expense:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Expense ID
+        title:
+          type: string
+          description: Expense title
+        description:
+          type: string
+          description: Expense description
+        amount:
+          type: number
+          format: decimal
+          description: Expense amount
+        currency:
+          type: string
+          description: Currency code
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+          description: Expense status
+        requestedBy:
+          $ref: '#/components/schemas/User'
+        approvedBy:
+          $ref: '#/components/schemas/User'
+        approvedAt:
+          type: string
+          format: date-time
+          description: Approval timestamp
+        rejectionReason:
+          type: string
+          description: Reason for rejection
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    # Treasury Schemas
+    TreasuryBalance:
+      type: object
+      properties:
+        currentBalance:
+          type: number
+          format: decimal
+          description: Current treasury balance
+        currency:
+          type: string
+          description: Currency code
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Last balance update timestamp
+
+    TreasuryTransactionRequest:
+      type: object
+      required:
+        - type
+        - amount
+        - description
+      properties:
+        type:
+          type: string
+          enum: [income, expense]
+          description: Transaction type
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Transaction amount
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Transaction description
+
+    TreasuryTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Transaction ID
+        type:
+          type: string
+          enum: [income, expense]
+          description: Transaction type
+        amount:
+          type: number
+          format: decimal
+          description: Transaction amount
+        description:
+          type: string
+          description: Transaction description
+        processedBy:
+          $ref: '#/components/schemas/User'
+        balanceAfter:
+          type: number
+          format: decimal
+          description: Balance after transaction
+        createdAt:
+          type: string
+          format: date-time
+          description: Transaction timestamp
+
+    # Savings Schemas
+    PrincipalSavingRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Principal savings amount
+
+    PrincipalSaving:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Principal saving ID
+        userId:
+          type: string
+          format: uuid
+          description: User ID
+        amount:
+          type: number
+          format: decimal
+          description: Saving amount
+        status:
+          type: string
+          enum: [paid, pending, cancelled]
+          description: Payment status
+        processedBy:
+          type: string
+          format: uuid
+          description: Processor user ID
+        processedAt:
+          type: string
+          format: date-time
+          description: Processing timestamp
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    MandatorySavingRequest:
+      type: object
+      required:
+        - amount
+        - periodDate
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Mandatory savings amount
+        periodDate:
+          type: string
+          format: date
+          description: Period date (YYYY-MM-DD)
+
+    MandatorySaving:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Mandatory saving ID
+        userId:
+          type: string
+          format: uuid
+          description: User ID
+        amount:
+          type: number
+          format: decimal
+          description: Saving amount
+        periodDate:
+          type: string
+          format: date
+          description: Period date
+        status:
+          type: string
+          enum: [due, paid, overdue]
+          description: Payment status
+        paidAt:
+          type: string
+          format: date-time
+          description: Payment timestamp
+        processedBy:
+          type: string
+          format: uuid
+          description: Processor user ID
+        processedAt:
+          type: string
+          format: date-time
+          description: Processing timestamp
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    # Loan Schemas (Planned)
+    LoanApplicationRequest:
+      type: object
+      required:
+        - amount
+        - durationMonths
+        - purpose
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Loan amount requested
+        durationMonths:
+          type: integer
+          enum: [6, 12, 18]
+          description: Loan duration in months
+        purpose:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Loan purpose description
+
+    Loan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Loan ID
+        borrowerId:
+          type: string
+          format: uuid
+          description: Borrower user ID
+        principalAmount:
+          type: number
+          format: decimal
+          description: Original loan amount
+        interestRate:
+          type: number
+          format: decimal
+          description: Interest rate (as decimal)
+        durationMonths:
+          type: integer
+          description: Loan duration in months
+        monthlyPayment:
+          type: number
+          format: decimal
+          description: Monthly payment amount
+        remainingBalance:
+          type: number
+          format: decimal
+          description: Remaining balance
+        status:
+          type: string
+          enum: [pending, approved, active, completed, defaulted]
+          description: Loan status
+        purpose:
+          type: string
+          description: Loan purpose
+        approvedBy:
+          type: string
+          format: uuid
+          description: Approver user ID
+        approvedAt:
+          type: string
+          format: date-time
+          description: Approval timestamp
+        disbursedAt:
+          type: string
+          format: date-time
+          description: Disbursement timestamp
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    # User List Response Schema
+    UsersListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          description: Array of user objects
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 10
+        next:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        prev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
+
+    # Common Schemas
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Items per page
+        total:
+          type: integer
+          description: Total number of items
+        totalPages:
+          type: integer
+          description: Total number of pages
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP status code
+        message:
+          type: string
+          description: Error message
+        error:
+          type: string
+          description: Error type
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+        message:
+          type: array
+          items:
+            type: string
+          description: Validation error messages
+          example:
+            [
+              'email must be a valid email',
+              'password must be longer than or equal to 6 characters'
+            ]
+        error:
+          type: string
+          description: Error type
+          example: Bad Request
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp

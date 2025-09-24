@@ -102,20 +102,29 @@ export class UsersRepository extends BaseRepository<User> {
 
   async findAllWithRoles(
     page = 1,
-    limit = 10
+    limit = 10,
+    role?: string
   ): Promise<{
     data: (User & { role_name: string })[]
     total: number
     page: number
     limit: number
+    next: boolean
+    prev: boolean
   }> {
     const offset = (page - 1) * limit
+    let countQuery: any
+    if (role) {
+      countQuery = this.knex('users')
+        .join('roles', 'roles.id', 'users.role_id')
+        .where('roles.id', role)
+        .count('users.id as count')
+    } else {
+      countQuery = this.knex('users').count('id as count')
+    }
 
-    // Get total count
-    const [{ count }] = await this.knex('users').count('id as count')
-
-    // Get users with role information
-    const data = await this.knex('users')
+    // Data query with JOIN for role information
+    let dataQuery = this.knex('users')
       .join('roles', 'roles.id', 'users.role_id')
       .select([
         'users.id',
@@ -126,19 +135,31 @@ export class UsersRepository extends BaseRepository<User> {
         'users.address',
         'users.status',
         'users.role_id',
-        'users.deposit_image_url',
         'users.created_at',
         'users.updated_at',
         'roles.name as role_name'
       ])
-      .limit(limit)
-      .offset(offset)
+
+    // Apply role filter to data query if provided
+    if (role) {
+      dataQuery = dataQuery.where('roles.id', role)
+    }
+
+    // Execute both queries in parallel for better performance
+    const [countResult, data] = await Promise.all([
+      countQuery,
+      dataQuery.limit(limit).offset(offset).orderBy('users.created_at', 'desc')
+    ])
+
+    const total = Number(countResult[0].count)
 
     return {
       data: data as (User & { role_name: string })[],
-      total: Number(count),
+      total,
       page,
-      limit
+      limit,
+      next: offset + limit < total,
+      prev: page > 1
     }
   }
 

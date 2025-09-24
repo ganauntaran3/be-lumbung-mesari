@@ -66,33 +66,4 @@ export class AuthController {
   async refresh(@Request() req: { user: any }) {
     return this.authService.refreshToken(req.user)
   }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  @ApiOperation({ summary: 'Get user profile' })
-  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getProfile(@CurrentUser() user: any) {
-    return user
-  }
-
-  @UseGuards(RolesGuard, JwtAuthGuard)
-  @Roles(UserRole.ADMIN)
-  @Get('admin')
-  @ApiOperation({ summary: 'Admin only endpoint' })
-  @ApiResponse({
-    status: 200,
-    description: 'Admin data retrieved successfully'
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Insufficient permissions'
-  })
-  getAdminData(@CurrentUser() user: any) {
-    return {
-      message: 'This is admin only data',
-      user
-    }
-  }
 }
