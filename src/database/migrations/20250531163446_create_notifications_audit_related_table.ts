@@ -3,15 +3,8 @@ import { Knex } from 'knex'
 export async function up(knex: Knex): Promise<void> {
   // Create audit_logs table for tracking all administrative actions
   await knex.schema.createTable('audit_logs', (table) => {
-    table
-      .string('id', 36)
-      .primary()
-      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
-    table
-      .string('user_id', 36)
-      .references('id')
-      .inTable('users')
-      .onDelete('SET NULL')
+    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.string('action').notNullable()
     table.string('entity_type').notNullable()
     table.string('entity_id').notNullable()
@@ -24,10 +17,7 @@ export async function up(knex: Knex): Promise<void> {
 
   // Create notification_types table
   await knex.schema.createTable('notification_types', (table) => {
-    table
-      .string('id', 36)
-      .primary()
-      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
     table.string('name').notNullable().unique()
     table.text('description')
     table.text('template').notNullable()
@@ -37,18 +27,15 @@ export async function up(knex: Knex): Promise<void> {
 
   // Create notifications table
   await knex.schema.createTable('notifications', (table) => {
+    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
     table
-      .string('id', 36)
-      .primary()
-      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
-    table
-      .string('user_id', 36)
+      .uuid('user_id')
       .references('id')
       .inTable('users')
       .onDelete('CASCADE')
       .notNullable()
     table
-      .string('notification_type_id', 36)
+      .uuid('notification_type_id')
       .references('id')
       .inTable('notification_types')
       .onDelete('RESTRICT')
@@ -64,15 +51,8 @@ export async function up(knex: Knex): Promise<void> {
 
   // Create email_logs table for tracking all sent emails
   await knex.schema.createTable('email_logs', (table) => {
-    table
-      .string('id', 36)
-      .primary()
-      .defaultTo(knex.raw('gen_random_uuid()::varchar'))
-    table
-      .string('user_id', 36)
-      .references('id')
-      .inTable('users')
-      .onDelete('SET NULL')
+    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.string('email').notNullable()
     table.string('subject').notNullable()
     table.text('body').notNullable()
