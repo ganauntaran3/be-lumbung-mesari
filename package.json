@@ -94,6 +94,19 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
+    "coveragePathIgnorePatterns": [
+      "node_modules",
+      ".spec.ts",
+      ".e2e-spec.ts",
+      "main.ts",
+      ".*\\.module\\.ts$",
+      ".*\\.config\\.ts$",
+      ".*\\.interface\\.ts$",
+      ".*\\.enum\\.ts$",
+      ".*\\.dto\\.ts$",
+      "database/migrations/",
+      "database/seeds/"
+    ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   }
