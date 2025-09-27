@@ -1,10 +1,12 @@
 import { Injectable, ConflictException } from '@nestjs/common'
-import { NewUser } from '../database/types/users'
+import { NewUser } from '../interface/users'
 import { UsersRepository } from './users.repository'
+import { PaginationOptions } from '../interface/pagination'
+import { UsersPaginatedResponse, UserWithRole } from '../interface/users'
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(private usersRepository: UsersRepository) { }
 
   async findByEmail(email: string) {
     return await this.usersRepository.findByEmail(email)
@@ -31,7 +33,13 @@ export class UsersService {
     return await this.usersRepository.findAll()
   }
 
-  async findAllWithPagination(page = 1, limit = 10, role?: string) {
-    return await this.usersRepository.findAllWithRoles(page, limit, role)
+  async findAllWithPagination(
+    options: PaginationOptions & { role?: string } = {}
+  ): Promise<UsersPaginatedResponse> {
+    const result = await this.usersRepository.findAllWithRoles(options)
+
+    return {
+      ...result as UsersPaginatedResponse
+    }
   }
 }
