@@ -11,6 +11,26 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  postgres_test:
+    image: ghcr.io/fboulnois/pg_uuidv7:1.6.0
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: db_lumbung_mesari_test
+    # Map a different host port if you need host access; otherwise omit 'ports'
+    ports:
+      - '5433:5432'
+    # Ephemeral storage for clean state
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U admin -d db_lumbung_mesari_test']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    profiles: ['test']
+
   adminer:
     image: adminer
     container_name: adminer

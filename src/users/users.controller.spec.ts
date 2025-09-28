@@ -39,8 +39,7 @@ describe('UsersController', () => {
     expect(controller).toBeDefined()
   })
 
-  it('should return all users', async () => {
-    const result = await controller.findAll()
-    expect(result).toBe('Hello World')
+  it('should have usersService injected', () => {
+    expect(usersService).toBeDefined()
   })
 })

@@ -12,7 +12,8 @@ describe('UsersService', () => {
     create: jest.fn(),
     findByEmail: jest.fn(),
     findByEmailWithRole: jest.fn(),
-    findByIdentifierWithRole: jest.fn()
+    findByIdentifierWithRole: jest.fn(),
+    findAllWithRoles: jest.fn(),
   }
 
   const mockUser = {
@@ -141,6 +142,146 @@ describe('UsersService', () => {
       )
       expect(repository.findByEmail).toHaveBeenCalledWith(createUserDto.email)
       expect(repository.create).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('findAllWithPagination', () => {
+    const mockPaginatedResponse = {
+      data: [
+        {
+          id: '1',
+          email: 'user1@example.com',
+          fullname: 'User One',
+          username: 'user1',
+          phone_number: '123456789',
+          address: 'Address 1',
+          status: 'active',
+          role_id: 'role1',
+          created_at: new Date(),
+          updated_at: new Date(),
+          role_name: 'member',
+        },
+      ],
+      pagination: {
+        page: 1,
+        limit: 10,
+        totalData: 1,
+        totalPage: 1,
+        next: false,
+        prev: false,
+      },
+    }
+
+    const expectedServiceResponse = {
+      data: [
+        {
+          id: '1',
+          email: 'user1@example.com',
+          fullname: 'User One',
+          username: 'user1',
+          phone_number: '123456789',
+          address: 'Address 1',
+          status: 'active',
+          role_id: 'role1',
+          created_at: mockPaginatedResponse.data[0].created_at,
+          updated_at: mockPaginatedResponse.data[0].updated_at,
+          role_name: 'member',
+        },
+      ],
+      page: 1,
+      limit: 10,
+      totalData: 1,
+      totalPage: 1,
+      next: false,
+      prev: false,
+    }
+
+    it('should return flattened paginated users with default options', async () => {
+      mockUsersRepository.findAllWithRoles.mockResolvedValue(mockPaginatedResponse)
+
+      const result = await service.findAllWithPagination()
+
+      expect(repository.findAllWithRoles).toHaveBeenCalledWith({})
+      expect(result).toEqual(expectedServiceResponse)
+    })
+
+    it('should return flattened paginated users with custom options', async () => {
+      const options = {
+        page: 2,
+        limit: 5,
+        sortBy: 'email',
+        sortOrder: 'asc' as const,
+        role: 'admin',
+      }
+
+      const customMockResponse = {
+        ...mockPaginatedResponse,
+        pagination: {
+          page: 2,
+          limit: 5,
+          totalData: 15,
+          totalPage: 3,
+          next: true,
+          prev: true,
+        },
+      }
+
+      const expectedCustomResponse = {
+        ...expectedServiceResponse,
+        page: 2,
+        limit: 5,
+        totalData: 15,
+        totalPage: 3,
+        next: true,
+        prev: true,
+      }
+
+      mockUsersRepository.findAllWithRoles.mockResolvedValue(customMockResponse)
+
+      const result = await service.findAllWithPagination(options)
+
+      expect(repository.findAllWithRoles).toHaveBeenCalledWith(options)
+      expect(result).toEqual(expectedCustomResponse)
+    })
+
+    it('should handle empty results', async () => {
+      const emptyMockResponse = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          totalData: 0,
+          totalPage: 0,
+          next: false,
+          prev: false,
+        },
+      }
+
+      const expectedEmptyResponse = {
+        data: [],
+        page: 1,
+        limit: 10,
+        totalData: 0,
+        totalPage: 0,
+        next: false,
+        prev: false,
+      }
+
+      mockUsersRepository.findAllWithRoles.mockResolvedValue(emptyMockResponse)
+
+      const result = await service.findAllWithPagination()
+
+      expect(result).toEqual(expectedEmptyResponse)
+    })
+
+    it('should pass role filter to repository', async () => {
+      const options = { role: 'member' }
+
+      mockUsersRepository.findAllWithRoles.mockResolvedValue(mockPaginatedResponse)
+
+      await service.findAllWithPagination(options)
+
+      expect(repository.findAllWithRoles).toHaveBeenCalledWith(options)
     })
   })
 })
