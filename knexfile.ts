@@ -46,6 +46,27 @@ const config = {
       directory: './src/database/seeds'
     }
   },
+  test: {
+    client: 'pg',
+    connection: {
+      database: 'db_lumbung_mesari_test',
+      host: 'localhost',
+      user: 'admin',
+      password: 'admin123',
+      port: 5433
+    },
+    pool: {
+      min: parseInt(process.env.DB_POOL_MIN || '2'),
+      max: parseInt(process.env.DB_POOL_MAX || '10')
+    },
+    migrations: {
+      directory: './src/database/migrations',
+      tableName: 'knex_migrations'
+    },
+    seeds: {
+      directory: './src/database/seeds'
+    }
+  },
   production: {
     client: 'pg',
     connection: {

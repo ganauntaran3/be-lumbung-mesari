@@ -20,6 +20,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/jest/bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:full": "./test-e2e.sh",
     "make:migration": "knex migrate:make",
     "migrate:latest": "knex migrate:latest",
     "migrate:up": "knex migrate:up",
