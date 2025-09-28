@@ -14,7 +14,6 @@ describe('UsersService', () => {
     findByEmailWithRole: jest.fn(),
     findByIdentifierWithRole: jest.fn(),
     findAllWithRoles: jest.fn(),
-    findAllWithRolesLegacy: jest.fn()
   }
 
   const mockUser = {

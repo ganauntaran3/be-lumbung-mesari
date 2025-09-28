@@ -11,7 +11,7 @@ import { CurrentUser } from './decorators/current-user.decorator'
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('login')
   @ApiOperation({ summary: 'User login with email or username' })
