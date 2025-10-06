@@ -32,6 +32,9 @@ export class UsersRepository extends BaseRepository<User> {
         'users.status',
         'users.role_id',
         'users.deposit_image_url',
+        'users.otp_code',
+        'users.otp_expires_at',
+        'users.otp_verified',
         'users.created_at',
         'users.updated_at',
         'roles.id as role'
@@ -84,6 +87,9 @@ export class UsersRepository extends BaseRepository<User> {
         'users.status',
         'users.role_id',
         'users.deposit_image_url',
+        'users.otp_code',
+        'users.otp_expires_at',
+        'users.otp_verified',
         'users.created_at',
         'users.updated_at',
         'roles.id as role'
@@ -102,10 +108,12 @@ export class UsersRepository extends BaseRepository<User> {
   }
 
   async findAllWithRoles(
-    options: PaginationOptions & { role?: string } = {}
+    options: PaginationOptions & { role?: string; status?: string; search?: string } = {}
   ): Promise<PaginationResult<User & { role_name: string }>> {
     const {
       role,
+      status,
+      search,
       page = 1,
       limit = 10,
       sortBy = 'created_at',
@@ -115,16 +123,27 @@ export class UsersRepository extends BaseRepository<User> {
     const offset = (page - 1) * limit
 
     let countQuery = this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+
     if (role) {
-      countQuery = countQuery
-        .join('roles', 'roles.id', 'users.role_id')
-        .where('roles.id', role)
+      countQuery = countQuery.where('roles.id', role)
+    }
+
+    if (status) {
+      countQuery = countQuery.where('users.status', status)
+    }
+
+    if (search) {
+      countQuery = countQuery.where(function () {
+        this.where('users.fullname', 'ilike', `%${search}%`)
+          .orWhere('users.email', 'ilike', `%${search}%`)
+          .orWhere('users.username', 'ilike', `%${search}%`)
+      })
     }
 
     const [{ count }] = await countQuery.count('users.id as count')
     const totalData = parseInt(count as string, 10)
 
-    // Optimized data query with proper table prefixes
     let dataQuery = this.knex('users')
       .join('roles', 'roles.id', 'users.role_id')
       .select([
@@ -135,6 +154,7 @@ export class UsersRepository extends BaseRepository<User> {
         'users.phone_number',
         'users.address',
         'users.status',
+        'users.deposit_image_url',
         'users.created_at',
         'users.updated_at',
         'roles.name as role_name'
@@ -144,21 +164,62 @@ export class UsersRepository extends BaseRepository<User> {
       dataQuery = dataQuery.where('roles.id', role)
     }
 
-    // Apply sorting with proper table prefix
+    if (status) {
+      dataQuery = dataQuery.where('users.status', status)
+    }
+
+    if (search) {
+      dataQuery = dataQuery.where(function () {
+        this.where('users.fullname', 'ilike', `%${search}%`)
+          .orWhere('users.email', 'ilike', `%${search}%`)
+          .orWhere('users.username', 'ilike', `%${search}%`)
+      })
+    }
+
     const sortColumn = sortBy.includes('.') ? sortBy : `users.${sortBy}`
     dataQuery = dataQuery.orderBy(sortColumn, sortOrder)
 
-    // Execute data query with pagination
     const data = await dataQuery.limit(limit).offset(offset)
-    console.log(data)
 
-    // Create pagination metadata using base repository helper
     const pagination = this.createPaginationMetadata(page, limit, totalData)
 
     return {
       data: data as (User & { role_name: string })[],
       ...pagination
     }
+  }
+
+  async findPendingUsers(
+    options: PaginationOptions = {}
+  ): Promise<PaginationResult<User & { role_name: string }>> {
+    return this.findAllWithRoles({ ...options, status: 'pending' })
+  }
+
+  async findById(id: string): Promise<User | undefined> {
+    const result = await this.knex('users')
+      .join('roles', 'roles.id', 'users.role_id')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.role_id',
+        'users.deposit_image_url',
+        'users.otp_code',
+        'users.otp_expires_at',
+        'users.otp_verified',
+        'users.created_at',
+        'users.updated_at',
+        'roles.name as role_name'
+      ])
+      .where('users.id', id)
+      .first()
+
+    return result as User | undefined
   }
 
   async createUser(data: NewUser): Promise<User> {

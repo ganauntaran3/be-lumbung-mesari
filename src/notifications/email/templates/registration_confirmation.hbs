@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat datang di Lumbung Mesari</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #007bff; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; }
+        .deposit-info { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745; }
+        .footer { background: #6c757d; color: white; padding: 10px; text-align: center; border-radius: 0 0 5px 5px; font-size: 12px; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Selamat datang di Lumbung Mesari!</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Halo {{fullname}},</h2>
+            <p>Terima kasih telah mendaftar di Koperasi Lumbung Mesari. Langkah selanjutnya adalah melakukan pembayaran deposit keanggotaan.</p>
+            
+            <div class="deposit-info">
+                <h3>📋 Informasi Pembayaran Deposit</h3>
+                <p><strong>Jumlah Deposit:</strong> Rp {{deposit_amount}}</p>
+                
+                <h4>🏦 Transfer Bank:</h4>
+                <ul>
+                    <li><strong>Bank:</strong> {{bank_name}}</li>
+                    <li><strong>No. Rekening:</strong> {{account_number}}</li>
+                    <li><strong>Atas Nama:</strong> {{account_name}}</li>
+                </ul>
+                
+                <h4>🏢 Atau datang langsung ke:</h4>
+                <p>{{cooperative_address}}</p>
+                
+                <p><strong>Catatan:</strong> {{instructions}}</p>
+            </div>
+            
+            <p>Setelah melakukan pembayaran, silakan login ke sistem dan upload bukti transfer untuk melanjutkan proses pendaftaran.</p>
+            
+            {{#if loginUrl}}
+            <a href="{{loginUrl}}" class="btn">Login ke Sistem</a>
+            {{/if}}
+        </div>
+        
+        <div class="footer">
+            <p>Email ini dikirim secara otomatis, mohon tidak membalas.</p>
+            <p>&copy; {{year}} Koperasi Lumbung Mesari. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

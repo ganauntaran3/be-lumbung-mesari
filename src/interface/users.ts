@@ -10,7 +10,10 @@ export interface UserTable {
   address: string
   status: string
   role_id: string
-  deposit_image_url?: string
+  deposit_image_url?: string | null
+  otp_code?: string | null
+  otp_expires_at?: Date | null
+  otp_verified?: boolean
   created_at?: Date
   updated_at?: Date
 }
@@ -29,7 +32,10 @@ export type User = {
   address: string
   status: string
   role: Role
-  deposit_image_url: string
+  deposit_image_url: string | null
+  otp_code?: string | null
+  otp_expires_at?: Date | null
+  otp_verified?: boolean
   created_at: Date
   updated_at: Date
 }

@@ -5,6 +5,11 @@ import * as bcrypt from 'bcrypt'
 import { AuthService } from './auth.service'
 import { UsersService } from '../users/users.service'
 import { LoginRequestDto } from './dto/login.dto'
+import { EmailHelperService } from '../notifications/email/email-helper.service'
+
+
+import { RateLimitService } from './services/rate-limit.service'
+import { OtpService } from './services/otp.service'
 
 jest.mock('bcrypt')
 const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>
@@ -17,11 +22,33 @@ describe('AuthService', () => {
   const mockUsersService = {
     findByIdentifierWithRole: jest.fn(),
     findByEmailWithRole: jest.fn(),
+    findByUsername: jest.fn(),
     create: jest.fn()
   }
 
   const mockJwtService = {
     sign: jest.fn()
+  }
+
+  const mockEmailHelperService = {
+    sendEmail: jest.fn(),
+    sendBulkEmail: jest.fn()
+  }
+
+
+
+
+
+  const mockRateLimitService = {
+    checkRegistrationLimit: jest.fn(),
+    recordSuccessfulRegistration: jest.fn()
+  }
+
+  const mockOtpService = {
+    generateOtp: jest.fn(),
+    getOtpExpirationTime: jest.fn(),
+    isValidOtpFormat: jest.fn(),
+    isOtpExpired: jest.fn()
   }
 
   const mockUser = {
@@ -58,6 +85,20 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService
+        },
+        {
+          provide: EmailHelperService,
+          useValue: mockEmailHelperService
+        },
+
+
+        {
+          provide: RateLimitService,
+          useValue: mockRateLimitService
+        },
+        {
+          provide: OtpService,
+          useValue: mockOtpService
         }
       ]
     }).compile()
