@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { compare, hash } from 'bcrypt'
 import { UsersService } from '../users/users.service'
@@ -68,19 +68,18 @@ export class AuthService {
   }
 
   async login(loginDto: LoginRequestDto) {
-    const { identifier, password } = loginDto
+    const { identifier, password: inputPassword } = loginDto
     const user = await this.usersService.findByIdentifierWithRole(identifier)
 
     if (!user) {
-      throw new NotFoundException('Invalid credentials')
+      throw new NotFoundException('User not found!')
+    }
+    if (!await compare(inputPassword, user.password)) {
+      throw new UnauthorizedException('Invalid credentials!')
     }
 
-    if (user && (await compare(password, user.password))) {
-      const { password, ...result } = user
-      return result
-    }
-
-    return this.generateTokens(user)
+    const { password, ...result } = user
+    return this.generateTokens(result)
   }
 
   async register(registerDto: RegisterDto) {
