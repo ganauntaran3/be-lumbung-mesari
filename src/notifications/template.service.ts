@@ -24,31 +24,8 @@ export class TemplateService {
         this.precompileTemplates();
     }
 
-    /**
-     * Get the correct templates path (handles both dev and production)
-     */
     private getTemplatesPath(): string {
-        // Try multiple possible paths
-        const possiblePaths = [
-            path.join(__dirname, 'templates'),                    // Standard dist path
-            path.join(__dirname, '..', '..', 'src', 'notifications', 'templates'), // Development path
-            path.join(process.cwd(), 'src', 'notifications', 'templates'),         // Alternative dev path
-            path.join(process.cwd(), 'dist', 'src', 'notifications', 'templates')  // Alternative dist path
-        ];
-
-        console.log('🔍 DEBUG: Searching for templates in possible paths...');
-
-        for (const templatePath of possiblePaths) {
-            console.log('🔍 DEBUG: Checking path:', templatePath);
-            if (fs.existsSync(templatePath)) {
-                console.log('✅ DEBUG: Found templates directory at:', templatePath);
-                return templatePath;
-            }
-        }
-
-        console.log('❌ DEBUG: No templates directory found in any of the paths');
-        // Fallback to the standard path
-        return path.join(__dirname, 'templates');
+        return path.join(__dirname, 'email', 'templates');
     }
 
     /**

@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module'
 import { ConfigModule } from '@nestjs/config'
 import { AuthModule } from './auth/auth.module'
 import { NotificationModule } from './notifications/notification.module'
+import { SavingsModule } from './savings/savings.module'
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { NotificationModule } from './notifications/notification.module'
     }),
     NotificationModule,
     UsersModule,
-    AuthModule
+    AuthModule,
+    SavingsModule
   ],
   controllers: [AppController],
   providers: [AppService]

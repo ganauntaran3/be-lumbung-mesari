@@ -4,7 +4,6 @@ import { hash } from 'bcrypt'
 export async function seed(knex: Knex): Promise<void> {
   const hashedPassword = await hash('admin123', 10)
 
-  // Insert admin user
   await knex('users').insert([
     {
       email: 'admin@lumbungmesari.com',
@@ -19,7 +18,6 @@ export async function seed(knex: Knex): Promise<void> {
     }
   ])
 
-  // Insert super admin user
   await knex('users').insert([
     {
       email: 'superadmin@lumbungmesari.com',
@@ -29,7 +27,7 @@ export async function seed(knex: Knex): Promise<void> {
       phone_number: '+62812345679',
       address: 'Lumbung Mesari Office',
       status: 'active',
-      role_id: 'super-administrator',
+      role_id: 'superadministrator',
       deposit_image_url: null
     }
   ])

@@ -85,7 +85,27 @@ export class RegisterDto {
 
 }
 
+class TokenDto {
+  @ApiProperty({
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'JWT access token (5 minutes expiry for pending users)'
+  })
+  access_token!: string
+
+  @ApiProperty({
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'JWT refresh token (1 day expiry)'
+  })
+  refresh_token!: string
+}
+
 export class RegisterResponseDto {
+  @ApiProperty({
+    description: 'Authentication tokens',
+    type: TokenDto
+  })
+  token!: TokenDto
+
   @ApiProperty({
     example: {
       id: 'uuid-v4-string',

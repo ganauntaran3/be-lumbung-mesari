@@ -1,17 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEmail, IsNotEmpty, IsString, Matches } from 'class-validator'
+import { IsNotEmpty, IsString, Matches } from 'class-validator'
 
 export class VerifyOtpDto {
-    @ApiProperty({
-        example: 'user@example.com',
-        description: 'User email address',
-        type: String,
-        required: true
-    })
-    @IsEmail({}, { message: 'Please provide a valid email address' })
-    @IsNotEmpty({ message: 'Email is required' })
-    email!: string
-
     @ApiProperty({
         example: '123456',
         description: '6-digit OTP code received via email',
@@ -24,7 +14,27 @@ export class VerifyOtpDto {
     otp_code!: string
 }
 
+class TokenDto {
+    @ApiProperty({
+        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        description: 'JWT access token (1 hour expiry after verification)'
+    })
+    access_token!: string
+
+    @ApiProperty({
+        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        description: 'JWT refresh token (1 day expiry)'
+    })
+    refresh_token!: string
+}
+
 export class VerifyOtpResponseDto {
+    @ApiProperty({
+        description: 'Authentication tokens',
+        type: TokenDto
+    })
+    token!: TokenDto
+
     @ApiProperty({
         example: {
             id: 'uuid-string',
@@ -42,18 +52,6 @@ export class VerifyOtpResponseDto {
         username: string
         status: string
     }
-
-    @ApiProperty({
-        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        description: 'JWT access token for authentication'
-    })
-    access_token!: string
-
-    @ApiProperty({
-        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        description: 'JWT refresh token'
-    })
-    refresh_token!: string
 
     @ApiProperty({
         example: 'OTP verified successfully. Please submit your deposit proof to complete registration.',

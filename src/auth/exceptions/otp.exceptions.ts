@@ -1,11 +1,11 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common'
+import { BadRequestException, GoneException } from '@nestjs/common'
 
-export class OtpExpiredException extends BadRequestException {
+export class OtpExpiredException extends GoneException {
     constructor() {
         super({
             message: 'OTP has expired. Please request a new one.',
             error: 'OTP_EXPIRED',
-            statusCode: 400
+            statusCode: 410
         })
     }
 }
@@ -25,7 +25,7 @@ export class OtpAlreadyVerifiedException extends BadRequestException {
         super({
             message: 'OTP has already been verified.',
             error: 'OTP_ALREADY_VERIFIED',
-            statusCode: 400
+            statusCode: 409
         })
     }
 }
@@ -42,6 +42,7 @@ export class NoOtpFoundException extends BadRequestException {
 
 export class UserNotInPendingStatusException extends BadRequestException {
     constructor() {
+        400
         super({
             message: 'User is not in pending verification status.',
             error: 'USER_NOT_PENDING',

@@ -112,7 +112,11 @@ export class AuthService {
       this.logger.log(`Registration trial: ${user.email}`);
       const emailSent = await this.sendOtpVerificationEmail(user, otpCode);
 
+      const userWithRole = await this.usersService.findByEmailWithRole(user.email);
+      const tokens = this.generateTokens(userWithRole);
+
       return {
+        ...tokens,
         user: {
           id: user.id,
           email: user.email,
@@ -131,12 +135,12 @@ export class AuthService {
     }
   }
 
-  async verifyOtp(email: string, otpCode: string) {
+  async verifyOtp(userId: string, otpCode: string) {
     if (!this.otpService.isValidOtpFormat(otpCode)) {
       throw new InvalidOtpException();
     }
 
-    const user = await this.usersService.findByEmailWithRole(email);
+    const user = await this.usersService.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found.');
     }
@@ -158,7 +162,7 @@ export class AuthService {
     }
 
     if (user.otp_code !== otpCode) {
-      this.logger.warn(`Failed OTP verification attempt for ${email} - invalid code provided`)
+      this.logger.warn(`Failed OTP verification attempt for user ${userId} - invalid code provided`)
       throw new InvalidOtpException();
     }
 
@@ -169,11 +173,11 @@ export class AuthService {
       otp_expires_at: null
     });
 
-    this.logger.log(`OTP verified successfully for ${email} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`)
+    this.logger.log(`OTP verified successfully for user ${userId} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`)
 
     await this.sendRegistrationNotifications(updatedUser, UserStatus.WAITING_DEPOSIT);
 
-    const userWithRole = await this.usersService.findByEmailWithRole(user.email);
+    const userWithRole = await this.usersService.findById(user.id);
 
     return {
       ...this.generateTokens(userWithRole),
@@ -188,8 +192,8 @@ export class AuthService {
     };
   }
 
-  async resendOtp(email: string) {
-    const user = await this.usersService.findByEmailWithRole(email);
+  async resendOtp(userId: string) {
+    const user = await this.usersService.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found.');
     }
@@ -213,7 +217,7 @@ export class AuthService {
 
     const emailSent = await this.sendOtpVerificationEmail(user, otpCode);
 
-    this.logger.log(`OTP resent for ${email} - ${emailSent ? 'email sent successfully' : 'email sending failed'}`)
+    this.logger.log(`OTP resent for user ${userId} - ${emailSent ? 'email sent successfully' : 'email sending failed'}`)
 
     return {
       message: emailSent
@@ -230,13 +234,19 @@ export class AuthService {
   private generateTokens(user: any) {
     const payload: JwtPayload = {
       sub: user.id,
+      username: user.username,
       email: user.email,
-      role: user.role || 'member'
+      role: user.role || 'member',
+      status: user.status || 'pending'
     }
 
+    const accessTokenExpiry = user.status === UserStatus.PENDING ? '10m' : '1h'
+
     return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '1d' })
+      token: {
+        access_token: this.jwtService.sign(payload, { expiresIn: accessTokenExpiry }),
+        refresh_token: this.jwtService.sign(payload, { expiresIn: '1d' })
+      }
     }
   }
 
