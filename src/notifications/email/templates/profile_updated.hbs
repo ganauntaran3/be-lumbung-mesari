@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Diperbarui - Lumbung Mesari</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #007bff; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; }
+        .update-info { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745; }
+        .security-notice { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
+        .footer { background: #6c757d; color: white; padding: 10px; text-align: center; border-radius: 0 0 5px 5px; font-size: 12px; }
+        .success-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Profil Diperbarui</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Halo {{fullname}},</h2>
+            <p>Profil Anda di <strong>Koperasi Lumbung Mesari</strong> telah berhasil diperbarui.</p>
+            
+            <div class="update-info">
+                <h3>📝 Informasi Pembaruan</h3>
+                <p><strong>Waktu Pembaruan:</strong> {{updated_at}}</p>
+                <p><strong>IP Address:</strong> {{ip_address}}</p>
+                
+                {{#if changes}}
+                <p><strong>Data yang Diperbarui:</strong></p>
+                <ul>
+                    {{#each changes}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+                {{/if}}
+            </div>
+            
+            <div class="security-notice">
+                <h3>🔒 Pemberitahuan Keamanan</h3>
+                <p><strong>Jika Anda tidak melakukan perubahan ini:</strong></p>
+                <ol>
+                    <li>Segera ubah password Anda</li>
+                    <li>Hubungi administrator di: admin@lumbungmesari.com</li>
+                    <li>Periksa aktivitas akun Anda secara berkala</li>
+                </ol>
+            </div>
+            
+            <p>Terima kasih telah menjaga informasi profil Anda tetap terkini.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Email ini dikirim secara otomatis, mohon tidak membalas.</p>
+            <p>&copy; {{year}} Koperasi Lumbung Mesari. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

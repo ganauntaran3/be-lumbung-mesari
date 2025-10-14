@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Perlu Diperbaiki - Lumbung Mesari</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #ffc107; color: #212529; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; }
+        .reason-box { background: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
+        .next-steps { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff; }
+        .footer { background: #6c757d; color: white; padding: 10px; text-align: center; border-radius: 0 0 5px 5px; font-size: 12px; }
+        .btn { background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0; font-weight: bold; }
+        .warning-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="warning-icon">⚠️</div>
+            <h1>Pendaftaran Perlu Diperbaiki</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Halo {{fullname}},</h2>
+            <p>Terima kasih atas minat Anda untuk bergabung dengan <strong>Koperasi Lumbung Mesari</strong>.</p>
+            
+            <p>Setelah meninjau pendaftaran Anda, kami perlu meminta Anda untuk memperbaiki beberapa hal:</p>
+            
+            {{#if reason}}
+            <div class="reason-box">
+                <h3>📝 Catatan dari Administrator:</h3>
+                <p><strong>{{reason}}</strong></p>
+            </div>
+            {{/if}}
+            
+            <div class="next-steps">
+                <h3>🔄 Langkah Selanjutnya:</h3>
+                <ol>
+                    <li>Perbaiki dokumen atau informasi sesuai catatan di atas</li>
+                    <li>Login ke sistem menggunakan akun Anda</li>
+                    <li>Upload ulang bukti deposit yang lebih jelas</li>
+                    <li>Tunggu konfirmasi dari administrator</li>
+                </ol>
+                
+                <p><strong>Catatan:</strong> Akun Anda masih aktif dan Anda dapat login untuk melakukan perbaikan.</p>
+            </div>
+            
+            {{#if loginUrl}}
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="btn">Login untuk Perbaikan</a>
+            </div>
+            {{/if}}
+            
+            <p>Jika Anda memiliki pertanyaan atau memerlukan bantuan, jangan ragu untuk menghubungi kami:</p>
+            <ul>
+                <li>📧 Email: admin@lumbungmesari.com</li>
+                <li>📞 Telepon: (021) 1234-5678</li>
+                <li>🏢 Kunjungi kantor kami di alamat yang tertera</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>Email ini dikirim secara otomatis, mohon tidak membalas.</p>
+            <p>&copy; {{year}} Koperasi Lumbung Mesari. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

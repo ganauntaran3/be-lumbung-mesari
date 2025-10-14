@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Anggota Baru - Review Diperlukan</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+        .header { background: #17a2b8; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; }
+        .user-info { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8; }
+        .deposit-info { background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { background: #6c757d; color: white; padding: 10px; text-align: center; border-radius: 0 0 5px 5px; font-size: 12px; }
+        .btn { background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 10px; font-weight: bold; }
+        .btn-secondary { background: #6c757d; }
+        .alert-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-item { margin: 5px 0; }
+        .info-label { font-weight: bold; color: #495057; }
+        .status-badge { background: #ffc107; color: #212529; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="alert-icon">🔔</div>
+            <h1>Pendaftaran Anggota Baru</h1>
+            <p>Review dan Persetujuan Diperlukan</p>
+        </div>
+        
+        <div class="content">
+            <h2>Halo Administrator,</h2>
+            <p>Ada pendaftaran anggota baru yang memerlukan review dan persetujuan Anda.</p>
+            
+            <div class="user-info">
+                <h3>👤 Informasi Calon Anggota</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Nama Lengkap:</span><br>
+                        {{fullname}}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Username:</span><br>
+                        {{username}}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email:</span><br>
+                        {{email}}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">No. Telepon:</span><br>
+                        {{phone_number}}
+                    </div>
+                </div>
+                
+                <div class="info-item" style="margin-top: 15px;">
+                    <span class="info-label">Alamat:</span><br>
+                    {{address}}
+                </div>
+                
+                <div class="info-item" style="margin-top: 15px;">
+                    <span class="info-label">Tanggal Pendaftaran:</span><br>
+                    {{created_at}}
+                </div>
+                
+                <div class="info-item" style="margin-top: 15px;">
+                    <span class="info-label">Status:</span><br>
+                    <span class="status-badge">{{status}}</span>
+                </div>
+            </div>
+            
+            {{#if deposit_image_url}}
+            <div class="deposit-info">
+                <h3>💰 Bukti Deposit</h3>
+                <p>Calon anggota telah mengupload bukti deposit:</p>
+                <p><a href="{{deposit_image_url}}" target="_blank" style="color: #007bff; font-weight: bold;">📎 Lihat Bukti Transfer</a></p>
+                <p><small><em>Klik link di atas untuk melihat bukti deposit yang diupload.</em></small></p>
+            </div>
+            {{else}}
+            <div class="deposit-info">
+                <h3>⏳ Status Deposit</h3>
+                <p>Calon anggota belum mengupload bukti deposit. Status saat ini: <strong>Menunggu Deposit</strong></p>
+            </div>
+            {{/if}}
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <h3>🔍 Tindakan yang Diperlukan</h3>
+                <p>Silakan review informasi di atas dan lakukan salah satu tindakan berikut:</p>
+                
+                {{#if adminUrl}}
+                <a href="{{adminUrl}}" class="btn">Review di Sistem Admin</a>
+                {{/if}}
+                
+                <a href="mailto:{{email}}" class="btn btn-secondary">Hubungi Calon Anggota</a>
+            </div>
+            
+            <div style="background: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4>📋 Checklist Review:</h4>
+                <ul style="margin: 10px 0;">
+                    <li>✅ Verifikasi kelengkapan data pribadi</li>
+                    <li>✅ Periksa kejelasan bukti deposit</li>
+                    <li>✅ Validasi nomor telepon dan email</li>
+                    <li>✅ Konfirmasi alamat domisili</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Email notifikasi otomatis dari Sistem Lumbung Mesari</p>
+            <p>&copy; {{year}} Koperasi Lumbung Mesari. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

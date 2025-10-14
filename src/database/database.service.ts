@@ -20,7 +20,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     try {
-      // Test the connection
       await this.knex.raw('SELECT 1')
       this.logger.log('Database connected successfully')
     } catch (error) {

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Disetujui - Lumbung Mesari</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #28a745; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; }
+        .credentials { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff; }
+        .footer { background: #6c757d; color: white; padding: 10px; text-align: center; border-radius: 0 0 5px 5px; font-size: 12px; }
+        .btn { background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0; font-weight: bold; }
+        .success-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Selamat! Pendaftaran Disetujui</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Halo {{fullname}},</h2>
+            <p>Kami dengan senang hati memberitahukan bahwa pendaftaran Anda di <strong>Koperasi Lumbung Mesari</strong> telah <strong>disetujui</strong>!</p>
+            
+            <div class="credentials">
+                <h3>🔑 Informasi Login Anda:</h3>
+                <ul>
+                    <li><strong>Email:</strong> {{email}}</li>
+                    <li><strong>Username:</strong> {{username}}</li>
+                    <li><strong>Status:</strong> Anggota Aktif</li>
+                </ul>
+                
+                <p><strong>Catatan:</strong> Gunakan password yang Anda buat saat pendaftaran untuk login.</p>
+            </div>
+            
+            <p>Sekarang Anda dapat mengakses semua layanan koperasi, termasuk:</p>
+            <ul>
+                <li>💰 Simpan Pinjam</li>
+                <li>📊 Laporan Keuangan</li>
+                <li>👥 Informasi Keanggotaan</li>
+                <li>📞 Layanan Pelanggan</li>
+            </ul>
+            
+            {{#if loginUrl}}
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="btn">Login Sekarang</a>
+            </div>
+            {{/if}}
+            
+            <p>Selamat bergabung dengan keluarga besar Lumbung Mesari!</p>
+        </div>
+        
+        <div class="footer">
+            <p>Email ini dikirim secara otomatis, mohon tidak membalas.</p>
+            <p>&copy; {{year}} Koperasi Lumbung Mesari. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

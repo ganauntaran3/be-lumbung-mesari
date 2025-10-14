@@ -3,7 +3,7 @@ import { Knex } from 'knex'
 export async function seed(knex: Knex): Promise<void> {
   await knex('roles').insert([
     {
-      id: 'super-administrator',
+      id: 'superadministrator',
       name: 'Super Administrator'
     },
     {
