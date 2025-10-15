@@ -4,8 +4,6 @@ import {
   Post,
   UseGuards,
   Request,
-  Get,
-  Req,
   HttpException,
   HttpStatus,
   BadRequestException,
@@ -43,9 +41,17 @@ export class AuthController {
   constructor(private authService: AuthService) { }
 
   @Post('login')
-  @ApiOperation({ summary: 'User login with email or username' })
+  @ApiOperation({
+    summary: 'User login with email or username',
+    description: `Authenticate user and return access tokens. 
+    
+**Special Behavior for Pending Users:**
+- If user status is 'pending' (not verified OTP), a new OTP will be automatically generated and sent to their email
+- This allows users to re-enter the verification flow if their previous token expired
+- Response will include otp_sent: true and a message indicating OTP was sent`
+  })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.OK,
     description: 'Successfully logged in',
     type: LoginResponseDto,
   })
@@ -250,7 +256,7 @@ export class AuthController {
     description: `Resend OTP verification code to user's email address. Requires authentication token from registration.`
   })
   @ApiResponse({
-    status: HttpStatus.CREATED,
+    status: HttpStatus.OK,
     description: 'New OTP sent successfully to email',
     type: ResendOtpResponseDto,
   })
@@ -304,7 +310,7 @@ export class AuthController {
     - Old tokens remain valid until their natural expiration`
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: 'Token refreshed successfully',
     type: LoginResponseDto,
     schema: {

@@ -27,6 +27,7 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
         try {
             const {
                 period,
+                year,
                 page = 1,
                 limit = 10,
                 sortBy = 'period_date',
@@ -42,11 +43,11 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
                 .join('users as u', 'ms.user_id', 'u.id')
                 .leftJoin('users as pb', 'ms.processed_by', 'pb.id')
 
-            // Apply period filtering if provided
             if (period) {
-                const { startDate, endDate } = this.convertPeriodToDateRange(period)
+                // Period with optional year (e.g., period=october or period=october&year=2025)
+                const { startDate, endDate } = this.convertPeriodToDateRange(period, year)
                 baseQuery = baseQuery.whereBetween('ms.period_date', [startDate, endDate])
-                this.logger.debug(`Applied period filter: ${period} (${startDate} to ${endDate})`)
+                this.logger.debug(`Applied period filter: ${period} ${year || 'current year'} (${startDate} to ${endDate})`)
             } else {
                 // Default to last 30 days
                 const thirtyDaysAgo = new Date()
@@ -129,6 +130,7 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
         try {
             const {
                 period,
+                year,
                 page = 1,
                 limit = 10,
                 sortBy = 'period_date',
@@ -145,11 +147,11 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
                 .leftJoin('users as pb', 'ms.processed_by', 'pb.id')
                 .where('ms.user_id', userId)
 
-            // Apply period filtering if provided
             if (period) {
-                const { startDate, endDate } = this.convertPeriodToDateRange(period)
+                // Period with optional year (e.g., period=october or period=october&year=2025)
+                const { startDate, endDate } = this.convertPeriodToDateRange(period, year)
                 baseQuery = baseQuery.whereBetween('ms.period_date', [startDate, endDate])
-                this.logger.debug(`Applied period filter: ${period} (${startDate} to ${endDate})`)
+                this.logger.debug(`Applied period filter: ${period} ${year || 'current year'} (${startDate} to ${endDate})`)
             } else {
                 // Default to last 30 days
                 const thirtyDaysAgo = new Date()
@@ -357,12 +359,12 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     }
 
     /**
-     * Convert month name to date range for the current year
-     * Handles current year assumption for period filtering
+     * Convert month name to date range for specified or current year
+     * Handles year parameter for period filtering
      */
-    private convertPeriodToDateRange(period: string): { startDate: Date; endDate: Date } {
+    private convertPeriodToDateRange(period: string, year?: number): { startDate: Date; endDate: Date } {
         try {
-            const currentYear = new Date().getFullYear()
+            const targetYear = year || new Date().getFullYear()
             const monthNames = [
                 'january', 'february', 'march', 'april', 'may', 'june',
                 'july', 'august', 'september', 'october', 'november', 'december'
@@ -376,10 +378,10 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
             }
 
             // Use UTC to ensure consistent dates regardless of server timezone
-            const startDate = new Date(Date.UTC(currentYear, monthIndex, 1))
-            const endDate = new Date(Date.UTC(currentYear, monthIndex + 1, 0)) // Last day of the month
+            const startDate = new Date(Date.UTC(targetYear, monthIndex, 1))
+            const endDate = new Date(Date.UTC(targetYear, monthIndex + 1, 0)) // Last day of the month
 
-            this.logger.debug(`Converted period '${period}' to date range: ${startDate.toISOString()} - ${endDate.toISOString()}`)
+            this.logger.debug(`Converted period '${period}' (year: ${targetYear}) to date range: ${startDate.toISOString()} - ${endDate.toISOString()}`)
 
             return { startDate, endDate }
         } catch (error) {

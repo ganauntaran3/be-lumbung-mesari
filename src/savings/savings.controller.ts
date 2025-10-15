@@ -28,7 +28,12 @@ export class SavingsController {
     @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
     @ApiOperation({
         summary: 'Get all mandatory savings records with filtering and pagination',
-        description: 'Retrieve all mandatory savings records across all members. Only accessible by administrators and superadministrators.'
+        description: `Retrieve all mandatory savings records across all members. Only accessible by administrators and superadministrators.
+        
+        **Filtering Options:**
+        - \`period=october\` - Get current year's October records
+        - \`period=october&year=2025\` - Get October 2025 records
+        - No parameters - Get last 30 days of records`
     })
     @ApiResponse({
         status: 200,
@@ -120,7 +125,6 @@ export class SavingsController {
         @CurrentUser() currentUser: any
     ) {
         try {
-            // Validate userId format
             if (!userId || userId.trim() === '') {
                 this.logger.warn('Invalid userId provided: empty or null')
                 throw new BadRequestException({

@@ -25,7 +25,6 @@ export class SavingsService {
                 this.validatePeriodParameter(queryParams.period)
             }
 
-            // Apply default date range configuration if no period specified
             const processedParams = this.applyDefaultDateRange(queryParams)
 
             const result = await this.savingsRepository.findAllWithUsers(processedParams)
@@ -51,12 +50,9 @@ export class SavingsService {
         try {
             this.logger.log(`Retrieving mandatory savings for user ${userId} with parameters:`, JSON.stringify(queryParams))
 
-            // Validate period parameter if provided
             if (queryParams.period) {
                 this.validatePeriodParameter(queryParams.period)
             }
-
-            // Apply default date range configuration if no period specified
             const processedParams = this.applyDefaultDateRange(queryParams)
 
             const result = await this.savingsRepository.findByUserIdWithPagination(userId, processedParams)
@@ -79,10 +75,8 @@ export class SavingsService {
         this.logger.log('Starting yearly mandatory savings creation for all active members (12 months)')
 
         try {
-            // Get all active users
             const allUsers = await this.usersService.findAll()
 
-            // Filter for active members only (exclude admin and superadmin)
             const activeMembers = allUsers.filter(user =>
                 user.status === 'active' && user.role_id === 'member'
             )
@@ -94,11 +88,9 @@ export class SavingsService {
                 return
             }
 
-            // Get configured mandatory savings amount
             const mandatorySavingsAmount = this.getMandatorySavingsAmount()
             this.logger.log(`Using mandatory savings amount: ${mandatorySavingsAmount}`)
 
-            // Create mandatory savings records for all active members for 12 months
             const userIds = activeMembers.map(user => user.id)
             const createdCount = await this.savingsRepository.createYearlyMandatorySavingsForUsers(
                 userIds,
@@ -107,7 +99,6 @@ export class SavingsService {
 
             this.logger.log(`Successfully processed ${createdCount} mandatory savings records (12 months) for ${activeMembers.length} active members`)
 
-            // Log individual user processing for monitoring
             activeMembers.forEach(user => {
                 this.logger.debug(`Processed yearly mandatory savings for member: ${user.id} (${user.fullname})`)
             })
@@ -132,9 +123,6 @@ export class SavingsService {
         return amount
     }
 
-    /**
-     * Validate period parameter format
-     */
     private validatePeriodParameter(period: string): void {
         const validMonths = [
             'january', 'february', 'march', 'april', 'may', 'june',
@@ -148,16 +136,11 @@ export class SavingsService {
         }
     }
 
-    /**
-     * Apply default date range configuration when no period is specified
-     */
     private applyDefaultDateRange(queryParams: SavingsQueryDto): SavingsQueryDto {
         if (queryParams.period) {
             return queryParams
         }
 
-        // If no period specified, the repository will apply the default 30-day range
-        // This method can be extended to apply other default configurations
         const defaultDateRangeDays = this.getDefaultDateRangeDays()
 
         this.logger.debug(`Applying default date range of ${defaultDateRangeDays} days`)
@@ -165,9 +148,6 @@ export class SavingsService {
         return queryParams
     }
 
-    /**
-     * Get the configured default date range in days with validation
-     */
     private getDefaultDateRangeDays(): number {
         const days = this.configService.get<number>('SAVINGS_DEFAULT_DATE_RANGE_DAYS', 30)
 
@@ -179,28 +159,12 @@ export class SavingsService {
         return days
     }
 
-    /**
-     * Check if automatic monthly record creation is enabled
-     */
-    isAutoCreationEnabled(): boolean {
-        const enabled = this.configService.get<boolean>('MANDATORY_SAVINGS_AUTO_CREATION_ENABLED', true)
-        this.logger.debug(`Automatic mandatory savings creation enabled: ${enabled}`)
-        return enabled
-    }
-
-    /**
-     * Get the cron schedule for monthly record creation
-     */
     getCronSchedule(): string {
         const schedule = this.configService.get<string>('MANDATORY_SAVINGS_CRON_SCHEDULE', '0 0 1 * *')
         this.logger.debug(`Mandatory savings cron schedule: ${schedule}`)
         return schedule
     }
 
-    /**
-     * Generate mandatory savings for remaining months of current year
-     * Development/manual trigger endpoint
-     */
     async generateRemainingYearSavings(): Promise<{
         message: string
         months_generated: number
@@ -211,10 +175,7 @@ export class SavingsService {
         this.logger.log('Generating mandatory savings for remaining months of current year')
 
         try {
-            // Get all active users
             const allUsers = await this.usersService.findAll()
-
-            // Filter for active members only (exclude admin and superadmin)
             const activeMembers = allUsers.filter(user =>
                 user.status === 'active' && user.role_id === 'member'
             )
@@ -232,7 +193,6 @@ export class SavingsService {
                 }
             }
 
-            // Get current date and calculate remaining months
             const currentDate = new Date()
             const currentMonth = currentDate.getMonth() // 0-11
             const currentYear = currentDate.getFullYear()
@@ -250,11 +210,9 @@ export class SavingsService {
 
             this.logger.log(`Generating savings for ${remainingMonths} months: ${generatedMonths.join(', ')}`)
 
-            // Get configured mandatory savings amount
             const mandatorySavingsAmount = this.getMandatorySavingsAmount()
             this.logger.log(`Using mandatory savings amount: ${mandatorySavingsAmount}`)
 
-            // Create mandatory savings records for members only
             const userIds = activeMembers.map(user => user.id)
             const createdCount = await this.savingsRepository.generateRemainingYearSavings(
                 userIds,
@@ -280,14 +238,10 @@ export class SavingsService {
         }
     }
 
-    /**
-     * Get all savings-related configuration values for monitoring/debugging
-     */
     getSavingsConfiguration(): Record<string, any> {
         return {
             mandatorySavingsAmount: this.getMandatorySavingsAmount(),
             defaultDateRangeDays: this.getDefaultDateRangeDays(),
-            autoCreationEnabled: this.isAutoCreationEnabled(),
             cronSchedule: this.getCronSchedule()
         }
     }

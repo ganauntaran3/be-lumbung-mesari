@@ -78,8 +78,38 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials!')
     }
 
+    // If user is still pending (not verified OTP), generate and send new OTP
+    if (user.status === UserStatus.PENDING) {
+      this.logger.log(`User ${user.email} is pending, generating new OTP for login`)
+
+      const otpCode = this.otpService.generateOtp()
+      const otpExpiresAt = this.otpService.getOtpExpirationTime()
+
+      // Update user with new OTP
+      await this.usersService.update(user.id, {
+        otp_code: otpCode,
+        otp_expires_at: otpExpiresAt
+      })
+
+      // Send OTP email (don't block login if email fails)
+      const emailSent = await this.sendOtpVerificationEmail(user, otpCode)
+
+      this.logger.log(`New OTP generated for pending user ${user.email} - email sent: ${emailSent}`)
+    }
+
     const { password, ...result } = user
-    return this.generateTokens(result)
+    const tokens = this.generateTokens(result)
+
+    // Add OTP status to response if user is pending
+    if (user.status === UserStatus.PENDING) {
+      return {
+        ...tokens,
+        otp_sent: true,
+        message: 'Login successful. A new OTP has been sent to your email for verification.'
+      }
+    }
+
+    return tokens
   }
 
   async register(registerDto: RegisterDto) {
