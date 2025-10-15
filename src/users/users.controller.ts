@@ -4,13 +4,13 @@ import { UsersService } from './users.service'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
-import { UserRole } from '../auth/enums/role.enum'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { UsersQueryDto } from './dto/users-query.dto'
 import { ApproveUserDto, ApprovalResponseDto } from './dto/approve-user.dto'
 import { Request } from 'express'
 import { UserProfileResponseSchema } from 'src/auth/dto/profile-response.dto'
 import { TokenErrorSchemas } from 'src/common/schema/error-schema'
+import { UserRole } from 'src/common/constants'
 
 @ApiTags('Users')
 @Controller('users')

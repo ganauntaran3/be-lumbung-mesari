@@ -15,14 +15,9 @@ import {
   NoOtpFoundException,
   UserNotInPendingStatusException
 } from './exceptions/otp.exceptions'
+import { UserStatus } from 'src/common/constants'
 
-export enum UserStatus {
-  WAITING_DEPOSIT = 'waiting_deposit',
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  REJECTED = 'rejected'
-}
+
 
 @Injectable()
 export class AuthService {
@@ -250,7 +245,7 @@ export class AuthService {
       username: user.username,
       email: user.email,
       role: user.role || 'member',
-      status: user.status || 'pending'
+      status: user.status || UserStatus.PENDING
     }
 
     const accessTokenExpiry = user.status === UserStatus.PENDING ? '10m' : '1h'

@@ -5,7 +5,6 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
-import { UserRole } from '../auth/enums/role.enum'
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import {
     createUnauthorizedSchema,
@@ -14,6 +13,7 @@ import {
     createNotFoundSchema
 } from '../common/schema/error-schema'
 import { MandatorySavingsPaginatedResponseDto } from './dto/savings-response.dto'
+import { UserRole } from 'src/common/constants'
 
 @ApiTags('Savings')
 @Controller('savings')
