@@ -24,23 +24,6 @@ export enum UserStatus {
   REJECTED = 'rejected'
 }
 
-
-export interface StatusTransition {
-  from: UserStatus;
-  to: UserStatus;
-  requiredRole: string[];
-  requiresReason?: boolean;
-}
-
-export const STATUS_TRANSITIONS: StatusTransition[] = [
-  { from: UserStatus.PENDING, to: UserStatus.WAITING_DEPOSIT, requiredRole: ['member', 'system'] },
-  { from: UserStatus.WAITING_DEPOSIT, to: UserStatus.PENDING, requiredRole: ['member'] },
-  { from: UserStatus.PENDING, to: UserStatus.ACTIVE, requiredRole: ['administrator', 'superadministrator'] },
-  { from: UserStatus.PENDING, to: UserStatus.WAITING_DEPOSIT, requiredRole: ['administrator', 'superadministrator'], requiresReason: true },
-  { from: UserStatus.ACTIVE, to: UserStatus.SUSPENDED, requiredRole: ['administrator', 'superadministrator'], requiresReason: true },
-  { from: UserStatus.SUSPENDED, to: UserStatus.ACTIVE, requiredRole: ['administrator', 'superadministrator'] }
-];
-
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name)
