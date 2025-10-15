@@ -14,5 +14,5 @@ export class ResendOtpResponseDto {
         example: true,
         description: 'Indicates OTP was sent successfully'
     })
-    otp_sent!: boolean
+    otpSent!: boolean
 }
