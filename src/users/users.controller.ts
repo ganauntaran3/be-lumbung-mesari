@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Post, Param, Body, Req, InternalServerErrorException, Logger } from '@nestjs/common'
+import { Controller, Get, Query, UseGuards, Post, Param, Body, Req, InternalServerErrorException, Logger, HttpStatus } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiUnauthorizedResponse } from '@nestjs/swagger'
 import { UsersService } from './users.service'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
@@ -8,6 +8,7 @@ import { UserRole } from '../auth/enums/role.enum'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { UsersQueryDto } from './dto/users-query.dto'
 import { ApproveUserDto, ApprovalResponseDto } from './dto/approve-user.dto'
+import { UsersPaginatedResponseDto } from './dto/users-response.dto'
 import { Request } from 'express'
 import { UserProfileResponseSchema } from 'src/auth/dto/profile-response.dto'
 import { TokenErrorSchemas } from 'src/common/schema/error-schema'
@@ -19,6 +20,19 @@ export class UsersController {
 
   constructor(private readonly usersService: UsersService) { }
 
+  private transformUserRecord(user: any): any {
+    const { phone_number, role_id, deposit_image_url, otp_verified, created_at, updated_at, ...otherData } = user
+    return {
+      ...otherData,
+      phoneNumber: phone_number,
+      roleId: role_id,
+      depositImageUrl: deposit_image_url,
+      otpVerified: otp_verified,
+      createdAt: created_at,
+      updatedAt: updated_at
+    }
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
@@ -26,7 +40,7 @@ export class UsersController {
     description: "Retrieve the authenticated user's profile information. Accessible by all authenticated users."
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Profile retrieved successfully',
     schema: UserProfileResponseSchema
   })
@@ -40,7 +54,6 @@ export class UsersController {
   })
   async getProfile(@CurrentUser() user: any) {
     try {
-      // Extract user ID from token and fetch full user data from database
       const fullUser = await this.usersService.findById(user.id);
 
       if (!fullUser) {
@@ -52,10 +65,9 @@ export class UsersController {
         });
       }
 
-      // Remove sensitive fields
       const { password, otp_code, otp_expires_at, ...safeUserData } = fullUser;
 
-      return safeUserData;
+      return this.transformUserRecord(safeUserData);
     } catch (error) {
       this.logger.error('Unexpected profile retrieval error:', error);
       throw new InternalServerErrorException({
@@ -69,90 +81,31 @@ export class UsersController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
-  @ApiOperation({ summary: 'Get users with filtering and pagination' })
-  @ApiResponse({
-    status: 200,
-    description: 'Users retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', format: 'uuid' },
-              email: { type: 'string', format: 'email' },
-              fullname: { type: 'string' },
-              username: { type: 'string' },
-              phone_number: { type: 'string' },
-              address: { type: 'string' },
-              status: {
-                type: 'string',
-                enum: ['waiting_deposit', 'active', 'inactive', 'suspended']
-              }
-            }
-          }
-        },
-        page: { type: 'integer', example: 1 },
-        limit: { type: 'integer', example: 10 },
-        totalData: { type: 'integer', example: 50 },
-        totalPage: { type: 'integer', example: 5 },
-        next: { type: 'boolean', example: true },
-        prev: { type: 'boolean', example: false }
-      }
-    }
+  @ApiOperation({
+    summary: 'Get users with filtering and pagination',
+    description: 'Retrieve all users with optional filtering by status, role, and search. Use status=pending to get pending users.'
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
-    status: 403,
+    status: HttpStatus.OK,
+    description: 'Users retrieved successfully',
+    type: UsersPaginatedResponseDto
+  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
     description: 'Forbidden - Insufficient permissions'
   })
   async findAll(
     @Query() queryParams: UsersQueryDto
   ) {
-    return await this.usersService.findAllWithPagination(queryParams)
-  }
+    const result = await this.usersService.findAllWithPagination(queryParams)
 
-  @Get('pending')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
-  @ApiOperation({ summary: 'Get pending users awaiting approval' })
-  @ApiResponse({
-    status: 200,
-    description: 'Pending users retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', format: 'uuid' },
-              email: { type: 'string', format: 'email' },
-              fullname: { type: 'string' },
-              username: { type: 'string' },
-              phone_number: { type: 'string' },
-              address: { type: 'string' },
-              status: { type: 'string', enum: ['pending'] },
-              deposit_image_url: { type: 'string', nullable: true }
-            }
-          }
-        },
-        page: { type: 'integer', example: 1 },
-        limit: { type: 'integer', example: 10 },
-        totalData: { type: 'integer', example: 5 },
-        totalPage: { type: 'integer', example: 1 },
-        next: { type: 'boolean', example: false },
-        prev: { type: 'boolean', example: false }
-      }
+    const transformedUsers = result.data.map(user => this.transformUserRecord(user))
+
+    return {
+      ...result,
+      data: transformedUsers
     }
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
-  async findPendingUsers(@Query() queryParams: UsersQueryDto) {
-    return await this.usersService.findPendingUsers(queryParams)
   }
 
   @Post(':id/approve')
@@ -173,25 +126,20 @@ export class UsersController {
     description: 'User approval/rejection processed successfully',
     type: ApprovalResponseDto
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid action or user status' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request - Invalid action or user status' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden - Insufficient permissions' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   async approveUser(
     @Param('id') userId: string,
     @Body() approvalData: ApproveUserDto,
     @CurrentUser() admin: any,
-    @Req() request: Request
   ): Promise<ApprovalResponseDto> {
-    const ipAddress = request.ip || request.connection.remoteAddress
-    const userAgent = request.get('User-Agent')
 
     return await this.usersService.approveUser(
       userId,
       approvalData,
       admin.id,
-      ipAddress,
-      userAgent
     )
   }
 }

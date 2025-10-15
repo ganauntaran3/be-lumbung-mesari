@@ -23,6 +23,21 @@ export class SavingsController {
 
     constructor(private readonly savingsService: SavingsService) { }
 
+    /**
+     * Transform savings record from snake_case (database) to camelCase (API)
+     */
+    private transformSavingsRecord(record: any): any {
+        const { period_date, paid_at, created_at, updated_at, processed_by_user, ...otherData } = record
+        return {
+            ...otherData,
+            periodDate: period_date,
+            paidAt: paid_at,
+            createdAt: created_at,
+            updatedAt: updated_at,
+            processedByUser: processed_by_user
+        }
+    }
+
     @Get('all')
     @UseGuards(RolesGuard)
     @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
@@ -62,7 +77,13 @@ export class SavingsController {
             // Log successful retrieval for audit purposes
             this.logger.log(`Successfully retrieved ${result.data.length} mandatory savings records`)
 
-            return result
+            // Transform data to camelCase
+            const transformedData = result.data.map(record => this.transformSavingsRecord(record))
+
+            return {
+                ...result,
+                data: transformedData
+            }
         } catch (error) {
             this.logger.error('Error fetching all mandatory savings:', error)
 
@@ -157,7 +178,13 @@ export class SavingsController {
                 this.logger.log(`Successfully retrieved ${result.data.length} mandatory savings records for user ${userId}`)
             }
 
-            return result
+            // Transform data to camelCase
+            const transformedData = result.data.map(record => this.transformSavingsRecord(record))
+
+            return {
+                ...result,
+                data: transformedData
+            }
         } catch (error) {
             // Handle specific error types
             if (error instanceof ForbiddenException ||
@@ -194,9 +221,9 @@ export class SavingsController {
             type: 'object',
             properties: {
                 message: { type: 'string', example: 'Successfully generated mandatory savings for 3 months (October to December) for 10 active members' },
-                months_generated: { type: 'number', example: 3 },
-                users_count: { type: 'number', example: 10 },
-                total_records: { type: 'number', example: 30 },
+                monthsGenerated: { type: 'number', example: 3 },
+                usersCount: { type: 'number', example: 10 },
+                totalRecords: { type: 'number', example: 30 },
                 months: { type: 'array', items: { type: 'string' }, example: ['October', 'November', 'December'] }
             }
         }
@@ -216,7 +243,14 @@ export class SavingsController {
 
             this.logger.log(`Successfully generated ${result.total_records} records for ${result.months_generated} months`)
 
-            return result
+            // Transform response to camelCase
+            return {
+                message: result.message,
+                monthsGenerated: result.months_generated,
+                usersCount: result.users_count,
+                totalRecords: result.total_records,
+                months: result.months
+            }
         } catch (error) {
             this.logger.error('Error generating remaining year savings:', error)
 

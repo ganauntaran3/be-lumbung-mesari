@@ -51,7 +51,7 @@ export class MandatorySavingsResponseDto {
         description: 'Period date for the savings',
         example: '2024-10-01'
     })
-    period_date!: Date
+    periodDate!: Date
 
     @ApiProperty({
         description: 'Savings amount',
@@ -71,19 +71,19 @@ export class MandatorySavingsResponseDto {
         example: '2024-10-15',
         nullable: true
     })
-    paid_at?: Date
+    paidAt?: Date
 
     @ApiProperty({
         description: 'Record creation timestamp',
         example: '2024-10-01T00:00:00.000Z'
     })
-    created_at!: Date
+    createdAt!: Date
 
     @ApiProperty({
         description: 'Record last update timestamp',
         example: '2024-10-01T00:00:00.000Z'
     })
-    updated_at!: Date
+    updatedAt!: Date
 
     @ApiProperty({
         description: 'User information',
@@ -96,7 +96,7 @@ export class MandatorySavingsResponseDto {
         type: ProcessedByUserDto,
         nullable: true
     })
-    processed_by_user?: ProcessedByUserDto
+    processedByUser?: ProcessedByUserDto
 }
 
 export class MandatorySavingsPaginatedResponseDto {
