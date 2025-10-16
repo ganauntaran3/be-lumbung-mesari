@@ -46,7 +46,6 @@ export class UsersService {
 
   async findAll() {
     const users = await this.usersRepository.findAll()
-    console.log("all users", users)
     return users
   }
 

@@ -15,31 +15,9 @@ import {
   NoOtpFoundException,
   UserNotInPendingStatusException
 } from './exceptions/otp.exceptions'
-
-export enum UserStatus {
-  WAITING_DEPOSIT = 'waiting_deposit',
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  REJECTED = 'rejected'
-}
+import { UserStatus } from 'src/common/constants'
 
 
-export interface StatusTransition {
-  from: UserStatus;
-  to: UserStatus;
-  requiredRole: string[];
-  requiresReason?: boolean;
-}
-
-export const STATUS_TRANSITIONS: StatusTransition[] = [
-  { from: UserStatus.PENDING, to: UserStatus.WAITING_DEPOSIT, requiredRole: ['member', 'system'] },
-  { from: UserStatus.WAITING_DEPOSIT, to: UserStatus.PENDING, requiredRole: ['member'] },
-  { from: UserStatus.PENDING, to: UserStatus.ACTIVE, requiredRole: ['administrator', 'superadministrator'] },
-  { from: UserStatus.PENDING, to: UserStatus.WAITING_DEPOSIT, requiredRole: ['administrator', 'superadministrator'], requiresReason: true },
-  { from: UserStatus.ACTIVE, to: UserStatus.SUSPENDED, requiredRole: ['administrator', 'superadministrator'], requiresReason: true },
-  { from: UserStatus.SUSPENDED, to: UserStatus.ACTIVE, requiredRole: ['administrator', 'superadministrator'] }
-];
 
 @Injectable()
 export class AuthService {
@@ -267,7 +245,7 @@ export class AuthService {
       username: user.username,
       email: user.email,
       role: user.role || 'member',
-      status: user.status || 'pending'
+      status: user.status || UserStatus.PENDING
     }
 
     const accessTokenExpiry = user.status === UserStatus.PENDING ? '10m' : '1h'

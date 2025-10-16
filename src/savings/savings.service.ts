@@ -4,6 +4,7 @@ import { SavingsRepository } from './savings.repository'
 import { UsersService } from '../users/users.service'
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponse } from './interfaces/mandatory-savings.interface'
+import { UserRole, UserStatus } from 'src/common/constants'
 
 @Injectable()
 export class SavingsService {
@@ -78,7 +79,7 @@ export class SavingsService {
             const allUsers = await this.usersService.findAll()
 
             const activeMembers = allUsers.filter(user =>
-                user.status === 'active' && user.role_id === 'member'
+                user.status === UserStatus.ACTIVE && user.role_id === UserRole.MEMBER
             )
 
             this.logger.log(`Found ${activeMembers.length} active members out of ${allUsers.length} total users`)
@@ -177,7 +178,7 @@ export class SavingsService {
         try {
             const allUsers = await this.usersService.findAll()
             const activeMembers = allUsers.filter(user =>
-                user.status === 'active' && user.role_id === 'member'
+                user.status === UserStatus.ACTIVE && user.role_id === UserRole.MEMBER
             )
 
             this.logger.log(`Found ${activeMembers.length} active members out of ${allUsers.length} total users`)

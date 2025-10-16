@@ -97,7 +97,6 @@ export class UsersRepository extends BaseRepository<User> {
         'users.created_at',
         'users.updated_at',
         'roles.id as role',
-        'roles.name as role_name'
       ])
       .where('users.email', identifier)
       .orWhere('users.username', identifier)

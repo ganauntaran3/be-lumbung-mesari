@@ -26,7 +26,7 @@ import { AuthService } from './auth.service'
 import { LoginRequestDto, LoginResponseDto } from './dto/login.dto'
 import { RegisterDto, RegisterResponseDto } from './dto/register.dto'
 import { VerifyOtpDto, VerifyOtpResponseDto } from './dto/verify-otp.dto'
-import { ResendOtpDto, ResendOtpResponseDto } from './dto/resend-otp.dto'
+import { ResendOtpResponseDto } from './dto/resend-otp.dto'
 import {
   AuthErrorSchemas,
   OtpBadRequestSchemas,
@@ -103,7 +103,7 @@ export class AuthController {
 
   @Post('register')
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: 'User registered successfully, OTP sent to email for verification',
     type: RegisterResponseDto,
   })
@@ -310,7 +310,7 @@ export class AuthController {
     - Old tokens remain valid until their natural expiration`
   })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Token refreshed successfully',
     type: LoginResponseDto,
     schema: {

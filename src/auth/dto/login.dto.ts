@@ -58,3 +58,25 @@ export class LoginResponseDto {
   })
   message?: string
 }
+
+export class LoginResponseDto {
+  @ApiProperty({
+    description: 'Authentication tokens',
+    type: TokenDto
+  })
+  token!: TokenDto
+
+  @ApiProperty({
+    description: 'Indicates if OTP was sent (only for pending users)',
+    example: true,
+    required: false
+  })
+  otp_sent?: boolean
+
+  @ApiProperty({
+    description: 'Additional message (only for pending users)',
+    example: 'Login successful. A new OTP has been sent to your email for verification.',
+    required: false
+  })
+  message?: string
+}
