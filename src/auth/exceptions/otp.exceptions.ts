@@ -1,11 +1,11 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, GoneException, HttpStatus } from '@nestjs/common'
 
-export class OtpExpiredException extends BadRequestException {
+export class OtpExpiredException extends GoneException {
     constructor() {
         super({
             message: 'OTP has expired. Please request a new one.',
             error: 'OTP_EXPIRED',
-            statusCode: 400
+            statusCode: HttpStatus.GONE
         })
     }
 }
@@ -15,17 +15,17 @@ export class InvalidOtpException extends BadRequestException {
         super({
             message: 'Invalid OTP code. Please check and try again.',
             error: 'INVALID_OTP',
-            statusCode: 400
+            statusCode: HttpStatus.BAD_REQUEST
         })
     }
 }
 
-export class OtpAlreadyVerifiedException extends BadRequestException {
+export class OtpAlreadyVerifiedException extends ConflictException {
     constructor() {
         super({
             message: 'OTP has already been verified.',
             error: 'OTP_ALREADY_VERIFIED',
-            statusCode: 400
+            statusCode: HttpStatus.CONFLICT
         })
     }
 }
@@ -35,7 +35,7 @@ export class NoOtpFoundException extends BadRequestException {
         super({
             message: 'No OTP found for this user. Please request a new one.',
             error: 'NO_OTP_FOUND',
-            statusCode: 400
+            statusCode: HttpStatus.BAD_REQUEST
         })
     }
 }
@@ -45,7 +45,7 @@ export class UserNotInPendingStatusException extends BadRequestException {
         super({
             message: 'User is not in pending verification status.',
             error: 'USER_NOT_PENDING',
-            statusCode: 400
+            statusCode: HttpStatus.BAD_REQUEST
         })
     }
 }
@@ -55,7 +55,7 @@ export class OtpSendFailedException extends BadRequestException {
         super({
             message: message || 'Failed to send OTP verification email. Please try again.',
             error: 'OTP_SEND_FAILED',
-            statusCode: 400
+            statusCode: HttpStatus.BAD_REQUEST
         })
     }
 }

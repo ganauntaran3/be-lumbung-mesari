@@ -24,31 +24,8 @@ export class TemplateService {
         this.precompileTemplates();
     }
 
-    /**
-     * Get the correct templates path (handles both dev and production)
-     */
     private getTemplatesPath(): string {
-        // Try multiple possible paths
-        const possiblePaths = [
-            path.join(__dirname, 'templates'),                    // Standard dist path
-            path.join(__dirname, '..', '..', 'src', 'notifications', 'templates'), // Development path
-            path.join(process.cwd(), 'src', 'notifications', 'templates'),         // Alternative dev path
-            path.join(process.cwd(), 'dist', 'src', 'notifications', 'templates')  // Alternative dist path
-        ];
-
-        console.log('🔍 DEBUG: Searching for templates in possible paths...');
-
-        for (const templatePath of possiblePaths) {
-            console.log('🔍 DEBUG: Checking path:', templatePath);
-            if (fs.existsSync(templatePath)) {
-                console.log('✅ DEBUG: Found templates directory at:', templatePath);
-                return templatePath;
-            }
-        }
-
-        console.log('❌ DEBUG: No templates directory found in any of the paths');
-        // Fallback to the standard path
-        return path.join(__dirname, 'templates');
+        return path.join(__dirname, 'email', 'templates');
     }
 
     /**
@@ -108,37 +85,34 @@ export class TemplateService {
      * Precompile all templates for better performance
      */
     private precompileTemplates(): void {
-        console.log('🔍 DEBUG: Starting template precompilation...');
-        console.log('🔍 DEBUG: Templates path:', this.templatesPath);
-        console.log('🔍 DEBUG: __dirname:', __dirname);
+        this.logger.log('🔍 DEBUG: Starting template precompilation...');
+        this.logger.log('🔍 DEBUG: __dirname:', __dirname);
+        this.logger.log('🔍 DEBUG: Templates path:', this.templatesPath);
 
         try {
-            // Check if templates directory exists
             if (!fs.existsSync(this.templatesPath)) {
-                console.log('❌ DEBUG: Templates directory does not exist:', this.templatesPath);
                 this.logger.error(`Templates directory not found: ${this.templatesPath}`);
                 return;
             }
 
             const templateFiles = fs.readdirSync(this.templatesPath);
-            console.log('🔍 DEBUG: Found template files:', templateFiles);
+            this.logger.debug('🔍 Template files:', templateFiles);
 
             for (const file of templateFiles) {
                 if (file.endsWith('.hbs')) {
                     const templateName = file.replace('.hbs', '');
                     const templatePath = path.join(this.templatesPath, file);
-                    console.log(`🔍 DEBUG: Processing template: ${templateName} from ${templatePath}`);
+                    this.logger.debug(`🔍 Processing template: ${templateName} from ${templatePath}`);
 
                     const templateContent = fs.readFileSync(templatePath, 'utf8');
                     const compiled = Handlebars.compile(templateContent);
                     this.compiledTemplates.set(templateName, compiled);
 
-                    console.log(`✅ DEBUG: Template compiled successfully: ${templateName}`);
-                    this.logger.log(`Template compiled: ${templateName}`);
+                    this.logger.debug(`✅ Template compiled successfully: ${templateName}`);
                 }
             }
 
-            console.log('🔍 DEBUG: All compiled templates:', Array.from(this.compiledTemplates.keys()));
+            this.logger.log('🔍 DEBUG: All compiled templates:', Array.from(this.compiledTemplates.keys()));
         } catch (error) {
             console.log('❌ DEBUG: Error during template precompilation:', error);
             this.logger.error('Failed to precompile templates:', error);

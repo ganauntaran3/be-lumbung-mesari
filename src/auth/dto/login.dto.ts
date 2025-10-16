@@ -21,7 +21,7 @@ export class LoginRequestDto {
   password = ''
 }
 
-export class LoginResponseDto {
+export class TokenDto {
   @ApiProperty({
     description: 'JWT access token for authentication',
     example:
@@ -35,4 +35,26 @@ export class LoginResponseDto {
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi0wMDEiLCJlbWFpbCI6ImFkbWluQGx1bWJ1bmdtZXNhcmkuY29tIiwicm9sZSI6ImFkbWluaXN0cmF0b3IiLCJpYXQiOjE3MDQwNjcyMDAsImV4cCI6MTcwNDY3MjAwMH0.example'
   })
   refresh_token = ''
+}
+
+export class LoginResponseDto {
+  @ApiProperty({
+    description: 'Authentication tokens',
+    type: TokenDto
+  })
+  token!: TokenDto
+
+  @ApiProperty({
+    description: 'Indicates if OTP was sent (only for pending users)',
+    example: true,
+    required: false
+  })
+  otp_sent?: boolean
+
+  @ApiProperty({
+    description: 'Additional message (only for pending users)',
+    example: 'Login successful. A new OTP has been sent to your email for verification.',
+    required: false
+  })
+  message?: string
 }

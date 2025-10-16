@@ -31,7 +31,7 @@ export type User = {
   phone_number: string
   address: string
   status: string
-  role: Role
+  role_id: string
   deposit_image_url: string | null
   otp_code?: string | null
   otp_expires_at?: Date | null

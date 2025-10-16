@@ -5,7 +5,6 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { join } from 'path';
 import { TemplateService } from './template.service';
 import { EmailHelperService } from './email/email-helper.service';
-import { config } from 'process';
 
 @Global()
 @Module({
@@ -34,7 +33,7 @@ import { config } from 'process';
                         from: smtpAddress
                     },
                     template: {
-                        dir: join(__dirname, 'email/templates'),
+                        dir: join(__dirname, './email/templates'),
                         adapter: new HandlebarsAdapter(),
                         options: {
                             strict: true,

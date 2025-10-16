@@ -45,7 +45,8 @@ export class UsersService {
   }
 
   async findAll() {
-    return await this.usersRepository.findAll()
+    const users = await this.usersRepository.findAll()
+    return users
   }
 
   async findAllWithPagination(
