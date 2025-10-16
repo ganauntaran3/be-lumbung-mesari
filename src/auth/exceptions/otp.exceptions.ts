@@ -1,4 +1,4 @@
-import { BadRequestException, GoneException, HttpStatus } from '@nestjs/common'
+import { BadRequestException, ConflictException, GoneException, HttpStatus } from '@nestjs/common'
 
 export class OtpExpiredException extends GoneException {
     constructor() {
@@ -20,7 +20,7 @@ export class InvalidOtpException extends BadRequestException {
     }
 }
 
-export class OtpAlreadyVerifiedException extends BadRequestException {
+export class OtpAlreadyVerifiedException extends ConflictException {
     constructor() {
         super({
             message: 'OTP has already been verified.',

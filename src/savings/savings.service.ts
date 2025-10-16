@@ -178,7 +178,7 @@ export class SavingsService {
         try {
             const allUsers = await this.usersService.findAll()
             const activeMembers = allUsers.filter(user =>
-                user.status === 'active' && user.role_id === 'member'
+                user.status === UserStatus.ACTIVE && user.role_id === UserRole.MEMBER
             )
 
             this.logger.log(`Found ${activeMembers.length} active members out of ${allUsers.length} total users`)
