@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Query, UseGuards, Param, Logger, ForbiddenException, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiParam, ApiBadRequestResponse } from '@nestjs/swagger'
-import { SavingsService } from './savings.service'
+import { MandatorySavingsService } from './mandatory-savings.service'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
@@ -21,7 +21,7 @@ import { UserRole } from 'src/common/constants'
 export class SavingsController {
     private readonly logger = new Logger(SavingsController.name)
 
-    constructor(private readonly savingsService: SavingsService) { }
+    constructor(private readonly mandatorySavingsService: MandatorySavingsService) { }
 
     private transformSavingsRecord(record: any): any {
         const { period_date, paid_at, created_at, updated_at, processed_by_user, ...otherData } = record
@@ -69,7 +69,7 @@ export class SavingsController {
     ) {
         try {
             this.logger.log('Fetching all mandatory savings records')
-            const result = await this.savingsService.findAllMandatorySavings(queryParams)
+            const result = await this.mandatorySavingsService.findAllMandatorySavings(queryParams)
 
             // Log successful retrieval for audit purposes
             this.logger.log(`Successfully retrieved ${result.data.length} mandatory savings records`)
@@ -167,7 +167,7 @@ export class SavingsController {
                 })
             }
 
-            const result = await this.savingsService.findUserMandatorySavings(userId, queryParams)
+            const result = await this.mandatorySavingsService.findUserMandatorySavings(userId, queryParams)
 
             if (!result || result.data.length === 0) {
                 this.logger.log(`No savings records found for user: ${userId}`)
@@ -236,7 +236,7 @@ export class SavingsController {
     async generateRemainingYearSavings() {
         try {
             this.logger.log('Manual trigger: Generating mandatory savings for remaining months of current year')
-            const result = await this.savingsService.generateRemainingYearSavings()
+            const result = await this.mandatorySavingsService.generateRemainingYearSavings()
 
             this.logger.log(`Successfully generated ${result.total_records} records for ${result.months_generated} months`)
 

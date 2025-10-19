@@ -7,8 +7,8 @@ import { MandatorySavingsPaginatedResponse } from './interfaces/mandatory-saving
 import { UserRole, UserStatus } from 'src/common/constants'
 
 @Injectable()
-export class SavingsService {
-    private readonly logger = new Logger(SavingsService.name)
+export class MandatorySavingsService {
+    private readonly logger = new Logger(MandatorySavingsService.name)
 
     constructor(
         private readonly savingsRepository: SavingsRepository,

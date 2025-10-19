@@ -7,6 +7,7 @@ import { RegisterDto } from './dto/register.dto'
 import { JwtPayload } from '../interface/jwt'
 import { EmailHelperService, NotificationTemplate, EmailData } from '../notifications/email/email-helper.service'
 import { OtpService } from './services/otp.service'
+import { PrincipalSavingsService } from '../savings/principal-savings.service'
 
 import {
   OtpExpiredException,
@@ -27,7 +28,8 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private emailHelperService: EmailHelperService,
-    private otpService: OtpService
+    private otpService: OtpService,
+    private principalSavingsService: PrincipalSavingsService
   ) { }
 
   private async validateUserUniqueness(email: string, username: string): Promise<void> {
@@ -182,6 +184,16 @@ export class AuthService {
     });
 
     this.logger.log(`OTP verified successfully for user ${userId} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`)
+
+    // Create principal savings record (status: pending)
+    try {
+      const principalSavings = await this.principalSavingsService.createPrincipalSavings(userId)
+      this.logger.log(`Principal savings created for user ${userId} with amount ${principalSavings.amount}`)
+    } catch (error) {
+      this.logger.error(`Failed to create principal savings for user ${userId}:`, error)
+      // Don't block OTP verification if principal savings creation fails
+      this.logger.warn(`Continuing with OTP verification despite principal savings creation failure`)
+    }
 
     await this.sendRegistrationNotifications(updatedUser, UserStatus.WAITING_DEPOSIT);
 
