@@ -27,14 +27,14 @@ export class TokenDto {
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi0wMDEiLCJlbWFpbCI6ImFkbWluQGx1bWJ1bmdtZXNhcmkuY29tIiwicm9sZSI6ImFkbWluaXN0cmF0b3IiLCJpYXQiOjE3MDQwNjcyMDAsImV4cCI6MTcwNDA3MDgwMH0.example'
   })
-  access_token = ''
+  accessToken = ''
 
   @ApiProperty({
     description: 'JWT refresh token for token renewal',
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbi0wMDEiLCJlbWFpbCI6ImFkbWluQGx1bWJ1bmdtZXNhcmkuY29tIiwicm9sZSI6ImFkbWluaXN0cmF0b3IiLCJpYXQiOjE3MDQwNjcyMDAsImV4cCI6MTcwNDY3MjAwMH0.example'
   })
-  refresh_token = ''
+  refreshToken = ''
 }
 
 export class LoginResponseDto {
@@ -49,7 +49,7 @@ export class LoginResponseDto {
     example: true,
     required: false
   })
-  otp_sent?: boolean
+  otpSent?: boolean
 
   @ApiProperty({
     description: 'Additional message (only for pending users)',

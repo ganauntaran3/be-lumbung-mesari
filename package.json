@@ -28,9 +28,7 @@
     "migrate:rollback": "knex migrate:rollback",
     "migrate:status": "knex migrate:status",
     "seed:run": "knex seed:run",
-    "seed:make": "knex seed:make",
-    "test:email": "ts-node scripts/test-email-config.ts",
-    "test:email-templates": "ts-node scripts/test-email-templates.ts"
+    "seed:make": "knex seed:make"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",

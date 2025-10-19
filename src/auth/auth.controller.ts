@@ -230,7 +230,7 @@ export class AuthController {
     try {
       const result = await this.authService.verifyOtp(
         req.user.id,
-        verifyOtpDto.otp_code,
+        verifyOtpDto.otpCode,
       );
 
       return result;

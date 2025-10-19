@@ -82,7 +82,7 @@ export class AuthService {
     if (user.status === UserStatus.PENDING) {
       return {
         ...tokens,
-        otp_sent: true,
+        otpSent: true,
         message: 'Login successful. A new OTP has been sent to your email for verification.'
       }
     }
@@ -108,7 +108,7 @@ export class AuthService {
         password: hashedPassword,
         fullname: registerDto.fullname,
         username: registerDto.username,
-        phone_number: registerDto.phone_number,
+        phone_number: registerDto.phoneNumber,
         address: registerDto.address,
         status: UserStatus.PENDING,
         role_id: 'member',
@@ -135,7 +135,7 @@ export class AuthService {
         message: emailSent
           ? 'Registration successful. Please check your email for OTP verification code.'
           : 'Registration successful. However, we could not send the OTP email. Please try resending the OTP.',
-        otp_sent: emailSent
+        otpSent: emailSent
       };
     } catch (error) {
       this.logger.error(`Registration failed for ${registerDto.email} (${registerDto.username}): ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -231,7 +231,7 @@ export class AuthService {
       message: emailSent
         ? 'New OTP has been sent to your email.'
         : 'OTP has been generated but could not be sent via email. Please contact support.',
-      otp_sent: emailSent
+      otpSent: emailSent
     };
   }
 
@@ -252,8 +252,8 @@ export class AuthService {
 
     return {
       token: {
-        access_token: this.jwtService.sign(payload, { expiresIn: accessTokenExpiry }),
-        refresh_token: this.jwtService.sign(payload, { expiresIn: '1d' })
+        accessToken: this.jwtService.sign(payload, { expiresIn: accessTokenExpiry }),
+        refreshToken: this.jwtService.sign(payload, { expiresIn: '1d' })
       }
     }
   }

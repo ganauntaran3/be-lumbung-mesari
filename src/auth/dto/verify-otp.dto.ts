@@ -11,7 +11,7 @@ export class VerifyOtpDto {
     @IsString({ message: 'OTP code must be a string' })
     @Matches(/^\d{6}$/, { message: 'OTP code must be exactly 6 digits' })
     @IsNotEmpty({ message: 'OTP code is required' })
-    otp_code!: string
+    otpCode!: string
 }
 
 class TokenDto {
@@ -19,13 +19,13 @@ class TokenDto {
         example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         description: 'JWT access token (1 hour expiry after verification)'
     })
-    access_token!: string
+    accessToken!: string
 
     @ApiProperty({
         example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         description: 'JWT refresh token (1 day expiry)'
     })
-    refresh_token!: string
+    refreshToken!: string
 }
 
 export class VerifyOtpResponseDto {

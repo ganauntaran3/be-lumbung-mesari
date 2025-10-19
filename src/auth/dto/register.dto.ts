@@ -69,7 +69,7 @@ export class RegisterDto {
     message: 'Please provide a valid Indonesian phone number (e.g., 081234567890 or +6281234567890)'
   })
   @IsNotEmpty({ message: 'Phone number is required' })
-  phone_number!: string
+  phoneNumber!: string
 
   @ApiProperty({
     example: 'Jl. Merdeka No. 123, Jakarta Pusat, DKI Jakarta',
@@ -90,13 +90,13 @@ class TokenDto {
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     description: 'JWT access token (5 minutes expiry for pending users)'
   })
-  access_token!: string
+  accessToken!: string
 
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     description: 'JWT refresh token (1 day expiry)'
   })
-  refresh_token!: string
+  refreshToken!: string
 }
 
 export class RegisterResponseDto {
@@ -134,5 +134,5 @@ export class RegisterResponseDto {
     example: true,
     description: 'Indicates whether OTP email was sent successfully'
   })
-  otp_sent!: boolean
+  otpSent!: boolean
 }

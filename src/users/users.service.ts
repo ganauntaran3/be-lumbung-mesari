@@ -74,10 +74,7 @@ export class UsersService {
     userId: string,
     approvalData: ApproveUserDto,
     adminId: string,
-    ipAddress?: string,
-    userAgent?: string
   ): Promise<ApprovalResponseDto> {
-    // Find the user
     const user = await this.findById(userId)
     if (!user) {
       throw new NotFoundException('User not found')
