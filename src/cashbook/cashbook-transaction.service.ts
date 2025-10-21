@@ -42,7 +42,6 @@ export class CashbookTransactionService {
                 direction: 'in',
                 amount: amount.toString(),
                 income_id: incomeId,
-                expense_id: null,
                 user_id: userId
             })
 
@@ -71,7 +70,6 @@ export class CashbookTransactionService {
                 txn_date: txnDate || new Date(),
                 direction: 'out',
                 amount: amount.toString(),
-                income_id: null,
                 expense_id: expenseId,
                 user_id: userId
             })

@@ -35,18 +35,6 @@ export class SavingsController {
         }
     }
 
-    private transformSavingsRecord(record: any): any {
-        const { period_date, paid_at, created_at, updated_at, processed_by_user, ...otherData } = record
-        return {
-            ...otherData,
-            periodDate: period_date,
-            paidAt: paid_at,
-            createdAt: created_at,
-            updatedAt: updated_at,
-            processedByUser: processed_by_user
-        }
-    }
-
     @Get('all')
     @UseGuards(RolesGuard)
     @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)

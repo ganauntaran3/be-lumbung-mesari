@@ -7,7 +7,8 @@ import { RegisterDto } from './dto/register.dto'
 import { JwtPayload } from '../interface/jwt'
 import { EmailHelperService, NotificationTemplate, EmailData } from '../notifications/email/email-helper.service'
 import { OtpService } from './services/otp.service'
-import { PrincipalSavingsService } from '../savings/principal-savings.service'
+import { UsersSavingsService } from '../users-savings/users-savings.service'
+import { DatabaseService } from '../database/database.service'
 
 import {
   OtpExpiredException,
@@ -29,7 +30,8 @@ export class AuthService {
     private jwtService: JwtService,
     private emailHelperService: EmailHelperService,
     private otpService: OtpService,
-    private principalSavingsService: PrincipalSavingsService
+    private usersSavingsService: UsersSavingsService,
+    private databaseService: DatabaseService
   ) { }
 
   private async validateUserUniqueness(email: string, username: string): Promise<void> {
@@ -176,40 +178,50 @@ export class AuthService {
       throw new InvalidOtpException();
     }
 
-    const updatedUser = await this.usersService.update(user.id, {
-      status: UserStatus.WAITING_DEPOSIT,
-      otp_verified: true,
-      otp_code: null,
-      otp_expires_at: null
-    });
+    // Use transaction to ensure data consistency
+    const knex = this.databaseService.getKnex();
+    const trx = await knex.transaction();
 
-    this.logger.log(`OTP verified successfully for user ${userId} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`)
-
-    // Create principal savings record (status: pending)
     try {
-      const principalSavings = await this.principalSavingsService.createPrincipalSavings(userId)
-      this.logger.log(`Principal savings created for user ${userId} with amount ${principalSavings.amount}`)
+      // 1. Update user status within transaction
+      const updatedUser = await this.usersService.updateWithTransaction(user.id, {
+        status: UserStatus.WAITING_DEPOSIT,
+        otp_verified: true,
+        otp_code: null,
+        otp_expires_at: null
+      }, trx);
+
+      this.logger.log(`OTP verified successfully for user ${userId} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`)
+
+      // 2. Create principal savings record within the same transaction
+      await this.usersSavingsService.createPrincipalSavingsForUser(userId, trx)
+      this.logger.log(`Principal savings created for user ${userId}`)
+
+      // 3. Commit transaction
+      await trx.commit();
+
+      // 4. Send notifications (outside transaction as it's not critical for data consistency)
+      await this.sendRegistrationNotifications(updatedUser, UserStatus.WAITING_DEPOSIT);
+
+      const userWithRole = await this.usersService.findById(user.id);
+
+      return {
+        ...this.generateTokens(userWithRole),
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          fullname: updatedUser.fullname,
+          username: updatedUser.username,
+          status: updatedUser.status
+        },
+        message: 'OTP verified successfully. Please submit your deposit proof to complete registration.'
+      };
     } catch (error) {
-      this.logger.error(`Failed to create principal savings for user ${userId}:`, error)
-      // Don't block OTP verification if principal savings creation fails
-      this.logger.warn(`Continuing with OTP verification despite principal savings creation failure`)
+      // Rollback transaction on any error
+      await trx.rollback();
+      this.logger.error(`Transaction failed during OTP verification for user ${userId}:`, error)
+      throw new BadRequestException('Failed to verify OTP. Please try again.');
     }
-
-    await this.sendRegistrationNotifications(updatedUser, UserStatus.WAITING_DEPOSIT);
-
-    const userWithRole = await this.usersService.findById(user.id);
-
-    return {
-      ...this.generateTokens(userWithRole),
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        fullname: updatedUser.fullname,
-        username: updatedUser.username,
-        status: updatedUser.status
-      },
-      message: 'OTP verified successfully. Please submit your deposit proof to complete registration.'
-    };
   }
 
   async resendOtp(userId: string) {

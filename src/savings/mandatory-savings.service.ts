@@ -1,10 +1,9 @@
 import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { SavingsRepository } from './savings.repository'
-import { UsersService } from '../users/users.service'
+import { UsersSavingsService } from '../users-savings/users-savings.service'
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponse } from './interfaces/mandatory-savings.interface'
-import { UserRole, UserStatus } from 'src/common/constants'
 
 @Injectable()
 export class MandatorySavingsService {
@@ -12,7 +11,7 @@ export class MandatorySavingsService {
 
     constructor(
         private readonly savingsRepository: SavingsRepository,
-        private readonly usersService: UsersService,
+        private readonly usersSavingsService: UsersSavingsService,
         private readonly configService: ConfigService
     ) { }
 
@@ -76,15 +75,11 @@ export class MandatorySavingsService {
         this.logger.log('Starting yearly mandatory savings creation for all active members (12 months)')
 
         try {
-            const allUsers = await this.usersService.findAll()
+            const activeMemberIds = await this.usersSavingsService.getActiveMemberIds()
 
-            const activeMembers = allUsers.filter(user =>
-                user.status === UserStatus.ACTIVE && user.role_id === UserRole.MEMBER
-            )
+            this.logger.log(`Found ${activeMemberIds.length} active members`)
 
-            this.logger.log(`Found ${activeMembers.length} active members out of ${allUsers.length} total users`)
-
-            if (activeMembers.length === 0) {
+            if (activeMemberIds.length === 0) {
                 this.logger.warn('No active members found for mandatory savings creation')
                 return
             }
@@ -92,16 +87,15 @@ export class MandatorySavingsService {
             const mandatorySavingsAmount = this.getMandatorySavingsAmount()
             this.logger.log(`Using mandatory savings amount: ${mandatorySavingsAmount}`)
 
-            const userIds = activeMembers.map(user => user.id)
             const createdCount = await this.savingsRepository.createYearlyMandatorySavingsForUsers(
-                userIds,
+                activeMemberIds,
                 mandatorySavingsAmount
             )
 
-            this.logger.log(`Successfully processed ${createdCount} mandatory savings records (12 months) for ${activeMembers.length} active members`)
+            this.logger.log(`Successfully processed ${createdCount} mandatory savings records (12 months) for ${activeMemberIds.length} active members`)
 
-            activeMembers.forEach(user => {
-                this.logger.debug(`Processed yearly mandatory savings for member: ${user.id} (${user.fullname})`)
+            activeMemberIds.forEach(userId => {
+                this.logger.debug(`Processed yearly mandatory savings for member: ${userId}`)
             })
 
         } catch (error) {
@@ -176,14 +170,11 @@ export class MandatorySavingsService {
         this.logger.log('Generating mandatory savings for remaining months of current year')
 
         try {
-            const allUsers = await this.usersService.findAll()
-            const activeMembers = allUsers.filter(user =>
-                user.status === UserStatus.ACTIVE && user.role_id === UserRole.MEMBER
-            )
+            const activeMemberIds = await this.usersSavingsService.getActiveMemberIds()
 
-            this.logger.log(`Found ${activeMembers.length} active members out of ${allUsers.length} total users`)
+            this.logger.log(`Found ${activeMemberIds.length} active members`)
 
-            if (activeMembers.length === 0) {
+            if (activeMemberIds.length === 0) {
                 this.logger.warn('No active members found')
                 return {
                     message: 'No active members found to generate savings for',
@@ -214,22 +205,21 @@ export class MandatorySavingsService {
             const mandatorySavingsAmount = this.getMandatorySavingsAmount()
             this.logger.log(`Using mandatory savings amount: ${mandatorySavingsAmount}`)
 
-            const userIds = activeMembers.map(user => user.id)
             const createdCount = await this.savingsRepository.generateRemainingYearSavings(
-                userIds,
+                activeMemberIds,
                 mandatorySavingsAmount,
                 currentYear,
                 currentMonth
             )
 
-            const message = `Successfully generated mandatory savings for ${remainingMonths} months (${generatedMonths.join(', ')}) for ${activeMembers.length} active members`
+            const message = `Successfully generated mandatory savings for ${remainingMonths} months (${generatedMonths.join(', ')}) for ${activeMemberIds.length} active members`
 
             this.logger.log(message)
 
             return {
                 message,
                 months_generated: remainingMonths,
-                users_count: activeMembers.length,
+                users_count: activeMemberIds.length,
                 total_records: createdCount,
                 months: generatedMonths
             }

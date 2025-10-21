@@ -400,10 +400,12 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     /**
      * Get current cashbook balance
      * Returns 0 if no balance record exists yet
+     * @param trx - Optional transaction object
      */
-    async getCashbookBalance(): Promise<number> {
+    async getCashbookBalance(trx?: any): Promise<number> {
         try {
-            const result = await this.knex('cashbook_balances')
+            const query = trx ? trx('cashbook_balances') : this.knex('cashbook_balances')
+            const result = await query
                 .select('balance')
                 .first()
 
@@ -426,14 +428,18 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
 
     /**
      * Create a principal savings record for a user
+     * @param data - Principal savings data
+     * @param trx - Optional transaction object
      */
     async createPrincipalSavings(
-        data: Omit<PrincipalSavingsTable, 'id' | 'created_at' | 'updated_at'>
+        data: Omit<PrincipalSavingsTable, 'id' | 'created_at' | 'updated_at'>,
+        trx?: any
     ): Promise<PrincipalSavingsTable> {
         try {
             this.logger.debug(`Creating principal savings for user ${data.user_id}`)
 
-            const [result] = await this.knex('principal_savings')
+            const query = trx ? trx('principal_savings') : this.knex('principal_savings')
+            const [result] = await query
                 .insert({
                     ...data,
                     created_at: new Date(),

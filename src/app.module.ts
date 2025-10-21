@@ -6,6 +6,8 @@ import { ConfigModule } from '@nestjs/config'
 import { AuthModule } from './auth/auth.module'
 import { NotificationModule } from './notifications/notification.module'
 import { SavingsModule } from './savings/savings.module'
+import { IncomesModule } from './incomes/incomes.module'
+import { CashbookModule } from './cashbook/cashbook.module'
 
 @Module({
   imports: [
@@ -16,7 +18,9 @@ import { SavingsModule } from './savings/savings.module'
     NotificationModule,
     UsersModule,
     AuthModule,
-    SavingsModule
+    SavingsModule,
+    IncomesModule,
+    CashbookModule
   ],
   controllers: [AppController],
   providers: [AppService]

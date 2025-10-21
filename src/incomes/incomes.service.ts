@@ -31,7 +31,6 @@ export class IncomesService {
                 category_id: category.id,
                 amount: amount.toString(),
                 user_id: userId,
-                loan_id: null,
                 notes: notes || 'Simpanan pokok dari anggota baru'
             })
 

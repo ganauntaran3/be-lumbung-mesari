@@ -2,10 +2,9 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { ConfigService } from '@nestjs/config'
 import { SavingsRepository } from './savings.repository'
 import { PrincipalSavingsWithUser } from './interfaces/principal-savings.interface'
-import { UsersService } from '../users/users.service'
+import { UsersSavingsService } from '../users-savings/users-savings.service'
 import { IncomesService } from '../incomes/incomes.service'
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
-import { UserStatus, UserRole } from '../common/constants'
 
 @Injectable()
 export class PrincipalSavingsService {
@@ -13,7 +12,7 @@ export class PrincipalSavingsService {
 
     constructor(
         private readonly savingsRepository: SavingsRepository,
-        private readonly usersService: UsersService,
+        private readonly usersSavingsService: UsersSavingsService,
         private readonly incomesService: IncomesService,
         private readonly cashbookTransactionService: CashbookTransactionService,
         private readonly configService: ConfigService
@@ -142,10 +141,7 @@ export class PrincipalSavingsService {
             const totalBalance = await this.savingsRepository.getCashbookBalance()
 
             // Get count of active members (excluding admins)
-            const allUsers = await this.usersService.findAll()
-            const activeMemberCount = allUsers.filter(
-                user => user.status === UserStatus.ACTIVE && user.role_id === UserRole.MEMBER
-            ).length
+            const activeMemberCount = await this.usersSavingsService.getActiveMemberCount()
 
             // If no active members yet, use minimum amount from config
             if (activeMemberCount === 0) {
