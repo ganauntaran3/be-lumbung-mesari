@@ -234,7 +234,50 @@ export class UsersRepository extends BaseRepository<User> {
     return this.updateById(id, data as User)
   }
 
+  async updateUserWithTransaction(id: string, data: UpdateUser, trx: any): Promise<User> {
+    const [result] = await trx('users')
+      .where('id', id)
+      .update({
+        ...data,
+        updated_at: new Date()
+      })
+      .returning('*')
+
+    if (!result) {
+      throw new Error(`User with id ${id} not found`)
+    }
+
+    return result as User
+  }
+
   async updateStatus(id: string, status: string): Promise<User> {
     return this.updateById(id, { status } as any)
+  }
+
+  /**
+   * Get count of active members
+   * Active members are users with status 'active'
+   * @param trx - Optional transaction object
+   */
+  async getActiveMemberCount(trx?: any): Promise<number> {
+    const query = trx ? trx('users') : this.knex('users')
+    const result = await query
+      .where('status', 'active')
+      .count('id as count')
+      .first()
+
+    return parseInt(result?.count as string, 10) || 0
+  }
+
+  /**
+   * Get IDs of active members
+   * Active members are users with status 'active'
+   */
+  async getActiveMemberIds(): Promise<string[]> {
+    const results = await this.knex('users')
+      .where('status', 'active')
+      .select('id')
+
+    return results.map(row => row.id)
   }
 }

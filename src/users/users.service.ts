@@ -2,9 +2,10 @@ import { Injectable, ConflictException, NotFoundException, BadRequestException, 
 import { NewUser } from '../interface/users'
 import { UsersRepository } from './users.repository'
 import { PaginationOptions } from '../interface/pagination'
-import { UsersPaginatedResponse, UserWithRole } from '../interface/users'
+import { UsersPaginatedResponse } from '../interface/users'
 import { ApproveUserDto, ApprovalAction, ApprovalResponseDto } from './dto/approve-user.dto'
 import { EmailHelperService, NotificationTemplate, EmailData } from '../notifications/email/email-helper.service'
+import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 @Injectable()
 export class UsersService {
@@ -12,7 +13,8 @@ export class UsersService {
 
   constructor(
     private usersRepository: UsersRepository,
-    private emailHelperService: EmailHelperService
+    private emailHelperService: EmailHelperService,
+    private usersSavingsService: UsersSavingsService
   ) { }
 
   async findByEmail(email: string) {
@@ -70,6 +72,10 @@ export class UsersService {
     return await this.usersRepository.updateUser(id, userData)
   }
 
+  async updateWithTransaction(id: string, userData: Partial<NewUser>, trx: any) {
+    return await this.usersRepository.updateUserWithTransaction(id, userData, trx)
+  }
+
   async approveUser(
     userId: string,
     approvalData: ApproveUserDto,
@@ -94,6 +100,17 @@ export class UsersService {
         message = 'User approved successfully'
 
         await this.usersRepository.updateStatus(userId, newStatus)
+
+        // Approve principal savings (mark as paid, create income, create cashbook transaction)
+        try {
+          await this.usersSavingsService.approvePrincipalSavingsForUser(userId, adminId)
+          this.logger.log(`Principal savings approved and income/cashbook transaction created for user ${userId}`)
+        } catch (error) {
+          this.logger.error(`Failed to approve principal savings for user ${userId}:`, error)
+          // Don't block user approval if principal savings approval fails
+          this.logger.warn(`User ${userId} approved but principal savings approval failed`)
+        }
+
         await this.sendApprovalEmail(user, approvalData.action, approvalData.reason)
 
         this.logger.log(`User ${userId} approved by admin ${adminId}`)

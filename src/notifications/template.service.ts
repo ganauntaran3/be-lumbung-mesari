@@ -96,15 +96,13 @@ export class TemplateService {
             }
 
             const templateFiles = fs.readdirSync(this.templatesPath);
-            this.logger.debug('🔍 Template files:', templateFiles);
 
             for (const file of templateFiles) {
                 if (file.endsWith('.hbs')) {
                     const templateName = file.replace('.hbs', '');
                     const templatePath = path.join(this.templatesPath, file);
-                    this.logger.debug(`🔍 Processing template: ${templateName} from ${templatePath}`);
-
                     const templateContent = fs.readFileSync(templatePath, 'utf8');
+
                     const compiled = Handlebars.compile(templateContent);
                     this.compiledTemplates.set(templateName, compiled);
 

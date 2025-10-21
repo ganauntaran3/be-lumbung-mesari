@@ -154,40 +154,7 @@ export class AuthController {
       const result = await this.authService.register(registerDto);
       return result;
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      if (error instanceof ConflictException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        const message = error.message.toLowerCase();
-
-        if (message.includes('email') && message.includes('exists')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'Email address is already registered',
-            error: 'Conflict'
-          });
-        }
-
-        if (message.includes('username') && message.includes('exists')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'Username is already taken',
-            error: 'Conflict'
-          });
-        }
-      }
-
-      console.error('Unexpected registration error:', error);
-      throw new InternalServerErrorException({
-        statusCode: 500,
-        message: 'An unexpected error occurred during registration. Please try again.',
-        error: 'Internal Server Error'
-      });
+      throw error
     }
   }
 

@@ -23,12 +23,13 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('loan_periods')
       .onDelete('RESTRICT')
       .notNullable()
-    table.decimal('principal_amount', 12, 4).notNullable()
-    table.decimal('admin_fee_amount', 12, 4).notNullable()
-    table.decimal('disbursed_amount', 12, 4).notNullable()
-    table.decimal('interest_amount', 12, 4).notNullable()
-    table.decimal('monthly_payment', 12, 4).notNullable()
-    table.decimal('total_payable_amount', 12, 4).notNullable()
+    table.decimal('principal_amount', 12, 4).notNullable() // Jumlah pokok pinjaman
+    table.decimal('admin_fee_amount', 12, 4).notNullable() // Biaya admin
+    table.decimal('disbursed_amount', 12, 4).notNullable() // Jumlah yang diberikan
+    table.decimal('interest_amount', 12, 4).notNullable() // Bunga tiap bulan
+    table.decimal('monthly_payment', 12, 4).notNullable() // Total uang yang harus disetorkan tiap bulan
+    table.decimal('total_payable_amount', 12, 4).notNullable() // Total uang yang harus dikembalikan
+    table.integer('installment_late_amount').nullable()
     table.date('start_date').notNullable()
     table.date('end_date').notNullable()
     table

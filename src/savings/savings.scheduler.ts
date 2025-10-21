@@ -2,14 +2,14 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { CronExpression, SchedulerRegistry } from '@nestjs/schedule'
 import { ConfigService } from '@nestjs/config'
 import { CronJob } from 'cron'
-import { SavingsService } from './savings.service'
+import { MandatorySavingsService } from './mandatory-savings.service'
 
 @Injectable()
 export class SavingsScheduler implements OnModuleInit {
     private readonly logger = new Logger(SavingsScheduler.name)
 
     constructor(
-        private readonly savingsService: SavingsService,
+        private readonly mandatorySavingsService: MandatorySavingsService,
         private readonly configService: ConfigService,
         private readonly schedulerRegistry: SchedulerRegistry
     ) { }
@@ -35,7 +35,7 @@ export class SavingsScheduler implements OnModuleInit {
         this.logger.log('Starting yearly mandatory savings creation cron job (12 months) - Triggered on January 1st')
 
         try {
-            await this.savingsService.createYearlyMandatorySavingsForAllUsers()
+            await this.mandatorySavingsService.createYearlyMandatorySavingsForAllUsers()
             this.logger.log('Yearly mandatory savings creation completed successfully')
         } catch (error) {
             this.logger.error('Yearly mandatory savings creation failed:', error)

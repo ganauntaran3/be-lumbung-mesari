@@ -13,7 +13,7 @@ export async function up(knex: Knex): Promise<void> {
     table.text('address').notNullable()
     table.enum('status', userStatus).notNullable().defaultTo(userStatus[0])
     table
-      .uuid('role_id')
+      .string('role_id')
       .references('id')
       .inTable('roles')
       .onDelete('RESTRICT')

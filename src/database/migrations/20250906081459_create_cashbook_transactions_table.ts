@@ -17,16 +17,6 @@ export async function up(knex: Knex): Promise<void> {
       .references('id')
       .inTable('expenses')
       .onDelete('SET NULL')
-    table
-      .uuid('principal_saving_id')
-      .references('id')
-      .inTable('principal_savings')
-      .onDelete('SET NULL')
-    table
-      .uuid('mandatory_saving_id')
-      .references('id')
-      .inTable('mandatory_savings')
-      .onDelete('SET NULL')
 
     table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.timestamp('created_at').defaultTo(knex.fn.now())
