@@ -1,6 +1,6 @@
 import { Knex } from 'knex'
 
-const userStatus = ['waiting_deposit', 'active', 'suspended', 'pending']
+const userStatus = ['pending', 'waiting_deposit', 'active', 'inactive', 'rejected']
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('users', (table) => {
@@ -13,7 +13,7 @@ export async function up(knex: Knex): Promise<void> {
     table.text('address').notNullable()
     table.enum('status', userStatus).notNullable().defaultTo(userStatus[0])
     table
-      .string('role_id')
+      .string('role_id', 36)
       .references('id')
       .inTable('roles')
       .onDelete('RESTRICT')

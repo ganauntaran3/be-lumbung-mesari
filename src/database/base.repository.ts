@@ -65,7 +65,7 @@ export abstract class BaseRepository<T> {
     const baseQuery = this.knex(this.tableName)
 
     const [{ count }] = await baseQuery.clone().count('* as count')
-    const totalData = parseInt(count as string, 10)
+    const totalData = Number.parseInt(count as string, 10)
 
     const dataQuery = baseQuery.clone().select('*')
     this.applySorting(dataQuery, sortBy, sortOrder)

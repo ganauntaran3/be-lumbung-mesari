@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 import { CashbookTransactionTable } from './interfaces/cashbook.interface'
+import { Knex } from 'knex'
 
 export interface TransactionFilters {
     dateFrom?: Date
@@ -27,12 +28,14 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
      * The trigger will automatically update cashbook_balances
      */
     async createTransaction(
-        data: Omit<CashbookTransactionTable, 'id' | 'created_at'>
+        data: Omit<CashbookTransactionTable, 'id' | 'created_at'>,
+        trx?: Knex.Transaction
     ): Promise<CashbookTransactionTable> {
         try {
             this.logger.debug(`Creating cashbook transaction: ${data.direction} ${data.amount}`)
 
-            const [result] = await this.knex('cashbook_transactions')
+            const query = trx ? trx('cashbook_transactions') : this.knex('cashbook_transactions')
+            const [result] = await query
                 .insert({
                     ...data,
                     created_at: new Date()

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger, UnauthorizedException } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, Logger, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { compare, hash } from 'bcrypt'
 import { UsersService } from '../users/users.service'
@@ -17,7 +17,8 @@ import {
   NoOtpFoundException,
   UserNotInPendingStatusException
 } from './exceptions/otp.exceptions'
-import { UserStatus } from 'src/common/constants'
+import { UserRole, UserStatus } from 'src/common/constants'
+import { User } from 'src/users/interface/users'
 
 
 
@@ -26,28 +27,13 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name)
 
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
-    private emailHelperService: EmailHelperService,
-    private otpService: OtpService,
-    private usersSavingsService: UsersSavingsService,
-    private databaseService: DatabaseService
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly emailHelperService: EmailHelperService,
+    private readonly otpService: OtpService,
+    private readonly usersSavingsService: UsersSavingsService,
+    private readonly databaseService: DatabaseService
   ) { }
-
-  private async validateUserUniqueness(email: string, username: string): Promise<void> {
-    const [existingUserByEmail, existingUserByUsername] = await Promise.all([
-      this.usersService.findByEmail(email),
-      this.usersService.findByUsername(username)
-    ]);
-
-    if (existingUserByEmail) {
-      throw new ConflictException('Email already exists');
-    }
-
-    if (existingUserByUsername) {
-      throw new ConflictException('Username already exists');
-    }
-  }
 
   async login(loginDto: LoginRequestDto) {
     const { identifier, password: inputPassword } = loginDto
@@ -56,42 +42,41 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException('User not found!')
     }
+
     if (!await compare(inputPassword, user.password)) {
       throw new UnauthorizedException('Invalid credentials!')
     }
 
-    // If user is still pending (not verified OTP), generate and send new OTP
+    let emailSent = false
+    let message = ""
     if (user.status === UserStatus.PENDING) {
       this.logger.log(`User ${user.email} is pending, generating new OTP for login`)
 
       const otpCode = this.otpService.generateOtp()
       const otpExpiresAt = this.otpService.getOtpExpirationTime()
 
-      // Update user with new OTP
       await this.usersService.update(user.id, {
-        otp_code: otpCode,
-        otp_expires_at: otpExpiresAt
+        otpCode,
+        otpExpiresAt
       })
 
-      // Send OTP email (don't block login if email fails)
-      const emailSent = await this.sendOtpVerificationEmail(user, otpCode)
+      emailSent = await this.sendOtpVerificationEmail(user, otpCode)
+      message = emailSent ? "Login success!. A new OTP has been sent to your email" : "Unable to send OTP!"
 
       this.logger.log(`New OTP generated for pending user ${user.email} - email sent: ${emailSent}`)
     }
 
-    const { password, ...result } = user
-    const tokens = this.generateTokens(result)
+    const tokens = this.generateTokens(user)
+    message = "Login success!"
 
-    // Add OTP status to response if user is pending
-    if (user.status === UserStatus.PENDING) {
-      return {
-        ...tokens,
-        otpSent: true,
-        message: 'Login successful. A new OTP has been sent to your email for verification.'
+    return {
+      ...tokens,
+      data: {
+        status: user.status,
+        emailSent: emailSent,
+        message: message
       }
     }
-
-    return tokens
   }
 
   async register(registerDto: RegisterDto) {
@@ -100,36 +85,28 @@ export class AuthService {
     }
 
     try {
-      await this.validateUserUniqueness(registerDto.email, registerDto.username);
-
       const hashedPassword = await hash(registerDto.password, 10);
+      const { passwordConfirmation, ...registerData } = registerDto
 
       const otpCode = this.otpService.generateOtp();
       const otpExpiresAt = this.otpService.getOtpExpirationTime();
 
       const user = await this.usersService.create({
-        email: registerDto.email,
+        ...registerData,
         password: hashedPassword,
-        fullname: registerDto.fullname,
-        username: registerDto.username,
-        phone_number: registerDto.phoneNumber,
-        address: registerDto.address,
         status: UserStatus.PENDING,
-        role_id: 'member',
-        otp_code: otpCode,
-        otp_expires_at: otpExpiresAt,
-        otp_verified: false
+        roleId: UserRole.MEMBER,
+        otpCode,
+        otpExpiresAt,
       });
 
       this.logger.log(`Registration trial: ${user.email}`);
       const emailSent = await this.sendOtpVerificationEmail(user, otpCode);
-
-      const userWithRole = await this.usersService.findByEmailWithRole(user.email);
-      const tokens = this.generateTokens(userWithRole);
+      const tokens = this.generateTokens(user);
 
       return {
         ...tokens,
-        user: {
+        data: {
           id: user.id,
           email: user.email,
           fullname: user.fullname,
@@ -152,7 +129,8 @@ export class AuthService {
       throw new InvalidOtpException();
     }
 
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findByIdIncludeOtp(userId);
+    console.log(user)
     if (!user) {
       throw new NotFoundException('User not found.');
     }
@@ -178,30 +156,23 @@ export class AuthService {
       throw new InvalidOtpException();
     }
 
-    // Use transaction to ensure data consistency
     const knex = this.databaseService.getKnex();
     const trx = await knex.transaction();
 
     try {
-      // 1. Update user status within transaction
-      const updatedUser = await this.usersService.updateWithTransaction(user.id, {
+      const updatedUser = await this.usersService.update(user.id, {
         status: UserStatus.WAITING_DEPOSIT,
-        otp_verified: true,
-        otp_code: null,
-        otp_expires_at: null
+        otpVerified: true,
+        otpCode: null,
+        otpExpiresAt: null
       }, trx);
 
       this.logger.log(`OTP verified successfully for user ${userId} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`)
 
-      // 2. Create principal savings record within the same transaction
-      await this.usersSavingsService.createPrincipalSavingsForUser(userId, trx)
+      await this.usersSavingsService.createPrincipalSavings(userId, trx)
       this.logger.log(`Principal savings created for user ${userId}`)
-
-      // 3. Commit transaction
       await trx.commit();
 
-      // 4. Send notifications (outside transaction as it's not critical for data consistency)
-      await this.sendRegistrationNotifications(updatedUser, UserStatus.WAITING_DEPOSIT);
 
       const userWithRole = await this.usersService.findById(user.id);
 
@@ -230,7 +201,6 @@ export class AuthService {
       throw new NotFoundException('User not found.');
     }
 
-    // Check if user is in pending status
     if (user.status !== UserStatus.PENDING) {
       throw new UserNotInPendingStatusException();
     }
@@ -243,8 +213,8 @@ export class AuthService {
     const otpExpiresAt = this.otpService.getOtpExpirationTime();
 
     await this.usersService.update(user.id, {
-      otp_code: otpCode,
-      otp_expires_at: otpExpiresAt
+      otpCode: otpCode,
+      otpExpiresAt: otpExpiresAt
     });
 
     const emailSent = await this.sendOtpVerificationEmail(user, otpCode);
@@ -263,12 +233,12 @@ export class AuthService {
     return this.generateTokens(user)
   }
 
-  private generateTokens(user: any) {
+  private generateTokens(user: User) {
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
       email: user.email,
-      role: user.role || 'member',
+      roleId: user.role_id || 'member',
       status: user.status || UserStatus.PENDING
     }
 
@@ -305,72 +275,5 @@ export class AuthService {
 
       return false;
     }
-  }
-
-  private async sendRegistrationNotifications(user: any, status: UserStatus): Promise<void> {
-    try {
-      const emailData: EmailData = {
-        template: NotificationTemplate.REGISTRATION_CONFIRMATION,
-        recipient: user.email,
-        data: {
-          fullname: user.fullname,
-          email: user.email,
-          username: user.username,
-          status: status,
-          depositInstructions: this.getDepositInstructions()
-        },
-        priority: 'high'
-      };
-
-      await this.emailHelperService.sendEmail(emailData);
-
-      this.logger.log(`Registration confirmation email sent successfully to ${user.email}`)
-
-      if (status === UserStatus.PENDING) {
-        await this.notifyAdministrators(user);
-      }
-    } catch (error) {
-      this.logger.error(`Failed to send registration confirmation email to ${user.email}:`, error)
-    }
-  }
-
-  private async notifyAdministrators(user: any): Promise<void> {
-    try {
-      const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@lumbungmesari.com'];
-
-      const adminNotifications: EmailData[] = adminEmails.map(adminEmail => ({
-        template: NotificationTemplate.ADMIN_NEW_REGISTRATION,
-        recipient: adminEmail.trim(),
-        data: {
-          fullname: user.fullname,
-          email: user.email,
-          username: user.username,
-          phone_number: user.phone_number,
-          address: user.address,
-          created_at: new Date().toLocaleDateString('id-ID'),
-          deposit_image_url: user.deposit_image_url
-        },
-        priority: 'high'
-      }));
-
-      await this.emailHelperService.sendBulkEmail(adminNotifications);
-
-      this.logger.log(`Admin notifications sent successfully to ${adminEmails.length} administrators for new user: ${user.email}`)
-    } catch (error) {
-      this.logger.error(`Failed to send admin notifications for new user ${user.email}:`, error)
-    }
-  }
-
-  private getDepositInstructions(): any {
-    return {
-      amount: 50000,
-      bank_details: {
-        bank_name: 'Bank BRI',
-        account_number: '1234567890',
-        account_name: 'Koperasi Lumbung Mesari'
-      },
-      cooperative_address: 'Jl. Merdeka No. 123, Jakarta Pusat, DKI Jakarta',
-      instructions: 'Silakan lakukan transfer sesuai nominal di atas dan upload bukti transfer melalui sistem.'
-    };
   }
 }

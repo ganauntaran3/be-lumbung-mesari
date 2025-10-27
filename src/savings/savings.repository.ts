@@ -575,12 +575,14 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
      */
     async updatePrincipalSavings(
         id: string,
-        updateData: UpdatePrincipalSavings
+        updateData: UpdatePrincipalSavings,
+        trx?: any
     ): Promise<PrincipalSavingsTable> {
         try {
             this.logger.debug(`Updating principal savings ${id} with data: ${JSON.stringify(updateData)}`)
 
-            const [result] = await this.knex('principal_savings')
+            const query = trx ? trx('principal_savings') : this.knex('principal_savings')
+            const [result] = await query
                 .where('id', id)
                 .update({
                     ...updateData,

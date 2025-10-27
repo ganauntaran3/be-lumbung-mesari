@@ -15,13 +15,14 @@ export class IncomesService {
     async createPrincipalSavingsIncome(
         userId: string,
         amount: number,
-        notes?: string
+        notes?: string,
+        trx?: any
     ): Promise<IncomeTable> {
         try {
             this.logger.log(`Creating principal savings income for user ${userId} with amount ${amount}`)
 
             // Find principal_savings category
-            const category = await this.incomesRepository.findCategoryByCode('principal_savings')
+            const category = await this.incomesRepository.findCategoryByCode('principal_savings', trx)
 
             if (!category) {
                 throw new NotFoundException('Income category "principal_savings" not found. Please run seed.')
@@ -32,7 +33,7 @@ export class IncomesService {
                 amount: amount.toString(),
                 user_id: userId,
                 notes: notes || 'Simpanan pokok dari anggota baru'
-            })
+            }, trx)
 
             this.logger.log(`Principal savings income created: ${income.id}`)
 

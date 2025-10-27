@@ -36,10 +36,12 @@ export class UsersSavingsService {
      * 
      * @param userId - ID of the user whose principal savings to approve
      * @param processedBy - ID of the admin who approved
+     * @param trx - Database transaction to ensure consistency
      */
     async approvePrincipalSavingsForUser(
         userId: string,
-        processedBy: string
+        processedBy: string,
+        trx: Knex.Transaction
     ): Promise<void> {
         this.logger.log(`Approving principal savings for user ${userId}`)
 
@@ -62,22 +64,26 @@ export class UsersSavingsService {
                 status: 'paid',
                 processed_by: processedBy,
                 processed_at: new Date()
-            }
+            },
+            trx
         )
 
         // 3. Create income
-        const amount = parseFloat(principalSavings.amount)
+        const amount = Number.parseFloat(principalSavings.amount)
         const income = await this.incomesService.createPrincipalSavingsIncome(
             userId,
             amount,
-            `Simpanan pokok dari ${principalSavings.user.fullname}`
+            `Simpanan pokok dari ${principalSavings.user.fullname}`,
+            trx
         )
 
         // 4. Create cashbook transaction
         await this.cashbookTransactionService.createIncomeTransaction(
             income.id,
             userId,
-            amount
+            amount,
+            undefined,
+            trx
         )
 
         this.logger.log(`Principal savings approved for user ${userId}`)
@@ -90,7 +96,7 @@ export class UsersSavingsService {
      * @param userId - ID of the user to create principal savings for
      * @param trx - Optional transaction object. If provided, operations will use this transaction
      */
-    async createPrincipalSavingsForUser(userId: string, trx?: Knex.Transaction): Promise<void> {
+    async createPrincipalSavings(userId: string, trx?: Knex.Transaction): Promise<void> {
         this.logger.log(`Creating principal savings for user ${userId}`)
 
         // 1. Calculate amount
@@ -150,7 +156,7 @@ export class UsersSavingsService {
         const amount = Math.floor(totalBalance / activeMemberCount)
         const minAmount = this.getMinimumAmount()
 
-        return amount < minAmount ? minAmount : amount
+        return Math.max(amount, minAmount)
     }
 
     /**

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Post, Param, Body, Req, InternalServerErrorException, Logger, HttpStatus } from '@nestjs/common'
+import { Controller, Get, Query, UseGuards, Post, Param, Body, InternalServerErrorException, Logger, HttpStatus } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiUnauthorizedResponse } from '@nestjs/swagger'
 import { UsersService } from './users.service'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
@@ -11,6 +11,7 @@ import { UsersPaginatedResponseDto } from './dto/users-response.dto'
 import { UserProfileResponseSchema } from 'src/auth/dto/profile-response.dto'
 import { TokenErrorSchemas } from 'src/common/schema/error-schema'
 import { UserRole } from 'src/common/constants'
+import { UserJWT } from './interface/users'
 
 @ApiTags('Users')
 @Controller('users')
@@ -18,19 +19,6 @@ export class UsersController {
   private readonly logger = new Logger(UsersController.name)
 
   constructor(private readonly usersService: UsersService) { }
-
-  private transformUserRecord(user: any): any {
-    const { phone_number, role_id, deposit_image_url, otp_verified, created_at, updated_at, ...otherData } = user
-    return {
-      ...otherData,
-      phoneNumber: phone_number,
-      roleId: role_id,
-      depositImageUrl: deposit_image_url,
-      otpVerified: otp_verified,
-      createdAt: created_at,
-      updatedAt: updated_at
-    }
-  }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -51,30 +39,9 @@ export class UsersController {
     description: 'Unauthorized - Expired token',
     schema: TokenErrorSchemas.expiredToken
   })
-  async getProfile(@CurrentUser() user: any) {
-    try {
-      const fullUser = await this.usersService.findById(user.id);
-
-      if (!fullUser) {
-        this.logger.error(`User not found for ID: ${user.id}`);
-        throw new InternalServerErrorException({
-          statusCode: 500,
-          message: 'User not found',
-          error: 'Internal Server Error'
-        });
-      }
-
-      const { password, otp_code, otp_expires_at, ...safeUserData } = fullUser;
-
-      return this.transformUserRecord(safeUserData);
-    } catch (error) {
-      this.logger.error('Unexpected profile retrieval error:', error);
-      throw new InternalServerErrorException({
-        statusCode: 500,
-        message: 'An unexpected error occurred while retrieving profile',
-        error: 'Internal Server Error'
-      });
-    }
+  async getProfile(@CurrentUser() user: UserJWT) {
+    const fullUser = await this.usersService.findById(user.id);
+    return fullUser
   }
 
   @Get()
@@ -98,13 +65,7 @@ export class UsersController {
     @Query() queryParams: UsersQueryDto
   ) {
     const result = await this.usersService.findAllWithPagination(queryParams)
-
-    const transformedUsers = result.data.map(user => this.transformUserRecord(user))
-
-    return {
-      ...result,
-      data: transformedUsers
-    }
+    return result
   }
 
   @Post(':id/approve')

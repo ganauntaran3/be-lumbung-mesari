@@ -3,11 +3,9 @@ import {
   Controller,
   Post,
   UseGuards,
-  Request,
   HttpException,
   HttpStatus,
   BadRequestException,
-  ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common'
 import {
@@ -34,11 +32,13 @@ import {
   InternalServerErrorResponseSchema
 } from '../common/schema/error-schema'
 import { JwtAuthGuard } from './guards/auth.guard'
+import { CurrentUser } from './decorators/current-user.decorator'
+import { UserJWT } from 'src/users/interface/users'
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
   @ApiOperation({
@@ -150,12 +150,7 @@ export class AuthController {
     }
   })
   async register(@Body() registerDto: RegisterDto) {
-    try {
-      const result = await this.authService.register(registerDto);
-      return result;
-    } catch (error) {
-      throw error
-    }
+    return await this.authService.register(registerDto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -193,10 +188,10 @@ export class AuthController {
     description: 'OTP verification data',
     type: VerifyOtpDto,
   })
-  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto, @Request() req: { user: any }) {
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto, @CurrentUser() user: UserJWT) {
     try {
       const result = await this.authService.verifyOtp(
-        req.user.id,
+        user.id,
         verifyOtpDto.otpCode,
       );
 
@@ -239,11 +234,11 @@ export class AuthController {
     description: 'User not found',
     schema: AuthErrorSchemas.userNotFound
   })
-  async resendOtp(@Request() req: { user: any }) {
+  async resendOtp(@CurrentUser() user: UserJWT) {
     try {
 
       const result = await this.authService.resendOtp(
-        req.user.id,
+        user.id,
       );
 
       return result;
@@ -293,9 +288,9 @@ export class AuthController {
     description: 'Unauthorized - Invalid or expired token',
     schema: AuthErrorSchemas.invalidCredentials
   })
-  async refresh(@Request() req: { user: any }) {
+  async refresh(@CurrentUser() user: UserJWT) {
     try {
-      const result = await this.authService.refreshToken(req.user);
+      const result = await this.authService.refreshToken(user);
       return result;
     } catch (error) {
       if (error instanceof HttpException) {

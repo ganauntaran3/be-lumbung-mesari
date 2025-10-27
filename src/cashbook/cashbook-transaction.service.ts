@@ -32,7 +32,8 @@ export class CashbookTransactionService {
         incomeId: string,
         userId: string,
         amount: number,
-        txnDate?: Date
+        txnDate?: Date,
+        trx?: any
     ): Promise<CashbookTransactionTable> {
         try {
             this.logger.log(`Creating income transaction: ${incomeId}, amount: ${amount}`)
@@ -43,7 +44,7 @@ export class CashbookTransactionService {
                 amount: amount.toString(),
                 income_id: incomeId,
                 user_id: userId
-            })
+            }, trx)
 
             this.logger.log(`Income transaction created: ${transaction.id}`)
             return transaction

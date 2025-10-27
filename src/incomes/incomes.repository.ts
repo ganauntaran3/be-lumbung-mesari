@@ -15,12 +15,14 @@ export class IncomesRepository extends BaseRepository<IncomeTable> {
      * Create an income record
      */
     async createIncome(
-        data: Omit<IncomeTable, 'id' | 'created_at'>
+        data: Omit<IncomeTable, 'id' | 'created_at'>,
+        trx?: any
     ): Promise<IncomeTable> {
         try {
             this.logger.debug(`Creating income record for category ${data.category_id}`)
 
-            const [result] = await this.knex('incomes')
+            const query = trx ? trx('incomes') : this.knex('incomes')
+            const [result] = await query
                 .insert({
                     ...data,
                     created_at: new Date()
@@ -38,9 +40,10 @@ export class IncomesRepository extends BaseRepository<IncomeTable> {
     /**
      * Find income category by code
      */
-    async findCategoryByCode(code: string): Promise<IncomeCategoryTable | null> {
+    async findCategoryByCode(code: string, trx?: any): Promise<IncomeCategoryTable | null> {
         try {
-            const result = await this.knex('income_categories')
+            const query = trx ? trx('income_categories') : this.knex('income_categories')
+            const result = await query
                 .where('code', code)
                 .first()
 
