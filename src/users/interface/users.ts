@@ -16,6 +16,14 @@ export type User = {
   updated_at: Date
 }
 
+export type UserDataToken = {
+  id: string
+  username: string
+  email: string
+  status: string
+  role_id: string
+}
+
 export type UpdateUserDto = {
   email?: string
   fullname?: string
@@ -43,6 +51,38 @@ export type CreatedUser = {
   otpExpiresAt: Date
 }
 
+export type UserDbFormat = {
+  id: string
+  email: string
+  fullname: string
+  username: string
+  phone_number: string
+  address: string
+  status: string
+  role_id: string
+  otp_code?: string | null
+  otp_expires_at?: Date | null
+  otp_verified?: boolean
+  created_at?: Date
+  updated_at?: Date
+}
+
+export type UserResponseFormat = {
+  id: string
+  email: string
+  fullname: string
+  username: string
+  phoneNumber: string
+  address: string
+  status: string
+  roleId: string
+  otpCode?: string | null
+  otpExpiresAt?: Date | null
+  otpVerified?: boolean
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 export interface UpdateUserEntity {
   email?: string
   fullname?: string
@@ -53,6 +93,7 @@ export interface UpdateUserEntity {
   status?: string
   role_id?: string
   otp_code?: string | null
+  otp_verified?: boolean
   otp_expires_at?: Date | null
 }
 

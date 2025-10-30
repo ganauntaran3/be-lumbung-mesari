@@ -1,12 +1,16 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
+import { Knex } from 'knex'
+
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
-import { UpdateUserEntity, User } from './interface/users'
 import { PaginationOptions, PaginationResult } from '../interface/pagination'
-import { Knex } from 'knex'
+
+import { UpdateUserEntity, User } from './interface/users'
 
 @Injectable()
 export class UsersRepository extends BaseRepository<User> {
+  private readonly logger = new Logger(UsersRepository.name)
+
   constructor(protected readonly databaseService: DatabaseService) {
     super(databaseService, 'users')
   }
@@ -38,7 +42,7 @@ export class UsersRepository extends BaseRepository<User> {
         'users.otp_verified',
         'users.created_at',
         'users.updated_at',
-        'roles.id as role',
+        'roles.id as role'
       ])
       .where('users.email', email)
       .first()
@@ -66,7 +70,7 @@ export class UsersRepository extends BaseRepository<User> {
         'users.otp_expires_at',
         'users.otp_verified',
         'users.created_at',
-        'users.updated_at',
+        'users.updated_at'
       ])
       .where('users.email', identifier)
       .orWhere('users.username', identifier)
@@ -82,7 +86,11 @@ export class UsersRepository extends BaseRepository<User> {
   }
 
   async findAllWithRoles(
-    options: PaginationOptions & { role?: string; status?: string; search?: string } = {}
+    options: PaginationOptions & {
+      role?: string
+      status?: string
+      search?: string
+    } = {}
   ): Promise<PaginationResult<User>> {
     const {
       role,
@@ -91,7 +99,7 @@ export class UsersRepository extends BaseRepository<User> {
       page = 1,
       limit = 10,
       sortBy = 'created_at',
-      sortOrder = 'desc',
+      sortOrder = 'desc'
     } = options
     try {
       const offset = (page - 1) * limit
@@ -118,19 +126,18 @@ export class UsersRepository extends BaseRepository<User> {
       const [{ count }] = await countQuery.count('users.id as count')
       const totalData = Number.parseInt(count as string, 10)
 
-      const dataQuery = query
-        .select([
-          'users.id',
-          'users.email',
-          'users.fullname',
-          'users.username',
-          'users.phone_number',
-          'users.address',
-          'users.status',
-          'users.deposit_image_url',
-          'users.created_at',
-          'users.updated_at',
-        ])
+      const dataQuery = query.select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.phone_number',
+        'users.address',
+        'users.status',
+        'users.deposit_image_url',
+        'users.created_at',
+        'users.updated_at'
+      ])
 
       const sortColumn = sortBy.includes('.') ? sortBy : `users.${sortBy}`
       const data = await dataQuery
@@ -144,9 +151,8 @@ export class UsersRepository extends BaseRepository<User> {
         data: data,
         ...pagination
       }
-
     } catch (error) {
-      console.error('Error find all:', error)
+      this.logger.error(error)
       throw error
     }
   }
@@ -165,7 +171,7 @@ export class UsersRepository extends BaseRepository<User> {
         'users.otp_code',
         'users.otp_verified',
         'users.created_at',
-        'users.updated_at',
+        'users.updated_at'
       ])
       .where('users.id', id)
       .first()
@@ -173,7 +179,11 @@ export class UsersRepository extends BaseRepository<User> {
     return result as User | undefined
   }
 
-  async updateUser(id: string, data: UpdateUserEntity, trx?: Knex.Transaction): Promise<User> {
+  async updateUser(
+    id: string,
+    data: UpdateUserEntity,
+    trx?: Knex.Transaction
+  ): Promise<User> {
     if (trx) {
       const [result] = await trx('users')
         .where('id', id)
@@ -189,7 +199,10 @@ export class UsersRepository extends BaseRepository<User> {
 
       return result as User
     } else {
-      const result = await this.updateById(id, { ...data, updated_at: new Date() } as User)
+      const result = await this.updateById(id, {
+        ...data,
+        updated_at: new Date()
+      } as User)
 
       if (!result) {
         throw new Error(`User with id ${id} not found`)
@@ -199,7 +212,11 @@ export class UsersRepository extends BaseRepository<User> {
     }
   }
 
-  async updateStatus(id: string, status: string, trx?: Knex.Transaction): Promise<User> {
+  async updateStatus(
+    id: string,
+    status: string,
+    trx?: Knex.Transaction
+  ): Promise<User> {
     if (trx) {
       const [result] = await trx('users')
         .where('id', id)
@@ -234,6 +251,6 @@ export class UsersRepository extends BaseRepository<User> {
       .where('status', 'active')
       .select('id')
 
-    return results.map(row => row.id)
+    return results.map((row) => row.id)
   }
 }

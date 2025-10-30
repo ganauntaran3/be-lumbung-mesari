@@ -1,6 +1,12 @@
 import { Knex } from 'knex'
 
-const userStatus = ['pending', 'waiting_deposit', 'active', 'inactive', 'rejected']
+const userStatus = [
+  'pending',
+  'waiting_deposit',
+  'active',
+  'inactive',
+  'rejected'
+]
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('users', (table) => {

@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger'
 
 export class ResendOtpResponseDto {
-    @ApiProperty({
-        example: 'New OTP has been sent to your email.',
-        description: 'Success message'
-    })
-    message!: string
+  @ApiProperty({
+    example: 'New OTP has been sent to your email.',
+    description: 'Success message'
+  })
+  message!: string
 
-    @ApiProperty({
-        example: true,
-        description: 'Indicates OTP was sent successfully'
-    })
-    otpSent!: boolean
+  @ApiProperty({
+    example: true,
+    description: 'Indicates OTP was sent successfully'
+  })
+  otpSent!: boolean
 }

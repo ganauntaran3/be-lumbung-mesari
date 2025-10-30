@@ -1,7 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing'
 import { ConflictException } from '@nestjs/common'
-import { UsersService } from './users.service'
+import { Test, TestingModule } from '@nestjs/testing'
+
 import { UsersRepository } from './users.repository'
+import { UsersService } from './users.service'
 
 describe('UsersService', () => {
   let service: UsersService
@@ -13,7 +14,7 @@ describe('UsersService', () => {
     findByEmail: jest.fn(),
     findByEmailWithRole: jest.fn(),
     findByIdentifierWithRole: jest.fn(),
-    findAllWithRoles: jest.fn(),
+    findAllWithRoles: jest.fn()
   }
 
   const mockUser = {
@@ -159,8 +160,8 @@ describe('UsersService', () => {
           role_id: 'role1',
           created_at: new Date(),
           updated_at: new Date(),
-          role_name: 'member',
-        },
+          role_name: 'member'
+        }
       ],
       pagination: {
         page: 1,
@@ -168,8 +169,8 @@ describe('UsersService', () => {
         totalData: 1,
         totalPage: 1,
         next: false,
-        prev: false,
-      },
+        prev: false
+      }
     }
 
     const expectedServiceResponse = {
@@ -185,19 +186,21 @@ describe('UsersService', () => {
           role_id: 'role1',
           created_at: mockPaginatedResponse.data[0].created_at,
           updated_at: mockPaginatedResponse.data[0].updated_at,
-          role_name: 'member',
-        },
+          role_name: 'member'
+        }
       ],
       page: 1,
       limit: 10,
       totalData: 1,
       totalPage: 1,
       next: false,
-      prev: false,
+      prev: false
     }
 
     it('should return flattened paginated users with default options', async () => {
-      mockUsersRepository.findAllWithRoles.mockResolvedValue(mockPaginatedResponse)
+      mockUsersRepository.findAllWithRoles.mockResolvedValue(
+        mockPaginatedResponse
+      )
 
       const result = await service.findAllWithPagination()
 
@@ -211,7 +214,7 @@ describe('UsersService', () => {
         limit: 5,
         sortBy: 'email',
         sortOrder: 'asc' as const,
-        role: 'admin',
+        role: 'admin'
       }
 
       const customMockResponse = {
@@ -222,8 +225,8 @@ describe('UsersService', () => {
           totalData: 15,
           totalPage: 3,
           next: true,
-          prev: true,
-        },
+          prev: true
+        }
       }
 
       const expectedCustomResponse = {
@@ -233,7 +236,7 @@ describe('UsersService', () => {
         totalData: 15,
         totalPage: 3,
         next: true,
-        prev: true,
+        prev: true
       }
 
       mockUsersRepository.findAllWithRoles.mockResolvedValue(customMockResponse)
@@ -253,8 +256,8 @@ describe('UsersService', () => {
           totalData: 0,
           totalPage: 0,
           next: false,
-          prev: false,
-        },
+          prev: false
+        }
       }
 
       const expectedEmptyResponse = {
@@ -264,7 +267,7 @@ describe('UsersService', () => {
         totalData: 0,
         totalPage: 0,
         next: false,
-        prev: false,
+        prev: false
       }
 
       mockUsersRepository.findAllWithRoles.mockResolvedValue(emptyMockResponse)
@@ -277,7 +280,9 @@ describe('UsersService', () => {
     it('should pass role filter to repository', async () => {
       const options = { role: 'member' }
 
-      mockUsersRepository.findAllWithRoles.mockResolvedValue(mockPaginatedResponse)
+      mockUsersRepository.findAllWithRoles.mockResolvedValue(
+        mockPaginatedResponse
+      )
 
       await service.findAllWithPagination(options)
 

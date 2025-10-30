@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEmail, IsNotEmpty, IsString, MinLength, Matches, IsOptional } from 'class-validator'
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  Matches,
+  IsOptional
+} from 'class-validator'
 
 export class RegisterDto {
   @ApiProperty({
@@ -14,14 +21,17 @@ export class RegisterDto {
 
   @ApiProperty({
     example: 'Password123!',
-    description: 'User password (minimum 8 characters, must contain uppercase letter)',
+    description:
+      'User password (minimum 8 characters, must contain uppercase letter)',
     type: String,
     minLength: 8,
     required: true
   })
   @IsString({ message: 'Password must be a string' })
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  @Matches(/^(?=.*[A-Z])/, { message: 'Password must contain at least one uppercase letter' })
+  @Matches(/^(?=.*[A-Z])/, {
+    message: 'Password must contain at least one uppercase letter'
+  })
   @IsNotEmpty({ message: 'Password is required' })
   password!: string
 
@@ -54,19 +64,23 @@ export class RegisterDto {
   })
   @IsString({ message: 'Username must be a string' })
   @MinLength(3, { message: 'Username must be at least 3 characters long' })
-  @Matches(/^[a-zA-Z0-9]+$/, { message: 'Username must contain only letters and numbers' })
+  @Matches(/^[a-zA-Z0-9]+$/, {
+    message: 'Username must contain only letters and numbers'
+  })
   @IsNotEmpty({ message: 'Username is required' })
   username!: string
 
   @ApiProperty({
     example: '081234567890',
-    description: 'Indonesian phone number (format: 08xxxxxxxxx or +628xxxxxxxxx)',
+    description:
+      'Indonesian phone number (format: 08xxxxxxxxx or +628xxxxxxxxx)',
     type: String,
     required: true
   })
   @IsString({ message: 'Phone number must be a string' })
   @Matches(/^(\+62|62|0)8[1-9][0-9]{6,9}$/, {
-    message: 'Please provide a valid Indonesian phone number (e.g., 081234567890 or +6281234567890)'
+    message:
+      'Please provide a valid Indonesian phone number (e.g., 081234567890 or +6281234567890)'
   })
   @IsNotEmpty({ message: 'Phone number is required' })
   phoneNumber!: string
@@ -81,8 +95,6 @@ export class RegisterDto {
   @MinLength(10, { message: 'Address must be at least 10 characters long' })
   @IsNotEmpty({ message: 'Address is required' })
   address!: string
-
-
 }
 
 class TokenDto {
@@ -114,7 +126,8 @@ export class RegisterResponseDto {
       username: 'johndoe',
       status: 'pending'
     },
-    description: 'User information after registration (Step 1). Status is "pending" until OTP verification.'
+    description:
+      'User information after registration (Step 1). Status is "pending" until OTP verification.'
   })
   user!: {
     id: string
@@ -125,7 +138,8 @@ export class RegisterResponseDto {
   }
 
   @ApiProperty({
-    example: 'Registration successful. Please check your email for OTP verification code.',
+    example:
+      'Registration successful. Please check your email for OTP verification code.',
     description: 'Success message with next steps for the user'
   })
   message!: string

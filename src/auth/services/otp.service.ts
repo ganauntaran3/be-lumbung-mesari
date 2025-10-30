@@ -3,21 +3,21 @@ import { randomInt } from 'node:crypto'
 
 @Injectable()
 export class OtpService {
-    generateOtp(): string {
-        return randomInt(100000, 999999).toString()
-    }
+  generateOtp(): string {
+    return randomInt(100000, 999999).toString()
+  }
 
-    getOtpExpirationTime(): Date {
-        const expirationTime = new Date()
-        expirationTime.setMinutes(expirationTime.getMinutes() + 5)
-        return expirationTime
-    }
+  getOtpExpirationTime(): Date {
+    const expirationTime = new Date()
+    expirationTime.setMinutes(expirationTime.getMinutes() + 5)
+    return expirationTime
+  }
 
-    isOtpExpired(expiresAt: Date): boolean {
-        return new Date() > expiresAt
-    }
+  isOtpExpired(expiresAt: Date): boolean {
+    return new Date() > expiresAt
+  }
 
-    isValidOtpFormat(otp: string): boolean {
-        return /^\d{6}$/.test(otp)
-    }
+  isValidOtpFormat(otp: string): boolean {
+    return /^\d{6}$/.test(otp)
+  }
 }

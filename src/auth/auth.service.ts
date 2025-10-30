@@ -1,26 +1,35 @@
-import { Injectable, BadRequestException, NotFoundException, Logger, UnauthorizedException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { compare, hash } from 'bcrypt'
+
+import { UserRole, UserStatus } from '../common/constants'
+import { DatabaseService } from '../database/database.service'
+import { JwtPayload } from '../interface/jwt'
+import {
+  EmailData,
+  EmailHelperService,
+  NotificationTemplate
+} from '../notifications/email/email-helper.service'
+import { UserDataToken } from '../users/interface/users'
 import { UsersService } from '../users/users.service'
+import { UsersSavingsService } from '../users-savings/users-savings.service'
+
 import { LoginRequestDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
-import { JwtPayload } from '../interface/jwt'
-import { EmailHelperService, NotificationTemplate, EmailData } from '../notifications/email/email-helper.service'
-import { OtpService } from './services/otp.service'
-import { UsersSavingsService } from '../users-savings/users-savings.service'
-import { DatabaseService } from '../database/database.service'
-
 import {
-  OtpExpiredException,
   InvalidOtpException,
-  OtpAlreadyVerifiedException,
   NoOtpFoundException,
+  OtpAlreadyVerifiedException,
+  OtpExpiredException,
   UserNotInPendingStatusException
 } from './exceptions/otp.exceptions'
-import { UserRole, UserStatus } from 'src/common/constants'
-import { User } from 'src/users/interface/users'
-
-
+import { OtpService } from './services/otp.service'
 
 @Injectable()
 export class AuthService {
@@ -33,7 +42,7 @@ export class AuthService {
     private readonly otpService: OtpService,
     private readonly usersSavingsService: UsersSavingsService,
     private readonly databaseService: DatabaseService
-  ) { }
+  ) {}
 
   async login(loginDto: LoginRequestDto) {
     const { identifier, password: inputPassword } = loginDto
@@ -43,14 +52,16 @@ export class AuthService {
       throw new NotFoundException('User not found!')
     }
 
-    if (!await compare(inputPassword, user.password)) {
+    if (!(await compare(inputPassword, user.password))) {
       throw new UnauthorizedException('Invalid credentials!')
     }
 
     let emailSent = false
-    let message = ""
+    let message = ''
     if (user.status === UserStatus.PENDING) {
-      this.logger.log(`User ${user.email} is pending, generating new OTP for login`)
+      this.logger.log(
+        `User ${user.email} is pending, generating new OTP for login`
+      )
 
       const otpCode = this.otpService.generateOtp()
       const otpExpiresAt = this.otpService.getOtpExpirationTime()
@@ -61,13 +72,19 @@ export class AuthService {
       })
 
       emailSent = await this.sendOtpVerificationEmail(user, otpCode)
-      message = emailSent ? "Login success!. A new OTP has been sent to your email" : "Unable to send OTP!"
+      message = emailSent
+        ? 'Login success!. A new OTP has been sent to your email'
+        : 'Unable to send OTP!'
 
-      this.logger.log(`New OTP generated for pending user ${user.email} - email sent: ${emailSent}`)
+      this.logger.log(
+        `New OTP generated for pending user ${user.email} - email sent: ${emailSent}`
+      )
+    } else {
+      this.logger.log(`Logged In: ${user.email}`)
+      message = 'Login success!'
     }
 
     const tokens = this.generateTokens(user)
-    message = "Login success!"
 
     return {
       ...tokens,
@@ -81,15 +98,15 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     if (registerDto.password !== registerDto.passwordConfirmation) {
-      throw new BadRequestException('Password confirmation does not match');
+      throw new BadRequestException('Password confirmation does not match')
     }
 
     try {
-      const hashedPassword = await hash(registerDto.password, 10);
+      const hashedPassword = await hash(registerDto.password, 10)
       const { passwordConfirmation, ...registerData } = registerDto
 
-      const otpCode = this.otpService.generateOtp();
-      const otpExpiresAt = this.otpService.getOtpExpirationTime();
+      const otpCode = this.otpService.generateOtp()
+      const otpExpiresAt = this.otpService.getOtpExpirationTime()
 
       const user = await this.usersService.create({
         ...registerData,
@@ -97,12 +114,12 @@ export class AuthService {
         status: UserStatus.PENDING,
         roleId: UserRole.MEMBER,
         otpCode,
-        otpExpiresAt,
-      });
+        otpExpiresAt
+      })
 
-      this.logger.log(`Registration trial: ${user.email}`);
-      const emailSent = await this.sendOtpVerificationEmail(user, otpCode);
-      const tokens = this.generateTokens(user);
+      this.logger.log(`Registration trial: ${user.email}`)
+      const emailSent = await this.sendOtpVerificationEmail(user, otpCode)
+      const tokens = this.generateTokens(user)
 
       return {
         ...tokens,
@@ -117,67 +134,85 @@ export class AuthService {
           ? 'Registration successful. Please check your email for OTP verification code.'
           : 'Registration successful. However, we could not send the OTP email. Please try resending the OTP.',
         otpSent: emailSent
-      };
+      }
     } catch (error) {
-      this.logger.error(`Registration failed for ${registerDto.email} (${registerDto.username}): ${error instanceof Error ? error.message : 'Unknown error'}`)
-      throw error;
+      this.logger.error(
+        `Registration failed for ${registerDto.email} (${registerDto.username}): ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+      throw error
     }
   }
 
   async verifyOtp(userId: string, otpCode: string) {
     if (!this.otpService.isValidOtpFormat(otpCode)) {
-      throw new InvalidOtpException();
+      throw new InvalidOtpException()
     }
 
-    const user = await this.usersService.findByIdIncludeOtp(userId);
-    console.log(user)
+    const user = await this.usersService.findByIdIncludeOtp(userId)
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException('User not found.')
     }
 
     if (user.status !== UserStatus.PENDING) {
-      throw new UserNotInPendingStatusException();
+      throw new UserNotInPendingStatusException()
     }
 
     if (user.otp_verified) {
-      throw new OtpAlreadyVerifiedException();
+      throw new OtpAlreadyVerifiedException()
     }
 
     if (!user.otp_code) {
-      throw new NoOtpFoundException();
+      throw new NoOtpFoundException()
     }
 
-    if (user.otp_expires_at && this.otpService.isOtpExpired(new Date(user.otp_expires_at))) {
-      throw new OtpExpiredException();
+    if (
+      user.otp_expires_at &&
+      this.otpService.isOtpExpired(new Date(user.otp_expires_at))
+    ) {
+      throw new OtpExpiredException()
     }
 
     if (user.otp_code !== otpCode) {
-      this.logger.warn(`Failed OTP verification attempt for user ${userId} - invalid code provided`)
-      throw new InvalidOtpException();
+      this.logger.warn(
+        `Failed OTP verification attempt for user ${userId} - invalid code provided`
+      )
+      throw new InvalidOtpException()
     }
 
-    const knex = this.databaseService.getKnex();
-    const trx = await knex.transaction();
+    const knex = this.databaseService.getKnex()
+    const trx = await knex.transaction()
 
     try {
-      const updatedUser = await this.usersService.update(user.id, {
-        status: UserStatus.WAITING_DEPOSIT,
-        otpVerified: true,
-        otpCode: null,
-        otpExpiresAt: null
-      }, trx);
+      const updatedUser = await this.usersService.update(
+        user.id,
+        {
+          status: UserStatus.WAITING_DEPOSIT,
+          otpVerified: true,
+          otpCode: null,
+          otpExpiresAt: null
+        },
+        trx
+      )
 
-      this.logger.log(`OTP verified successfully for user ${userId} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`)
+      this.logger.log(
+        `OTP verified successfully for user ${userId} - user status changed from ${UserStatus.PENDING} to ${UserStatus.WAITING_DEPOSIT}`
+      )
 
       await this.usersSavingsService.createPrincipalSavings(userId, trx)
       this.logger.log(`Principal savings created for user ${userId}`)
-      await trx.commit();
+      await trx.commit()
 
-
-      const userWithRole = await this.usersService.findById(user.id);
+      const userData = {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        fullname: updatedUser.fullname,
+        username: updatedUser.username,
+        status: updatedUser.status,
+        role_id: updatedUser.role_id
+      }
 
       return {
-        ...this.generateTokens(userWithRole),
+        ...this.generateTokens(userData),
         user: {
           id: updatedUser.id,
           email: updatedUser.email,
@@ -185,55 +220,61 @@ export class AuthService {
           username: updatedUser.username,
           status: updatedUser.status
         },
-        message: 'OTP verified successfully. Please submit your deposit proof to complete registration.'
-      };
+        message:
+          'OTP verified successfully. Please submit your deposit proof to complete registration.'
+      }
     } catch (error) {
       // Rollback transaction on any error
-      await trx.rollback();
-      this.logger.error(`Transaction failed during OTP verification for user ${userId}:`, error)
-      throw new BadRequestException('Failed to verify OTP. Please try again.');
+      await trx.rollback()
+      this.logger.error(
+        `Transaction failed during OTP verification for user ${userId}:`,
+        error
+      )
+      throw new BadRequestException('Failed to verify OTP. Please try again.')
     }
   }
 
   async resendOtp(userId: string) {
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findByIdIncludeOtp(userId)
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException('User not found.')
     }
 
     if (user.status !== UserStatus.PENDING) {
-      throw new UserNotInPendingStatusException();
+      throw new UserNotInPendingStatusException()
     }
 
     if (user.otp_verified) {
-      throw new OtpAlreadyVerifiedException();
+      throw new OtpAlreadyVerifiedException()
     }
 
-    const otpCode = this.otpService.generateOtp();
-    const otpExpiresAt = this.otpService.getOtpExpirationTime();
+    const otpCode = this.otpService.generateOtp()
+    const otpExpiresAt = this.otpService.getOtpExpirationTime()
 
     await this.usersService.update(user.id, {
       otpCode: otpCode,
       otpExpiresAt: otpExpiresAt
-    });
+    })
 
-    const emailSent = await this.sendOtpVerificationEmail(user, otpCode);
+    const emailSent = await this.sendOtpVerificationEmail(user, otpCode)
 
-    this.logger.log(`OTP resent for user ${userId} - ${emailSent ? 'email sent successfully' : 'email sending failed'}`)
+    this.logger.log(
+      `OTP resent for user ${userId} - ${emailSent ? 'email sent successfully' : 'email sending failed'}`
+    )
 
     return {
       message: emailSent
         ? 'New OTP has been sent to your email.'
         : 'OTP has been generated but could not be sent via email. Please contact support.',
       otpSent: emailSent
-    };
+    }
   }
 
   async refreshToken(user: any) {
     return this.generateTokens(user)
   }
 
-  private generateTokens(user: User) {
+  private generateTokens(user: UserDataToken) {
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
@@ -246,13 +287,18 @@ export class AuthService {
 
     return {
       token: {
-        accessToken: this.jwtService.sign(payload, { expiresIn: accessTokenExpiry }),
+        accessToken: this.jwtService.sign(payload, {
+          expiresIn: accessTokenExpiry
+        }),
         refreshToken: this.jwtService.sign(payload, { expiresIn: '1d' })
       }
     }
   }
 
-  private async sendOtpVerificationEmail(user: any, otpCode: string): Promise<boolean> {
+  private async sendOtpVerificationEmail(
+    user: any,
+    otpCode: string
+  ): Promise<boolean> {
     try {
       const emailData: EmailData = {
         template: NotificationTemplate.OTP_VERIFICATION,
@@ -263,17 +309,21 @@ export class AuthService {
           otp_code: otpCode
         },
         priority: 'high'
-      };
+      }
 
-      await this.emailHelperService.sendEmail(emailData);
+      await this.emailHelperService.sendEmail(emailData)
 
-      this.logger.log(`OTP verification email sent successfully to ${user.email}`)
-      return true;
+      this.logger.log(
+        `OTP verification email sent successfully to ${user.email}`
+      )
+      return true
     } catch (error) {
-      this.logger.error(`Failed to send OTP email to ${user.email}:`, error);
-      this.logger.warn(`OTP email delivery failed for ${user.email} - user can request resend`)
+      this.logger.error(`Failed to send OTP email to ${user.email}:`, error)
+      this.logger.warn(
+        `OTP email delivery failed for ${user.email} - user can request resend`
+      )
 
-      return false;
+      return false
     }
   }
 }

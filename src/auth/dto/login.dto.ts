@@ -39,21 +39,21 @@ export class TokenDto {
 
 export class LoginDataResponse {
   @ApiProperty({
-    description: 'Indicates if OTP was sent (only for pending users)',
+    description: 'Indicates if OTP was sent (only for pending users)'
   })
   status!: string
 
   @ApiProperty({
-    description: 'Indicates if OTP was sent (only for pending users)',
+    description: 'Indicates if OTP was sent (only for pending users)'
   })
   emailSent!: boolean
 
   @ApiProperty({
     description: 'Additional message.',
-    example: 'Login successful. A new OTP has been sent to your email for verification.',
+    example:
+      'Login successful. A new OTP has been sent to your email for verification.'
   })
   message!: string
-
 }
 
 export class LoginResponseDto {

@@ -25,4 +25,4 @@ import { CashbookModule } from './cashbook/cashbook.module'
   controllers: [AppController],
   providers: [AppService]
 })
-export class AppModule { }
+export class AppModule {}
