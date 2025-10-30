@@ -4,8 +4,9 @@ import {
   OnModuleInit,
   Logger
 } from '@nestjs/common'
-import { Knex, knex } from 'knex'
 import { ConfigService } from '@nestjs/config'
+import { Knex, knex } from 'knex'
+
 import { getDatabaseConfig } from './database.config'
 
 @Injectable()

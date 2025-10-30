@@ -3,12 +3,10 @@ import {
   Controller,
   Post,
   UseGuards,
-  Request,
   HttpException,
   HttpStatus,
   BadRequestException,
-  ConflictException,
-  InternalServerErrorException,
+  InternalServerErrorException
 } from '@nestjs/common'
 import {
   ApiOperation,
@@ -20,25 +18,29 @@ import {
   ApiInternalServerErrorResponse,
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
-  ApiGoneResponse,
+  ApiGoneResponse
 } from '@nestjs/swagger'
-import { AuthService } from './auth.service'
-import { LoginRequestDto, LoginResponseDto } from './dto/login.dto'
-import { RegisterDto, RegisterResponseDto } from './dto/register.dto'
-import { VerifyOtpDto, VerifyOtpResponseDto } from './dto/verify-otp.dto'
-import { ResendOtpResponseDto } from './dto/resend-otp.dto'
+import { UserJWT } from 'src/users/interface/users'
+
 import {
   AuthErrorSchemas,
   OtpBadRequestSchemas,
   TokenErrorSchemas,
   InternalServerErrorResponseSchema
 } from '../common/schema/error-schema'
+
+import { AuthService } from './auth.service'
+import { CurrentUser } from './decorators/current-user.decorator'
+import { LoginRequestDto, LoginResponseDto } from './dto/login.dto'
+import { RegisterDto, RegisterResponseDto } from './dto/register.dto'
+import { ResendOtpResponseDto } from './dto/resend-otp.dto'
+import { VerifyOtpDto, VerifyOtpResponseDto } from './dto/verify-otp.dto'
 import { JwtAuthGuard } from './guards/auth.guard'
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('login')
   @ApiOperation({
@@ -53,7 +55,7 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Successfully logged in',
-    type: LoginResponseDto,
+    type: LoginResponseDto
   })
   @ApiUnauthorizedResponse({
     description: 'Invalid credentials',
@@ -85,27 +87,28 @@ export class AuthController {
   })
   async login(@Body() loginDto: LoginRequestDto) {
     try {
-      const result = await this.authService.login(loginDto);
-      return result;
+      const result = await this.authService.login(loginDto)
+      return result
     } catch (error) {
       if (error instanceof HttpException) {
-        throw error;
+        throw error
       }
 
-      console.error('Unexpected login error:', error);
+      console.error('Unexpected login error:', error)
       throw new InternalServerErrorException({
         statusCode: 500,
         message: 'An unexpected error occurred during login',
         error: 'Internal Server Error'
-      });
+      })
     }
   }
 
   @Post('register')
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'User registered successfully, OTP sent to email for verification',
-    type: RegisterResponseDto,
+    description:
+      'User registered successfully, OTP sent to email for verification',
+    type: RegisterResponseDto
   })
   @ApiBadRequestResponse({
     description: 'Validation failed or invalid input data',
@@ -150,45 +153,7 @@ export class AuthController {
     }
   })
   async register(@Body() registerDto: RegisterDto) {
-    try {
-      const result = await this.authService.register(registerDto);
-      return result;
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      if (error instanceof ConflictException) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        const message = error.message.toLowerCase();
-
-        if (message.includes('email') && message.includes('exists')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'Email address is already registered',
-            error: 'Conflict'
-          });
-        }
-
-        if (message.includes('username') && message.includes('exists')) {
-          throw new ConflictException({
-            statusCode: 409,
-            message: 'Username is already taken',
-            error: 'Conflict'
-          });
-        }
-      }
-
-      console.error('Unexpected registration error:', error);
-      throw new InternalServerErrorException({
-        statusCode: 500,
-        message: 'An unexpected error occurred during registration. Please try again.',
-        error: 'Internal Server Error'
-      });
-    }
+    return await this.authService.register(registerDto)
   }
 
   @UseGuards(JwtAuthGuard)
@@ -199,8 +164,9 @@ export class AuthController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'OTP verified successfully, user status updated to waiting_deposit',
-    type: VerifyOtpResponseDto,
+    description:
+      'OTP verified successfully, user status updated to waiting_deposit',
+    type: VerifyOtpResponseDto
   })
   @ApiGoneResponse({
     description: 'OTP has expired, need to resend OTP',
@@ -224,28 +190,33 @@ export class AuthController {
   })
   @ApiBody({
     description: 'OTP verification data',
-    type: VerifyOtpDto,
+    type: VerifyOtpDto
   })
-  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto, @Request() req: { user: any }) {
+  async verifyOtp(
+    @Body() verifyOtpDto: VerifyOtpDto,
+    @CurrentUser() user: UserJWT
+  ) {
     try {
       const result = await this.authService.verifyOtp(
-        req.user.id,
-        verifyOtpDto.otpCode,
-      );
+        user.id,
+        verifyOtpDto.otpCode
+      )
 
-      return result;
+      return result
     } catch (error) {
-      if (error instanceof BadRequestException ||
-        error instanceof HttpException) {
-        throw error;
+      if (
+        error instanceof BadRequestException ||
+        error instanceof HttpException
+      ) {
+        throw error
       }
 
-      console.error('Unexpected OTP verification error:', error);
+      console.error('Unexpected OTP verification error:', error)
       throw new InternalServerErrorException({
         statusCode: 500,
         message: 'An unexpected error occurred during OTP verification',
         error: 'Internal Server Error'
-      });
+      })
     }
   }
 
@@ -258,7 +229,7 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'New OTP sent successfully to email',
-    type: ResendOtpResponseDto,
+    type: ResendOtpResponseDto
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or expired token',
@@ -272,26 +243,25 @@ export class AuthController {
     description: 'User not found',
     schema: AuthErrorSchemas.userNotFound
   })
-  async resendOtp(@Request() req: { user: any }) {
+  async resendOtp(@CurrentUser() user: UserJWT) {
     try {
+      const result = await this.authService.resendOtp(user.id)
 
-      const result = await this.authService.resendOtp(
-        req.user.id,
-      );
-
-      return result;
+      return result
     } catch (error) {
-      if (error instanceof BadRequestException ||
-        error instanceof HttpException) {
-        throw error;
+      if (
+        error instanceof BadRequestException ||
+        error instanceof HttpException
+      ) {
+        throw error
       }
 
-      console.error('Unexpected OTP resend error:', error);
+      console.error('Unexpected OTP resend error:', error)
       throw new InternalServerErrorException({
         statusCode: 500,
         message: 'An unexpected error occurred while resending OTP',
         error: 'Internal Server Error'
-      });
+      })
     }
   }
 
@@ -326,21 +296,21 @@ export class AuthController {
     description: 'Unauthorized - Invalid or expired token',
     schema: AuthErrorSchemas.invalidCredentials
   })
-  async refresh(@Request() req: { user: any }) {
+  async refresh(@CurrentUser() user: UserJWT) {
     try {
-      const result = await this.authService.refreshToken(req.user);
-      return result;
+      const result = await this.authService.refreshToken(user)
+      return result
     } catch (error) {
       if (error instanceof HttpException) {
-        throw error;
+        throw error
       }
 
-      console.error('Unexpected token refresh error:', error);
+      console.error('Unexpected token refresh error:', error)
       throw new InternalServerErrorException({
         statusCode: 500,
         message: 'An unexpected error occurred during token refresh',
         error: 'Internal Server Error'
-      });
+      })
     }
   }
 }

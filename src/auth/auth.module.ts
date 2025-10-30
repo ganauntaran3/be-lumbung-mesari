@@ -1,16 +1,22 @@
 import { Module } from '@nestjs/common'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
-import { ConfigModule, ConfigService } from '@nestjs/config'
+
+import { DatabaseModule } from '../database/database.module'
 import { UsersModule } from '../users/users.module'
-import { AuthService } from './auth.service'
+import { UsersSavingsModule } from '../users-savings/users-savings.module'
+
 import { AuthController } from './auth.controller'
-import { JwtStrategy } from './strategies/jwt.strategy'
+import { AuthService } from './auth.service'
 import { OtpService } from './services/otp.service'
+import { JwtStrategy } from './strategies/jwt.strategy'
 
 @Module({
   imports: [
     UsersModule,
+    UsersSavingsModule,
+    DatabaseModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -26,12 +32,8 @@ import { OtpService } from './services/otp.service'
       inject: [ConfigService]
     })
   ],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    OtpService
-  ],
+  providers: [AuthService, JwtStrategy, OtpService],
   controllers: [AuthController],
   exports: [AuthService]
 })
-export class AuthModule { }
+export class AuthModule {}

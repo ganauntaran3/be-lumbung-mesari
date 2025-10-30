@@ -16,16 +16,16 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       exceptionFactory: (errors) => {
-        const messages = errors.map(error =>
-          Object.values(error.constraints || {}).join(', ')
-        ).join('; ');
+        const messages = errors
+          .map((error) => Object.values(error.constraints || {}).join(', '))
+          .join('; ')
         return new BadRequestException({
           statusCode: 400,
           message: messages,
           error: 'Validation Failed',
           timestamp: new Date().toISOString(),
           details: errors
-        });
+        })
       }
     })
   )

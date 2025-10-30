@@ -115,7 +115,7 @@ export async function seed(knex: Knex): Promise<void> {
       status: 'active',
       role_id: 'member',
       deposit_image_url: null
-    },
+    }
   ]
 
   await knex('users').insert(memberUsers)

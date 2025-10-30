@@ -1,10 +1,12 @@
 import { Knex } from 'knex'
-import { DatabaseService } from './database.service'
+
 import {
   PaginationOptions,
   PaginationResult,
   PAGINATION_DEFAULTS
 } from '../interface/pagination'
+
+import { DatabaseService } from './database.service'
 
 export abstract class BaseRepository<T> {
   protected readonly knex: Knex
@@ -52,12 +54,14 @@ export abstract class BaseRepository<T> {
     return result as T
   }
 
-  async paginate(options: PaginationOptions = {}): Promise<PaginationResult<T>> {
+  async paginate(
+    options: PaginationOptions = {}
+  ): Promise<PaginationResult<T>> {
     const {
       page = PAGINATION_DEFAULTS.page,
       limit = PAGINATION_DEFAULTS.limit,
       sortBy = PAGINATION_DEFAULTS.sortBy,
-      sortOrder = PAGINATION_DEFAULTS.sortOrder,
+      sortOrder = PAGINATION_DEFAULTS.sortOrder
     } = options
 
     const offset = (page - 1) * limit
@@ -65,7 +69,7 @@ export abstract class BaseRepository<T> {
     const baseQuery = this.knex(this.tableName)
 
     const [{ count }] = await baseQuery.clone().count('* as count')
-    const totalData = parseInt(count as string, 10)
+    const totalData = Number.parseInt(count as string, 10)
 
     const dataQuery = baseQuery.clone().select('*')
     this.applySorting(dataQuery, sortBy, sortOrder)
@@ -82,7 +86,7 @@ export abstract class BaseRepository<T> {
       totalData,
       totalPage,
       next,
-      prev,
+      prev
     }
   }
 
@@ -101,7 +105,7 @@ export abstract class BaseRepository<T> {
       totalData,
       totalPage,
       next,
-      prev,
+      prev
     }
   }
 
