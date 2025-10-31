@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
+
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
-import { UsersModule } from './users/users.module'
-import { ConfigModule } from '@nestjs/config'
 import { AuthModule } from './auth/auth.module'
+import { CashbookModule } from './cashbook/cashbook.module'
+import { ExpensesModule } from './expenses/expenses.module'
+import { IncomesModule } from './incomes/incomes.module'
 import { NotificationModule } from './notifications/notification.module'
 import { SavingsModule } from './savings/savings.module'
-import { IncomesModule } from './incomes/incomes.module'
-import { CashbookModule } from './cashbook/cashbook.module'
+import { UsersModule } from './users/users.module'
 
 @Module({
   imports: [
@@ -20,7 +22,8 @@ import { CashbookModule } from './cashbook/cashbook.module'
     AuthModule,
     SavingsModule,
     IncomesModule,
-    CashbookModule
+    CashbookModule,
+    ExpensesModule
   ],
   controllers: [AppController],
   providers: [AppService]

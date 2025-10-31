@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { Knex } from 'knex'
 
 import { CashbookTransactionRepository } from './cashbook-transaction.repository'
 import { CashbookTransactionTable } from './interfaces/cashbook.interface'
@@ -73,20 +74,24 @@ export class CashbookTransactionService {
     expenseId: string,
     userId: string,
     amount: number,
-    txnDate?: Date
+    txnDate?: Date,
+    trx?: Knex.Transaction
   ): Promise<CashbookTransactionTable> {
     try {
       this.logger.log(
         `Creating expense transaction: ${expenseId}, amount: ${amount}`
       )
 
-      const transaction = await this.transactionRepository.createTransaction({
-        txn_date: txnDate || new Date(),
-        direction: 'out',
-        amount: amount.toString(),
-        expense_id: expenseId,
-        user_id: userId
-      })
+      const transaction = await this.transactionRepository.createTransaction(
+        {
+          txn_date: txnDate || new Date(),
+          direction: 'out',
+          amount: amount.toString(),
+          expense_id: expenseId,
+          user_id: userId
+        },
+        trx
+      )
 
       this.logger.log(`Expense transaction created: ${transaction.id}`)
       return transaction
@@ -99,9 +104,6 @@ export class CashbookTransactionService {
     }
   }
 
-  /**
-   * Get transaction history with filters
-   */
   async getTransactionHistory(filters: TransactionFilters = {}): Promise<{
     transactions: CashbookTransactionTable[]
     summary: TransactionSummary
@@ -174,37 +176,6 @@ export class CashbookTransactionService {
       return transactions
     } catch (error) {
       this.logger.error('Failed to get recent transactions:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Get monthly transaction summary
-   */
-  async getMonthlyTransactionSummary(
-    year: number,
-    month: number
-  ): Promise<TransactionSummary> {
-    try {
-      const startDate = new Date(year, month - 1, 1)
-      const endDate = new Date(year, month, 0, 23, 59, 59)
-
-      this.logger.log(
-        `Getting monthly summary for ${year}-${month.toString().padStart(2, '0')}`
-      )
-
-      const transactions = await this.getTransactionsByDateRange(
-        startDate,
-        endDate
-      )
-      const summary = this.calculateTransactionSummary(transactions)
-
-      return summary
-    } catch (error) {
-      this.logger.error(
-        `Failed to get monthly summary for ${year}-${month}:`,
-        error
-      )
       throw error
     }
   }
