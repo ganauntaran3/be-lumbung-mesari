@@ -107,7 +107,7 @@ export class UsersRepository extends BaseRepository<User> {
       let query = this.knex('users')
 
       if (role) {
-        query = query.where('roles.id', role)
+        query = query.where('users.role_id', role)
       }
 
       if (status) {
