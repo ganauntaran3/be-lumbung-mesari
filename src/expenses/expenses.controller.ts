@@ -247,7 +247,7 @@ export class ExpensesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Delete expense (SuperAdmin only)',
     description:

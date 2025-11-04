@@ -71,20 +71,8 @@ export class ExpensesService {
         }
         return { shuAmount: 0, capitalAmount: totalAmount }
       case ExpenseSource.AUTO: {
-        const knex = this.databaseService.getKnex()
-        const balances = await knex('cashbook_balances')
-          .select('type', 'balance')
-          .whereIn('type', ['shu', 'capital'])
-
-        const shuBalance = parseFloat(
-          balances.find((b) => b.type === 'shu')?.balance || '0'
-        )
-        const capitalBalance = parseFloat(
-          balances.find((b) => b.type === 'capital')?.balance || '0'
-        )
-
         if (capitalBalance >= totalAmount) {
-          return { shuAmount: totalAmount, capitalAmount: 0 }
+          return { shuAmount: 0, capitalAmount: totalAmount }
         } else if (shuBalance + capitalBalance >= totalAmount) {
           const remainingAmount = totalAmount - shuBalance
           return { shuAmount: shuBalance, capitalAmount: remainingAmount }
