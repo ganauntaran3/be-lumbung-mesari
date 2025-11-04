@@ -21,6 +21,7 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('income_categories')
       .onDelete('RESTRICT')
       .notNullable()
+    table.string('name', 255).notNullable()
     table.decimal('amount', 12, 4).notNullable()
     table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.uuid('loan_id').references('id').inTable('loans').onDelete('SET NULL')
@@ -35,7 +36,9 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('mandatory_savings')
       .onDelete('SET NULL')
     table.text('notes').nullable()
+    table.timestamp('txn_date').defaultTo(knex.fn.now())
     table.timestamp('created_at').defaultTo(knex.fn.now())
+    table.timestamp('updated_at').defaultTo(knex.fn.now())
   })
 }
 

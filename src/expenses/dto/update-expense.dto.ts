@@ -21,6 +21,16 @@ export class UpdateExpenseDto {
   expenseCategoryId?: string
 
   @ApiPropertyOptional({
+    description: 'Expense name/title',
+    example: 'Updated Office Supplies Purchase',
+    maxLength: 255
+  })
+  @IsOptional()
+  @IsString({ message: 'Name must be a string' })
+  @MaxLength(255, { message: 'Name cannot exceed 255 characters' })
+  name?: string
+
+  @ApiPropertyOptional({
     description: 'Expense amount (positive number)',
     example: 175000,
     type: Number,

@@ -49,11 +49,31 @@ export class ExpenseResponseDto {
   expenseCategoryId!: string
 
   @ApiProperty({
-    description: 'Expense amount',
+    description: 'Expense name/title',
+    example: 'Office Supplies Purchase'
+  })
+  name!: string
+
+  @ApiProperty({
+    description: 'Amount deducted from SHU balance',
+    example: 100000,
+    type: Number
+  })
+  shuAmount!: number
+
+  @ApiProperty({
+    description: 'Amount deducted from Capital balance',
+    example: 50000,
+    type: Number
+  })
+  capitalAmount!: number
+
+  @ApiProperty({
+    description: 'Total expense amount (shuAmount + capitalAmount)',
     example: 150000,
     type: Number
   })
-  amount!: number
+  totalAmount!: number
 
   @ApiPropertyOptional({
     description: 'User ID associated with the expense',

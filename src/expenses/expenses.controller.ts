@@ -84,7 +84,6 @@ export class ExpensesController {
     @CurrentUser() user: UserJWT
   ): Promise<ExpenseResponseDto> {
     try {
-      this.logger.log(`Creating expense for user ${user.id}`)
       return await this.expensesService.createExpense(createExpenseDto, user.id)
     } catch (error) {
       if (error instanceof HttpException) {

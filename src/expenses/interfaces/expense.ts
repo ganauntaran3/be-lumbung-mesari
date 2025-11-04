@@ -1,7 +1,12 @@
 import { ExpenseTable, ExpenseCategoryTable } from '../../interface/expenses'
 import { PaginationResult } from '../../interface/pagination'
 
-// Extended interfaces for API responses
+export enum ExpenseSource {
+  AUTO = 'auto',
+  CAPITAL = 'capital',
+  SHU = 'shu'
+}
+
 export interface ExpenseWithCategory extends ExpenseTable {
   category: ExpenseCategoryTable
 }

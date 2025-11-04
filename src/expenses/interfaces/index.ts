@@ -1,1 +1,1 @@
-export * from './expense.interface'
+export * from './expense'

@@ -11,11 +11,14 @@ export interface ExpenseCategoryTable {
 export interface ExpenseTable {
   id: string
   expense_category_id: string
-  amount: string
+  name: string
+  shu_amount: string
+  capital_amount: string
   user_id?: string
   loan_id?: string
   notes?: string
   source?: 'auto' | 'total' | 'capital' | 'shu'
+  txn_date: Date
   created_at: Date
   updated_at: Date
 }

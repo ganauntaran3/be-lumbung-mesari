@@ -15,137 +15,218 @@ export async function up(knex: Knex): Promise<void> {
 
   // Insert saldo awal
   await knex('cashbook_balances').insert([
-    { type: 'total', balance: 5000000.0 },
-    { type: 'capital', balance: 5000000.0 },
+    { type: 'total', balance: 5000000 },
+    { type: 'capital', balance: 5000000 },
     { type: 'shu', balance: 0 }
   ])
 
-  // Enhanced trigger function with category-based logic
+  // Enhanced trigger function with shu_amount and capital_amount fields
   await knex.raw(`
     CREATE OR REPLACE FUNCTION update_cashbook_balance()
     RETURNS TRIGGER AS $$
     DECLARE
       income_destination TEXT;
-      expense_source TEXT;
       amount_val DECIMAL;
-      current_shu_balance DECIMAL;
-      current_capital_balance DECIMAL;
+      shu_amount_val DECIMAL;
+      capital_amount_val DECIMAL;
+      old_shu_amount_val DECIMAL;
+      old_capital_amount_val DECIMAL;
+      operation_type TEXT;
     BEGIN
-      amount_val := NEW.amount::DECIMAL;
+      -- Determine operation type and extract amounts from related expense
+      IF TG_OP = 'DELETE' THEN
+        operation_type := 'DELETE';
+        amount_val := OLD.amount::DECIMAL;
+        -- Get expense amounts if this is an expense transaction
+        IF OLD.expense_id IS NOT NULL THEN
+          SELECT COALESCE(e.shu_amount, 0), COALESCE(e.capital_amount, 0)
+          INTO shu_amount_val, capital_amount_val
+          FROM expenses e WHERE e.id = OLD.expense_id;
+        ELSE
+          shu_amount_val := 0;
+          capital_amount_val := 0;
+        END IF;
+      ELSIF TG_OP = 'UPDATE' THEN
+        operation_type := 'UPDATE';
+        amount_val := NEW.amount::DECIMAL;
+        -- Get new expense amounts
+        IF NEW.expense_id IS NOT NULL THEN
+          SELECT COALESCE(e.shu_amount, 0), COALESCE(e.capital_amount, 0)
+          INTO shu_amount_val, capital_amount_val
+          FROM expenses e WHERE e.id = NEW.expense_id;
+        ELSE
+          shu_amount_val := 0;
+          capital_amount_val := 0;
+        END IF;
+        -- Get old expense amounts
+        IF OLD.expense_id IS NOT NULL THEN
+          SELECT COALESCE(e.shu_amount, 0), COALESCE(e.capital_amount, 0)
+          INTO old_shu_amount_val, old_capital_amount_val
+          FROM expenses e WHERE e.id = OLD.expense_id;
+        ELSE
+          old_shu_amount_val := 0;
+          old_capital_amount_val := 0;
+        END IF;
+      ELSE -- INSERT
+        operation_type := 'INSERT';
+        amount_val := NEW.amount::DECIMAL;
+        -- Get expense amounts if this is an expense transaction
+        IF NEW.expense_id IS NOT NULL THEN
+          SELECT COALESCE(e.shu_amount, 0), COALESCE(e.capital_amount, 0)
+          INTO shu_amount_val, capital_amount_val
+          FROM expenses e WHERE e.id = NEW.expense_id;
+        ELSE
+          shu_amount_val := 0;
+          capital_amount_val := 0;
+        END IF;
+      END IF;
       
+      -- Handle DELETE operations (reverse the original transaction)
+      IF TG_OP = 'DELETE' THEN
+        -- Handle INCOME deletion (subtract from balances)
+        IF OLD.income_id IS NOT NULL THEN
+          SELECT ic.default_destination INTO income_destination
+          FROM incomes i
+          JOIN income_categories ic ON i.income_category_id = ic.id
+          WHERE i.id = OLD.income_id;
+          
+          -- Reverse: subtract from total and specific balance
+          UPDATE cashbook_balances 
+          SET balance = balance - amount_val, updated_at = NOW()
+          WHERE type IN ('total', income_destination);
+          
+          RAISE NOTICE 'Income Deleted: Subtracted % from % and total', amount_val, income_destination;
+        END IF;
+        
+        -- Handle EXPENSE deletion (add back exact amounts)
+        IF OLD.expense_id IS NOT NULL THEN
+          -- Add back SHU amount if any
+          IF shu_amount_val > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance + shu_amount_val, updated_at = NOW()
+            WHERE type = 'shu';
+            RAISE NOTICE 'Expense Deleted: Added back % to SHU', shu_amount_val;
+          END IF;
+          
+          -- Add back Capital amount if any
+          IF capital_amount_val > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance + capital_amount_val, updated_at = NOW()
+            WHERE type = 'capital';
+            RAISE NOTICE 'Expense Deleted: Added back % to capital', capital_amount_val;
+          END IF;
+          
+          -- Add back total amount
+          UPDATE cashbook_balances 
+          SET balance = balance + (shu_amount_val + capital_amount_val), updated_at = NOW()
+          WHERE type = 'total';
+          RAISE NOTICE 'Expense Deleted: Added back % to total', (shu_amount_val + capital_amount_val);
+        END IF;
+        
+        RETURN OLD;
+      END IF;
+      
+      -- Handle UPDATE operations (reverse old, apply new)
+      IF TG_OP = 'UPDATE' THEN
+        -- Only process if amounts changed or IDs changed
+        IF OLD.amount != NEW.amount OR OLD.income_id != NEW.income_id OR OLD.expense_id != NEW.expense_id OR
+           old_shu_amount_val != shu_amount_val OR old_capital_amount_val != capital_amount_val THEN
+          
+          -- First reverse the old transaction
+          IF OLD.income_id IS NOT NULL THEN
+            SELECT ic.default_destination INTO income_destination
+            FROM incomes i
+            JOIN income_categories ic ON i.income_category_id = ic.id
+            WHERE i.id = OLD.income_id;
+            
+            UPDATE cashbook_balances 
+            SET balance = balance - OLD.amount::DECIMAL, updated_at = NOW()
+            WHERE type IN ('total', income_destination);
+          END IF;
+          
+          IF OLD.expense_id IS NOT NULL THEN
+            -- Reverse old expense amounts
+            IF old_shu_amount_val > 0 THEN
+              UPDATE cashbook_balances 
+              SET balance = balance + old_shu_amount_val, updated_at = NOW()
+              WHERE type = 'shu';
+            END IF;
+            
+            IF old_capital_amount_val > 0 THEN
+              UPDATE cashbook_balances 
+              SET balance = balance + old_capital_amount_val, updated_at = NOW()
+              WHERE type = 'capital';
+            END IF;
+            
+            UPDATE cashbook_balances 
+            SET balance = balance + (old_shu_amount_val + old_capital_amount_val), updated_at = NOW()
+            WHERE type = 'total';
+          END IF;
+          
+          -- Now apply the new transaction (fall through to INSERT logic)
+        ELSE
+          -- No significant change, return early
+          RETURN NEW;
+        END IF;
+      END IF;
+      
+      -- Handle INSERT operations (and UPDATE after reversing old values)
       -- Handle INCOME transactions
       IF NEW.income_id IS NOT NULL THEN
-        -- Get destination from category (no override for income)
         SELECT ic.default_destination INTO income_destination
         FROM incomes i
         JOIN income_categories ic ON i.income_category_id = ic.id
         WHERE i.id = NEW.income_id;
         
-        -- Update total balance
         UPDATE cashbook_balances 
         SET balance = balance + amount_val, updated_at = NOW()
         WHERE type = 'total';
         
-        -- Update specific balance based on destination
         UPDATE cashbook_balances 
         SET balance = balance + amount_val, updated_at = NOW()
         WHERE type = income_destination;
         
-        RAISE NOTICE 'Income: Added % to % and total', amount_val, income_destination;
+        RAISE NOTICE 'Income %: Added % to % and total', operation_type, amount_val, income_destination;
       END IF;
       
-      -- Handle EXPENSE transactions
+      -- Handle EXPENSE transactions (using exact amounts)
       IF NEW.expense_id IS NOT NULL THEN
-        -- Get source (override or category default)
-        SELECT COALESCE(e.source, ec.default_source) INTO expense_source
-        FROM expenses e
-        JOIN expense_categories ec ON e.expense_category_id = ec.id
-        WHERE e.id = NEW.expense_id;
+        -- Deduct SHU amount if any
+        IF shu_amount_val > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance - shu_amount_val, updated_at = NOW()
+          WHERE type = 'shu';
+          RAISE NOTICE 'Expense %: Deducted % from SHU', operation_type, shu_amount_val;
+        END IF;
         
-        -- Get current balances for validation
-        SELECT balance INTO current_shu_balance 
-        FROM cashbook_balances WHERE type = 'shu';
+        -- Deduct Capital amount if any
+        IF capital_amount_val > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance - capital_amount_val, updated_at = NOW()
+          WHERE type = 'capital';
+          RAISE NOTICE 'Expense %: Deducted % from capital', operation_type, capital_amount_val;
+        END IF;
         
-        SELECT balance INTO current_capital_balance 
-        FROM cashbook_balances WHERE type = 'capital';
-        
-        -- Handle different source types
-        CASE expense_source
-          WHEN 'shu' THEN
-            -- SHU only - validate sufficient balance
-            IF current_shu_balance < amount_val THEN
-              RAISE EXCEPTION 'Insufficient SHU balance. Available: %, Required: %', 
-                current_shu_balance, amount_val;
-            END IF;
-            
-            UPDATE cashbook_balances 
-            SET balance = balance - amount_val, updated_at = NOW()
-            WHERE type IN ('total', 'shu');
-            
-            RAISE NOTICE 'Expense: Deducted % from SHU and total', amount_val;
-            
-          WHEN 'capital' THEN
-            -- Capital only - validate sufficient balance
-            IF current_capital_balance < amount_val THEN
-              RAISE EXCEPTION 'Insufficient capital balance. Available: %, Required: %', 
-                current_capital_balance, amount_val;
-            END IF;
-            
-            UPDATE cashbook_balances 
-            SET balance = balance - amount_val, updated_at = NOW()
-            WHERE type IN ('total', 'capital');
-            
-            RAISE NOTICE 'Expense: Deducted % from capital and total', amount_val;
-            
-          WHEN 'auto' THEN
-            -- Smart selection: prefer SHU for operational expenses
-            IF current_shu_balance >= amount_val THEN
-              -- Use SHU if sufficient
-              UPDATE cashbook_balances 
-              SET balance = balance - amount_val, updated_at = NOW()
-              WHERE type IN ('total', 'shu');
-              
-              RAISE NOTICE 'Expense: Auto-deducted % from SHU and total', amount_val;
-            ELSE
-              -- Fallback to capital if SHU insufficient
-              IF current_capital_balance >= amount_val THEN
-                UPDATE cashbook_balances 
-                SET balance = balance - amount_val, updated_at = NOW()
-                WHERE type IN ('total', 'capital');
-                
-                RAISE NOTICE 'Expense: Auto-deducted % from capital and total (SHU insufficient)', amount_val;
-              ELSE
-                RAISE EXCEPTION 'Insufficient funds. SHU: %, Capital: %, Required: %', 
-                  current_shu_balance, current_capital_balance, amount_val;
-              END IF;
-            END IF;
-            
-          ELSE -- 'total'
-            -- Deduct from SHU by default for 'total' source
-            IF current_shu_balance >= amount_val THEN
-              UPDATE cashbook_balances 
-              SET balance = balance - amount_val, updated_at = NOW()
-              WHERE type IN ('total', 'shu');
-              
-              RAISE NOTICE 'Expense: Deducted % from SHU and total', amount_val;
-            ELSE
-              RAISE EXCEPTION 'Insufficient SHU balance for total source. Available: %, Required: %', 
-                current_shu_balance, amount_val;
-            END IF;
-        END CASE;
+        -- Deduct total amount
+        UPDATE cashbook_balances 
+        SET balance = balance - (shu_amount_val + capital_amount_val), updated_at = NOW()
+        WHERE type = 'total';
+        RAISE NOTICE 'Expense %: Deducted % from total', operation_type, (shu_amount_val + capital_amount_val);
       END IF;
       
-
-      
-      RETURN NEW;
+      IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+      ELSE
+        RETURN NEW;
+      END IF;
     END;
     $$ LANGUAGE plpgsql;
   `)
 
-  // Trigger pada cashbook_transactions
+  // Trigger pada cashbook_transactions - handle INSERT, UPDATE, DELETE
   await knex.raw(`
     CREATE TRIGGER trg_update_cashbook_balance
-    AFTER INSERT ON cashbook_transactions
+    AFTER INSERT OR UPDATE OR DELETE ON cashbook_transactions
     FOR EACH ROW
     EXECUTE FUNCTION update_cashbook_balance();
   `)

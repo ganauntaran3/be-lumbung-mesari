@@ -18,9 +18,20 @@ export class CreateExpenseDto {
     example: '01234567-89ab-cdef-0123-456789abcdef',
     required: true
   })
-  @IsUUID(4, { message: 'Expense category ID must be a valid UUID' })
+  @IsUUID(7, { message: 'Expense category ID must be a valid UUID' })
   @IsNotEmpty({ message: 'Expense category ID is required' })
   expenseCategoryId!: string
+
+  @ApiProperty({
+    description: 'Expense name/title',
+    example: 'Office Supplies Purchase',
+    required: true,
+    maxLength: 255
+  })
+  @IsString({ message: 'Name must be a string' })
+  @IsNotEmpty({ message: 'Expense name is required' })
+  @MaxLength(255, { message: 'Name cannot exceed 255 characters' })
+  name!: string
 
   @ApiProperty({
     description: 'Expense amount (positive number)',
@@ -46,7 +57,7 @@ export class CreateExpenseDto {
     example: '01234567-89ab-cdef-0123-456789abcdef'
   })
   @IsOptional()
-  @IsUUID(4, { message: 'User ID must be a valid UUID' })
+  @IsString()
   userId?: string
 
   @ApiPropertyOptional({
@@ -54,7 +65,7 @@ export class CreateExpenseDto {
     example: '01234567-89ab-cdef-0123-456789abcdef'
   })
   @IsOptional()
-  @IsUUID(4, { message: 'Loan ID must be a valid UUID' })
+  @IsUUID(7, { message: 'Loan ID must be a valid UUID' })
   loanId?: string
 
   @ApiPropertyOptional({
@@ -83,5 +94,5 @@ export class CreateExpenseDto {
     example: '2023-11-01T00:00:00.000Z'
   })
   @IsOptional()
-  expenseDate?: Date
+  transactionDate?: Date
 }

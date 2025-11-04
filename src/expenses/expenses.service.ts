@@ -17,10 +17,12 @@ import {
   ExpenseNotFoundError,
   ExpenseCategoryNotFoundError,
   InvalidExpenseAmountError,
-  ExpenseValidationError
+  ExpenseValidationError,
+  InsufficientFundsError
 } from './exceptions/expense.exceptions'
 import { ExpenseCategoriesRepository } from './expense-categories.repository'
 import { ExpensesRepository } from './expenses.repository'
+import { ExpenseSource } from './interfaces'
 
 @Injectable()
 export class ExpensesService {
@@ -32,6 +34,72 @@ export class ExpensesService {
     private readonly cashbookTransactionService: CashbookTransactionService,
     private readonly databaseService: DatabaseService
   ) {}
+
+  private async allocateAmounts(
+    totalAmount: number,
+    source: 'auto' | 'total' | 'capital' | 'shu'
+  ): Promise<{ shuAmount: number; capitalAmount: number }> {
+    const knex = this.databaseService.getKnex()
+    const balances = await knex('cashbook_balances')
+      .select('type', 'balance')
+      .whereIn('type', ['shu', 'capital'])
+
+    const shuBalance = parseFloat(
+      balances.find((b) => b.type === 'shu')?.balance || '0'
+    )
+    const capitalBalance = parseFloat(
+      balances.find((b) => b.type === 'capital')?.balance || '0'
+    )
+
+    switch (source) {
+      case ExpenseSource.SHU:
+        if (shuBalance < totalAmount) {
+          throw new InsufficientFundsError(
+            totalAmount,
+            shuBalance,
+            ExpenseSource.SHU
+          )
+        }
+        return { shuAmount: totalAmount, capitalAmount: 0 }
+      case ExpenseSource.CAPITAL:
+        if (capitalBalance < totalAmount) {
+          throw new InsufficientFundsError(
+            totalAmount,
+            capitalBalance,
+            ExpenseSource.CAPITAL
+          )
+        }
+        return { shuAmount: 0, capitalAmount: totalAmount }
+      case ExpenseSource.AUTO: {
+        const knex = this.databaseService.getKnex()
+        const balances = await knex('cashbook_balances')
+          .select('type', 'balance')
+          .whereIn('type', ['shu', 'capital'])
+
+        const shuBalance = parseFloat(
+          balances.find((b) => b.type === 'shu')?.balance || '0'
+        )
+        const capitalBalance = parseFloat(
+          balances.find((b) => b.type === 'capital')?.balance || '0'
+        )
+
+        if (capitalBalance >= totalAmount) {
+          return { shuAmount: totalAmount, capitalAmount: 0 }
+        } else if (shuBalance + capitalBalance >= totalAmount) {
+          const remainingAmount = totalAmount - shuBalance
+          return { shuAmount: shuBalance, capitalAmount: remainingAmount }
+        } else {
+          throw new InsufficientFundsError(
+            totalAmount,
+            shuBalance + capitalBalance,
+            ExpenseSource.AUTO
+          )
+        }
+      }
+      default:
+        return { shuAmount: 0, capitalAmount: totalAmount }
+    }
+  }
 
   async createExpense(
     createExpenseDto: CreateExpenseDto,
@@ -58,15 +126,28 @@ export class ExpensesService {
       throw new ExpenseCategoryNotFoundError(createExpenseDto.expenseCategoryId)
     }
 
+    const effectiveSource = createExpenseDto.source || category.default_source
+
+    const { shuAmount, capitalAmount } = await this.allocateAmounts(
+      createExpenseDto.amount,
+      effectiveSource
+    )
+
+    this.logger.debug(
+      `Allocated amounts - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
+    )
+
     try {
       const expenseData = {
         expense_category_id: createExpenseDto.expenseCategoryId,
-        amount: createExpenseDto.amount.toString(),
-        txn_date: createExpenseDto.expenseDate,
+        name: createExpenseDto.name,
+        shu_amount: shuAmount.toString(),
+        capital_amount: capitalAmount.toString(),
+        txn_date: createExpenseDto.transactionDate || new Date(),
         user_id: createExpenseDto.userId || currentUserId,
         loan_id: createExpenseDto.loanId,
         notes: createExpenseDto.notes,
-        source: createExpenseDto.source || category.default_source
+        source: effectiveSource
       }
 
       const knex = this.databaseService.getKnex()
@@ -76,12 +157,11 @@ export class ExpensesService {
           trx
         )
 
-        // Create cashbook transaction
         await this.cashbookTransactionService.createExpenseTransaction(
           expense.id,
           expense.user_id || currentUserId,
           createExpenseDto.amount,
-          createExpenseDto.expenseDate,
+          createExpenseDto.transactionDate,
           trx
         )
 
@@ -169,8 +249,9 @@ export class ExpensesService {
     }
 
     // 3. Validate category if being updated
+    let category = null
     if (updateExpenseDto.expenseCategoryId) {
-      const category = await this.expenseCategoriesRepository.findById(
+      category = await this.expenseCategoriesRepository.findById(
         updateExpenseDto.expenseCategoryId
       )
       if (!category) {
@@ -182,11 +263,35 @@ export class ExpensesService {
 
     // 4. Prepare update data
     const updateData: UpdateExpense = {}
+
+    // Handle amount change - recalculate shu_amount and capital_amount
+    if (updateExpenseDto.amount !== undefined) {
+      // Get the effective category (new or existing)
+      const effectiveCategory = category || existingExpense.category
+      const effectiveSource =
+        updateExpenseDto.source ||
+        existingExpense.source ||
+        effectiveCategory.default_source
+
+      // Allocate the new amount
+      const { shuAmount, capitalAmount } = await this.allocateAmounts(
+        updateExpenseDto.amount,
+        effectiveSource
+      )
+
+      updateData.shu_amount = shuAmount.toString()
+      updateData.capital_amount = capitalAmount.toString()
+
+      this.logger.log(
+        `Reallocated amounts for expense ${id} - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
+      )
+    }
+
     if (updateExpenseDto.expenseCategoryId) {
       updateData.expense_category_id = updateExpenseDto.expenseCategoryId
     }
-    if (updateExpenseDto.amount !== undefined) {
-      updateData.amount = updateExpenseDto.amount.toString()
+    if (updateExpenseDto.name !== undefined) {
+      updateData.name = updateExpenseDto.name
     }
     if (updateExpenseDto.userId !== undefined) {
       updateData.user_id = updateExpenseDto.userId
@@ -201,23 +306,22 @@ export class ExpensesService {
       updateData.source = updateExpenseDto.source
     }
 
-    // 5. Update expense and handle cashbook integration if amount changed
+    // 5. Update expense in transaction
     const knex = this.databaseService.getKnex()
     await knex.transaction(async (trx: Knex.Transaction) => {
-      // Update the expense using transaction-aware method
       await this.expensesRepository.updateExpenseById(id, updateData, trx)
 
-      // If amount changed, we would need to update the cashbook transaction
-      // For now, we'll log this as a future enhancement
-      if (
-        updateExpenseDto.amount !== undefined &&
-        updateExpenseDto.amount.toString() !== existingExpense.amount
-      ) {
-        this.logger.warn(
-          `Amount changed for expense ${id}. Cashbook transaction update not implemented yet.`
+      // Update cashbook transaction if amount changed
+      if (updateExpenseDto.amount !== undefined) {
+        // Find and update the related cashbook transaction
+        await knex('cashbook_transactions')
+          .where('expense_id', id)
+          .update({ amount: updateExpenseDto.amount.toString() })
+          .transacting(trx)
+
+        this.logger.log(
+          `Updated cashbook transaction for expense ${id} with new amount: ${updateExpenseDto.amount}`
         )
-        // Note: Implement cashbook transaction update in future enhancement
-        // This would require finding the related cashbook transaction and updating it
       }
     })
 
@@ -286,10 +390,16 @@ export class ExpensesService {
   private formatExpenseResponse(
     expense: ExpenseWithCategory
   ): ExpenseResponseDto {
+    const shuAmount = Number.parseFloat(expense.shu_amount)
+    const capitalAmount = Number.parseFloat(expense.capital_amount)
+
     return {
       id: expense.id,
       expenseCategoryId: expense.expense_category_id,
-      amount: Number.parseFloat(expense.amount),
+      name: expense.name,
+      shuAmount,
+      capitalAmount,
+      totalAmount: shuAmount + capitalAmount,
       userId: expense.user_id,
       loanId: expense.loan_id,
       notes: expense.notes,
