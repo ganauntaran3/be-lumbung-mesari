@@ -679,10 +679,7 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
         : this.knex('principal_savings')
       const [result] = await query
         .where('id', id)
-        .update({
-          ...updateData,
-          updated_at: new Date()
-        })
+        .update(updateData)
         .returning('*')
 
       if (!result) {

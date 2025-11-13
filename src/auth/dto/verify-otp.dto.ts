@@ -54,8 +54,7 @@ export class VerifyOtpResponseDto {
   }
 
   @ApiProperty({
-    example:
-      'OTP verified successfully. Please submit your deposit proof to complete registration.',
+    example: 'OTP verified successfully!',
     description: 'Success message with next steps'
   })
   message!: string

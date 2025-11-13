@@ -1,11 +1,9 @@
-import { IsOptional, IsInt, Min, Max, IsString, IsIn } from 'class-validator'
-import { Type } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
+import { Type } from 'class-transformer'
+import { IsOptional, IsInt, Min, Max, IsString, IsIn } from 'class-validator'
+
 import { PAGINATION_DEFAULTS } from '../../interface/pagination'
 
-/**
- * DTO for pagination query parameters
- */
 export class PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Page number (1-based)',

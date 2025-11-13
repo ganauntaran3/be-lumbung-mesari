@@ -3,14 +3,14 @@ import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
-import {
-  ExpenseTable,
-  NewExpense,
-  ExpenseWithCategory
-} from '../interface/expenses'
 import { PaginationResult } from '../interface/pagination'
 
 import { ExpensesQueryDto } from './dto/expenses-query.dto'
+import {
+  ExpenseTable,
+  NewExpense,
+  ExpenseWithCategoryTable
+} from './interfaces/expense'
 
 @Injectable()
 export class ExpensesRepository extends BaseRepository<ExpenseTable> {
@@ -70,37 +70,43 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
     }
 
     if (minAmount !== undefined) {
-      query.where('expenses.amount', '>=', minAmount.toString())
+      query.whereRaw(
+        '(expenses.shu_amount::decimal + expenses.capital_amount::decimal) >= ?',
+        [minAmount]
+      )
     }
 
     if (maxAmount !== undefined) {
-      query.where('expenses.amount', '<=', maxAmount.toString())
+      query.whereRaw(
+        '(expenses.shu_amount::decimal + expenses.capital_amount::decimal) <= ?',
+        [maxAmount]
+      )
     }
   }
 
-  /**
-   * Apply sorting with joins consideration
-   * @param query - The Knex query builder
-   * @param sortBy - Field to sort by
-   * @param sortOrder - Sort order (asc/desc)
-   */
   private applySortingWithJoins(
     query: Knex.QueryBuilder,
-    sortBy: string = 'date',
+    sortBy: string = 'updated_at',
     sortOrder: 'asc' | 'desc' = 'desc'
   ): void {
     switch (sortBy) {
-      case 'date':
+      case 'updated_at':
+        query.orderBy('expenses.updated_at', sortOrder)
+        break
+      case 'created_at':
         query.orderBy('expenses.created_at', sortOrder)
         break
       case 'amount':
-        query.orderBy('expenses.amount', sortOrder)
+        // Sort by total amount (shu_amount + capital_amount)
+        query.orderByRaw(
+          `(expenses.shu_amount::decimal + expenses.capital_amount::decimal) ${sortOrder}`
+        )
         break
       case 'category':
         query.orderBy('expense_categories.name', sortOrder)
         break
       default:
-        query.orderBy('expenses.created_at', sortOrder)
+        query.orderBy('expenses.updated_at', sortOrder)
     }
   }
 
@@ -124,7 +130,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
 
   async findAllWithFilters(
     filters: ExpensesQueryDto
-  ): Promise<PaginationResult<ExpenseWithCategory>> {
+  ): Promise<PaginationResult<ExpenseWithCategoryTable>> {
     const {
       page = 1,
       limit = 10,
@@ -134,13 +140,12 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
       endDate,
       minAmount,
       maxAmount,
-      sortBy = 'date',
+      sortBy = 'updated_at',
       sortOrder = 'desc'
     } = filters
 
     const offset = (page - 1) * limit
 
-    // Base query with category join
     const baseQuery = this.knex(this.tableName)
       .leftJoin(
         'expense_categories',
@@ -181,11 +186,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.updated_at',
         'expense_categories.id as category_id',
         'expense_categories.code as category_code',
-        'expense_categories.name as category_name',
-        'expense_categories.description as category_description',
-        'expense_categories.default_source as category_default_source',
-        'expense_categories.created_at as category_created_at',
-        'expense_categories.updated_at as category_updated_at'
+        'expense_categories.name as category_name'
       )
 
     // Apply sorting
@@ -210,18 +211,16 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
       category: {
         id: row.category_id,
         code: row.category_code,
-        name: row.category_name,
-        description: row.category_description,
-        default_source: row.category_default_source,
-        created_at: row.category_created_at,
-        updated_at: row.category_updated_at
+        name: row.category_name
       }
-    })) as ExpenseWithCategory[]
+    })) as ExpenseWithCategoryTable[]
 
     return this.createPaginationResult(page, limit, totalData, data)
   }
 
-  async findByIdWithCategory(id: string): Promise<ExpenseWithCategory | null> {
+  async findByIdWithCategory(
+    id: string
+  ): Promise<ExpenseWithCategoryTable | null> {
     const result = await this.knex(this.tableName)
       .leftJoin(
         'expense_categories',
@@ -278,7 +277,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         created_at: result.category_created_at,
         updated_at: result.category_updated_at
       }
-    } as ExpenseWithCategory
+    } as ExpenseWithCategoryTable
   }
 
   async updateExpenseById(

@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
-import { ExpenseCategoryTable } from '../interface/expenses'
+
+import { ExpenseCategoryTable } from './interfaces'
 
 @Injectable()
 export class ExpenseCategoriesRepository extends BaseRepository<ExpenseCategoryTable> {

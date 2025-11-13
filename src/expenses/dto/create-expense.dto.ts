@@ -52,7 +52,7 @@ export class CreateExpenseDto {
   })
   amount!: number
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'User ID associated with the expense',
     example: '01234567-89ab-cdef-0123-456789abcdef'
   })

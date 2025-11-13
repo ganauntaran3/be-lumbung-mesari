@@ -9,12 +9,9 @@ export class IncomesService {
 
   constructor(private readonly incomesRepository: IncomesRepository) {}
 
-  /**
-   * Create income from principal savings
-   * Called when admin approves user and marks principal savings as paid
-   */
   async createPrincipalSavingsIncome(
     userId: string,
+    principalSavingsId: string,
     amount: number,
     notes?: string,
     trx?: any
@@ -38,9 +35,11 @@ export class IncomesService {
 
       const income = await this.incomesRepository.createIncome(
         {
+          name: 'Simpanan Pokok',
           income_category_id: category.id,
           amount: amount.toString(),
           user_id: userId,
+          principal_saving_id: principalSavingsId,
           notes: notes || 'Simpanan pokok dari anggota baru'
         },
         trx

@@ -15,16 +15,21 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable('incomes', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.string('name', 255).notNullable()
     table
       .uuid('income_category_id')
       .references('id')
       .inTable('income_categories')
       .onDelete('RESTRICT')
       .notNullable()
-    table.string('name', 255).notNullable()
     table.decimal('amount', 12, 4).notNullable()
     table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.uuid('loan_id').references('id').inTable('loans').onDelete('SET NULL')
+    table
+      .uuid('installment_id')
+      .references('id')
+      .inTable('loans')
+      .onDelete('SET NULL')
     table
       .uuid('principal_saving_id')
       .references('id')

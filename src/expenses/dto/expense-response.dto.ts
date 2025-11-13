@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { ExpenseSource } from 'src/cashbook/interfaces/cashbook.interface'
 
 import { PaginationResult } from '../../interface/pagination'
 
@@ -27,12 +28,12 @@ export class ExpenseCategoryResponseDto {
   })
   description?: string
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Default source for this category',
-    enum: ['auto', 'total', 'capital', 'shu'],
+    enum: ['auto', 'capital', 'shu'],
     example: 'auto'
   })
-  defaultSource!: 'auto' | 'total' | 'capital' | 'shu'
+  defaultSource!: ExpenseSource
 }
 
 export class ExpenseResponseDto {
@@ -68,13 +69,6 @@ export class ExpenseResponseDto {
   })
   capitalAmount!: number
 
-  @ApiProperty({
-    description: 'Total expense amount (shuAmount + capitalAmount)',
-    example: 150000,
-    type: Number
-  })
-  totalAmount!: number
-
   @ApiPropertyOptional({
     description: 'User ID associated with the expense',
     example: '01234567-89ab-cdef-0123-456789abcdef'
@@ -95,10 +89,10 @@ export class ExpenseResponseDto {
 
   @ApiPropertyOptional({
     description: 'Source of funds for the expense',
-    enum: ['auto', 'total', 'capital', 'shu'],
+    enum: ['auto', 'capital', 'shu'],
     example: 'auto'
   })
-  source?: 'auto' | 'total' | 'capital' | 'shu'
+  source?: ExpenseSource
 
   @ApiProperty({
     description: 'Expense creation timestamp',

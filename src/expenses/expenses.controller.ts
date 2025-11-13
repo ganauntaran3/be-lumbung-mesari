@@ -42,6 +42,7 @@ import {
 import { ExpensesQueryDto } from './dto/expenses-query.dto'
 import { UpdateExpenseDto } from './dto/update-expense.dto'
 import { ExpensesService } from './expenses.service'
+import { ExpenseResponse, ExpensesPaginatedResponse } from './interfaces'
 
 @ApiTags('Expenses')
 @Controller('expenses')
@@ -82,7 +83,7 @@ export class ExpensesController {
   async createExpense(
     @Body() createExpenseDto: CreateExpenseDto,
     @CurrentUser() user: UserJWT
-  ): Promise<ExpenseResponseDto> {
+  ): Promise<ExpenseResponse> {
     try {
       return await this.expensesService.createExpense(createExpenseDto, user.id)
     } catch (error) {
@@ -112,7 +113,7 @@ export class ExpensesController {
   })
   async findAllExpenses(
     @Query() query: ExpensesQueryDto
-  ): Promise<ExpensesPaginatedResponseDto> {
+  ): Promise<ExpensesPaginatedResponse> {
     try {
       this.logger.log(
         `Retrieving expenses with filters: ${JSON.stringify(query)}`
@@ -185,7 +186,7 @@ export class ExpensesController {
   @ApiNotFoundResponse({
     description: 'Expense not found'
   })
-  async findExpenseById(@Param('id') id: string): Promise<ExpenseResponseDto> {
+  async findExpenseById(@Param('id') id: string): Promise<ExpenseResponse> {
     try {
       this.logger.log(`Retrieving expense by ID: ${id}`)
       return await this.expensesService.findExpenseById(id)
@@ -229,7 +230,7 @@ export class ExpensesController {
   async updateExpense(
     @Param('id') id: string,
     @Body() updateExpenseDto: UpdateExpenseDto
-  ): Promise<ExpenseResponseDto> {
+  ): Promise<ExpenseResponse> {
     try {
       this.logger.log(`Updating expense ${id}`)
       return await this.expensesService.updateExpense(id, updateExpenseDto)

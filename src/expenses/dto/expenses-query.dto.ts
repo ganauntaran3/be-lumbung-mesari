@@ -100,14 +100,15 @@ export class ExpensesQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({
     description: 'Field to sort by',
-    enum: ['date', 'amount', 'category'],
-    example: 'date'
+    enum: ['updated_at', 'created_at', 'amount', 'category'],
+    example: 'updated_at',
+    default: 'updated_at'
   })
   @IsOptional()
-  @IsEnum(['date', 'amount', 'category'], {
-    message: 'Sort by must be one of: date, amount, category'
+  @IsEnum(['updated_at', 'created_at', 'amount', 'category'], {
+    message: 'Sort by must be one of: updated_at, created_at, amount, category'
   })
-  sortBy?: 'date' | 'amount' | 'category'
+  sortBy?: 'updated_at' | 'created_at' | 'amount' | 'category' = 'updated_at'
 
   @ApiPropertyOptional({
     description: 'Sort order',

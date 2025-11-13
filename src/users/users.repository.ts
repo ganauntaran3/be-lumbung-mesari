@@ -240,6 +240,7 @@ export class UsersRepository extends BaseRepository<User> {
     const query = trx ? trx('users') : this.knex('users')
     const result = await query
       .where('status', 'active')
+      .where('role_id', 'member')
       .count('id as count')
       .first()
 
@@ -249,6 +250,7 @@ export class UsersRepository extends BaseRepository<User> {
   async getActiveMemberIds(): Promise<string[]> {
     const results = await this.knex('users')
       .where('status', 'active')
+      .where('role_id', 'member')
       .select('id')
 
     return results.map((row) => row.id)

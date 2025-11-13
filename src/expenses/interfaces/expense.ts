@@ -1,10 +1,72 @@
-import { ExpenseTable, ExpenseCategoryTable } from '../../interface/expenses'
+import { ExpenseSource } from 'src/cashbook/interfaces/cashbook.interface'
+
 import { PaginationResult } from '../../interface/pagination'
 
-export enum ExpenseSource {
-  AUTO = 'auto',
-  CAPITAL = 'capital',
-  SHU = 'shu'
+export interface ExpenseCategoryTable {
+  id: string
+  code: string
+  name: string
+  description?: string
+  default_source: ExpenseSource
+  created_at: Date
+  updated_at: Date
+}
+
+export interface ExpenseTable {
+  id: string
+  expense_category_id: string
+  name: string
+  shu_amount: string
+  capital_amount: string
+  user_id?: string
+  loan_id?: string
+  notes?: string
+  source?: ExpenseSource
+  txn_date: Date
+  created_at: Date
+  updated_at: Date
+}
+
+// Type aliases for CRUD operations
+export type ExpenseCategory = ExpenseCategoryTable
+export type NewExpenseCategory = Omit<
+  ExpenseCategoryTable,
+  'id' | 'created_at' | 'updated_at'
+>
+export type UpdateExpenseCategory = Partial<
+  Omit<ExpenseCategoryTable, 'id' | 'created_at' | 'updated_at'>
+>
+
+export type Expense = ExpenseTable
+export type NewExpense = Omit<ExpenseTable, 'id' | 'created_at' | 'updated_at'>
+export type UpdateExpense = Partial<
+  Omit<ExpenseTable, 'id' | 'created_at' | 'updated_at'>
+>
+
+// Extended interfaces for API responses
+export interface ExpenseWithCategoryTable extends ExpenseTable {
+  category: ExpenseCategory
+}
+
+export interface ExpenseTransformResponse {
+  id: string
+  name: string
+  expenseCategoryId: string
+  shuAmount: number
+  capitalAmount: number
+  userId?: string
+  loanId?: string
+  notes?: string
+  source?: ExpenseSource
+  createdAt: Date
+  updatedAt: Date
+  category: {
+    id: string
+    code: string
+    name: string
+    description?: string
+    defaultSource?: ExpenseSource
+  }
 }
 
 export interface ExpenseWithCategory extends ExpenseTable {
@@ -27,7 +89,10 @@ export interface ExpenseFilters {
 export interface ExpenseResponse {
   id: string
   expenseCategoryId: string
-  amount: number
+  name: string
+  shuAmount: number
+  capitalAmount: number
+  totalAmount: number
   userId?: string
   loanId?: string
   notes?: string
@@ -39,7 +104,7 @@ export interface ExpenseResponse {
     code: string
     name: string
     description?: string
-    defaultSource: 'auto' | 'total' | 'capital' | 'shu'
+    defaultSource?: ExpenseSource
   }
 }
 

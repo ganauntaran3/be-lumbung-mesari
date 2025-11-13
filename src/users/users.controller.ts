@@ -6,9 +6,9 @@ import {
   Post,
   Param,
   Body,
-  InternalServerErrorException,
   Logger,
-  HttpStatus
+  HttpStatus,
+  HttpCode
 } from '@nestjs/common'
 import {
   ApiTags,
@@ -29,6 +29,7 @@ import { RolesGuard } from '../auth/guards/roles.guard'
 import { ApproveUserDto, ApprovalResponseDto } from './dto/approve-user.dto'
 import { UsersQueryDto } from './dto/users-query.dto'
 import { UsersPaginatedResponseDto } from './dto/users-response.dto'
+import { EmailNotificationFailedException } from './exceptions/user.exceptions'
 import { UserJWT } from './interface/users'
 import { UsersService } from './users.service'
 
@@ -88,12 +89,13 @@ export class UsersController {
   }
 
   @Post(':id/approve')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Approve or reject a user registration',
     description:
-      'Approve or reject a pending user registration. Reason is optional for both actions.'
+      'Approve or reject a pending user registration. Reason is optional for both actions. Note: If email notification fails, the approval will still succeed but a warning will be included in the response.'
   })
   @ApiParam({
     name: 'id',
@@ -121,6 +123,23 @@ export class UsersController {
     @Body() approvalData: ApproveUserDto,
     @CurrentUser() admin: any
   ): Promise<ApprovalResponseDto> {
-    return await this.usersService.approveUser(userId, approvalData, admin.id)
+    try {
+      return await this.usersService.approveUser(userId, approvalData, admin.id)
+    } catch (error) {
+      if (error instanceof EmailNotificationFailedException) {
+        this.logger.warn(
+          `User ${userId} approved but email notification failed: ${error.message}`
+        )
+        // Return success response with warning
+        return {
+          message: 'User approved successfully, but email notification failed',
+          status: 'active',
+          userId: userId,
+          warning: 'Email notification could not be sent'
+        }
+      }
+      // Re-throw other errors
+      throw error
+    }
   }
 }

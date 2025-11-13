@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Knex } from 'knex'
+import { ExpenseSource } from 'src/cashbook/interfaces/cashbook.interface'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
 import { DatabaseService } from '../database/database.service'
-import { ExpenseWithCategory, UpdateExpense } from '../interface/expenses'
 
 import { CreateExpenseDto } from './dto/create-expense.dto'
 import {
@@ -22,7 +22,16 @@ import {
 } from './exceptions/expense.exceptions'
 import { ExpenseCategoriesRepository } from './expense-categories.repository'
 import { ExpensesRepository } from './expenses.repository'
-import { ExpenseSource } from './interfaces'
+import {
+  ExpensesPaginatedResponse,
+  ExpenseTransformResponse
+} from './interfaces'
+import {
+  ExpenseResponse,
+  ExpenseWithCategoryTable,
+  UpdateExpense,
+  NewExpense
+} from './interfaces/expense'
 
 @Injectable()
 export class ExpensesService {
@@ -89,10 +98,37 @@ export class ExpensesService {
     }
   }
 
+  private formatExpenseResponse(
+    expense: ExpenseWithCategoryTable
+  ): ExpenseResponse {
+    const shuAmount = Number.parseFloat(expense.shu_amount)
+    const capitalAmount = Number.parseFloat(expense.capital_amount)
+
+    return {
+      id: expense.id,
+      expenseCategoryId: expense.expense_category_id,
+      name: expense.name,
+      shuAmount,
+      capitalAmount,
+      totalAmount: shuAmount + capitalAmount,
+      userId: expense.user_id,
+      loanId: expense.loan_id,
+      notes: expense.notes,
+      source: expense.source,
+      createdAt: expense.created_at,
+      updatedAt: expense.updated_at,
+      category: {
+        id: expense.category.id,
+        code: expense.category.code,
+        name: expense.category.name
+      }
+    }
+  }
+
   async createExpense(
     createExpenseDto: CreateExpenseDto,
     currentUserId: string
-  ): Promise<ExpenseResponseDto> {
+  ): Promise<ExpenseResponse> {
     this.logger.log(
       `Creating expense for category ${createExpenseDto.expenseCategoryId} with amount ${createExpenseDto.amount}`
     )
@@ -114,7 +150,8 @@ export class ExpensesService {
       throw new ExpenseCategoryNotFoundError(createExpenseDto.expenseCategoryId)
     }
 
-    const effectiveSource = createExpenseDto.source || category.default_source
+    const effectiveSource = (createExpenseDto.source ||
+      category.default_source) as ExpenseSource
 
     const { shuAmount, capitalAmount } = await this.allocateAmounts(
       createExpenseDto.amount,
@@ -126,7 +163,7 @@ export class ExpensesService {
     )
 
     try {
-      const expenseData = {
+      const expenseData: NewExpense = {
         expense_category_id: createExpenseDto.expenseCategoryId,
         name: createExpenseDto.name,
         shu_amount: shuAmount.toString(),
@@ -145,11 +182,13 @@ export class ExpensesService {
           trx
         )
 
+        // Create cashbook transaction (application-level sync)
         await this.cashbookTransactionService.createExpenseTransaction(
           expense.id,
-          expense.user_id || currentUserId,
-          createExpenseDto.amount,
-          createExpenseDto.transactionDate,
+          expenseData.user_id || currentUserId,
+          shuAmount,
+          capitalAmount,
+          expense.txn_date,
           trx
         )
 
@@ -170,7 +209,7 @@ export class ExpensesService {
 
   async findAllExpenses(
     query: ExpensesQueryDto
-  ): Promise<ExpensesPaginatedResponseDto> {
+  ): Promise<ExpensesPaginatedResponse> {
     this.logger.log(`Finding expenses with filters: ${JSON.stringify(query)}`)
 
     const result = await this.expensesRepository.findAllWithFilters(query)
@@ -186,12 +225,7 @@ export class ExpensesService {
     }
   }
 
-  /**
-   * Find expense by ID with category information
-   * @param id - The expense ID
-   * @returns Promise<ExpenseResponseDto>
-   */
-  async findExpenseById(id: string): Promise<ExpenseResponseDto> {
+  async findExpenseById(id: string): Promise<ExpenseResponse> {
     this.logger.log(`Finding expense by ID: ${id}`)
 
     const expense = await this.expensesRepository.findByIdWithCategory(id)
@@ -211,7 +245,7 @@ export class ExpensesService {
   async updateExpense(
     id: string,
     updateExpenseDto: UpdateExpenseDto
-  ): Promise<ExpenseResponseDto> {
+  ): Promise<ExpenseResponse> {
     this.logger.log(
       `Updating expense ${id} with data: ${JSON.stringify(updateExpenseDto)}`
     )
@@ -290,25 +324,26 @@ export class ExpensesService {
     if (updateExpenseDto.notes !== undefined) {
       updateData.notes = updateExpenseDto.notes
     }
-    if (updateExpenseDto.source !== undefined) {
-      updateData.source = updateExpenseDto.source
-    }
 
     // 5. Update expense in transaction
     const knex = this.databaseService.getKnex()
     await knex.transaction(async (trx: Knex.Transaction) => {
       await this.expensesRepository.updateExpenseById(id, updateData, trx)
 
-      // Update cashbook transaction if amount changed
-      if (updateExpenseDto.amount !== undefined) {
-        // Find and update the related cashbook transaction
-        await knex('cashbook_transactions')
-          .where('expense_id', id)
-          .update({ amount: updateExpenseDto.amount.toString() })
-          .transacting(trx)
+      // Update cashbook transaction if amounts changed (application-level sync)
+      if (
+        updateData.shu_amount !== undefined &&
+        updateData.capital_amount !== undefined
+      ) {
+        const shuAmount = parseFloat(updateData.shu_amount)
+        const capitalAmount = parseFloat(updateData.capital_amount)
 
-        this.logger.log(
-          `Updated cashbook transaction for expense ${id} with new amount: ${updateExpenseDto.amount}`
+        await this.cashbookTransactionService.updateExpenseTransaction(
+          id,
+          shuAmount,
+          capitalAmount,
+          updateData.txn_date,
+          trx
         )
       }
     })
@@ -321,11 +356,6 @@ export class ExpensesService {
     return this.formatExpenseResponse(updatedExpenseWithCategory!)
   }
 
-  /**
-   * Delete an expense with proper authorization checks and cashbook cleanup
-   * @param id - The expense ID to delete
-   * @returns Promise<void>
-   */
   async deleteExpense(id: string): Promise<void> {
     this.logger.log(`Deleting expense ${id}`)
 
@@ -338,23 +368,20 @@ export class ExpensesService {
     // 2. Delete expense and handle cashbook cleanup
     const knex = this.databaseService.getKnex()
     await knex.transaction(async (trx: Knex.Transaction) => {
+      // Delete cashbook transaction first (application-level sync)
+      await this.cashbookTransactionService.deleteExpenseTransaction(id, trx)
+
       // Delete the expense using transaction-aware method
       await this.expensesRepository.deleteExpenseById(id, trx)
 
-      // Note: Cashbook transaction cleanup would be handled by database constraints
-      // or triggers, or we would need to implement explicit cleanup here
       this.logger.log(
-        `Expense ${id} deleted. Related cashbook transactions should be handled by database constraints.`
+        `Expense ${id} and related cashbook transaction deleted successfully`
       )
     })
 
     this.logger.log(`Expense ${id} deleted successfully`)
   }
 
-  /**
-   * Get all available expense categories
-   * @returns Promise<ExpenseCategoryResponseDto[]>
-   */
   async getAllCategories(): Promise<ExpenseCategoryResponseDto[]> {
     this.logger.log('Retrieving all expense categories')
 
@@ -368,39 +395,5 @@ export class ExpensesService {
       description: category.description,
       defaultSource: category.default_source
     }))
-  }
-
-  /**
-   * Format expense data for API response
-   * @param expense - The expense data with category
-   * @returns ExpenseResponseDto
-   */
-  private formatExpenseResponse(
-    expense: ExpenseWithCategory
-  ): ExpenseResponseDto {
-    const shuAmount = Number.parseFloat(expense.shu_amount)
-    const capitalAmount = Number.parseFloat(expense.capital_amount)
-
-    return {
-      id: expense.id,
-      expenseCategoryId: expense.expense_category_id,
-      name: expense.name,
-      shuAmount,
-      capitalAmount,
-      totalAmount: shuAmount + capitalAmount,
-      userId: expense.user_id,
-      loanId: expense.loan_id,
-      notes: expense.notes,
-      source: expense.source,
-      createdAt: expense.created_at,
-      updatedAt: expense.updated_at,
-      category: {
-        id: expense.category.id,
-        code: expense.category.code,
-        name: expense.category.name,
-        description: expense.category.description,
-        defaultSource: expense.category.default_source
-      }
-    }
   }
 }
