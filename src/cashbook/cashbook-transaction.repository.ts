@@ -26,7 +26,7 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
   }
 
   async createTransaction(
-    data: Omit<CashbookTransactionTable, 'id' | 'created_at'>,
+    data: Omit<CashbookTransactionTable, 'id' | 'created_at' | 'updated_at'>,
     trx?: Knex.Transaction
   ): Promise<CashbookTransactionTable> {
     try {
@@ -40,7 +40,8 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
       const [result] = await query
         .insert({
           ...data,
-          created_at: new Date()
+          created_at: new Date(),
+          updated_at: new Date()
         })
         .returning('*')
 
@@ -289,6 +290,138 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
       return summary
     } catch (error) {
       this.logger.error('Failed to get transaction summary:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update cashbook transaction by expense ID
+   */
+  async updateTransactionByExpenseId(
+    expenseId: string,
+    data: Partial<CashbookTransactionTable>,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable> {
+    try {
+      this.logger.debug(
+        `Updating cashbook transaction for expense ${expenseId}`
+      )
+
+      const query = trx
+        ? trx('cashbook_transactions')
+        : this.knex('cashbook_transactions')
+
+      const [result] = await query
+        .where('expense_id', expenseId)
+        .update({
+          ...data,
+          updated_at: new Date()
+        })
+        .returning('*')
+
+      if (!result) {
+        throw new Error(`No transaction found for expense ${expenseId}`)
+      }
+
+      this.logger.log(`Cashbook transaction updated for expense ${expenseId}`)
+      return result as CashbookTransactionTable
+    } catch (error) {
+      this.logger.error(
+        `Failed to update cashbook transaction for expense ${expenseId}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Update cashbook transaction by income ID
+   */
+  async updateTransactionByIncomeId(
+    incomeId: string,
+    data: Partial<CashbookTransactionTable>,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable> {
+    try {
+      this.logger.debug(`Updating cashbook transaction for income ${incomeId}`)
+
+      const query = trx
+        ? trx('cashbook_transactions')
+        : this.knex('cashbook_transactions')
+
+      const [result] = await query
+        .where('income_id', incomeId)
+        .update({
+          ...data,
+          updated_at: new Date()
+        })
+        .returning('*')
+
+      if (!result) {
+        throw new Error(`No transaction found for income ${incomeId}`)
+      }
+
+      this.logger.log(`Cashbook transaction updated for income ${incomeId}`)
+      return result as CashbookTransactionTable
+    } catch (error) {
+      this.logger.error(
+        `Failed to update cashbook transaction for income ${incomeId}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Delete cashbook transaction by expense ID
+   */
+  async deleteTransactionByExpenseId(
+    expenseId: string,
+    trx?: Knex.Transaction
+  ): Promise<void> {
+    try {
+      this.logger.debug(
+        `Deleting cashbook transaction for expense ${expenseId}`
+      )
+
+      const query = trx
+        ? trx('cashbook_transactions')
+        : this.knex('cashbook_transactions')
+
+      await query.where('expense_id', expenseId).del()
+
+      this.logger.log(`Cashbook transaction deleted for expense ${expenseId}`)
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete cashbook transaction for expense ${expenseId}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Delete cashbook transaction by income ID
+   */
+  async deleteTransactionByIncomeId(
+    incomeId: string,
+    trx?: Knex.Transaction
+  ): Promise<void> {
+    try {
+      this.logger.debug(`Deleting cashbook transaction for income ${incomeId}`)
+
+      const query = trx
+        ? trx('cashbook_transactions')
+        : this.knex('cashbook_transactions')
+
+      await query.where('income_id', incomeId).del()
+
+      this.logger.log(`Cashbook transaction deleted for income ${incomeId}`)
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete cashbook transaction for income ${incomeId}:`,
+        error
+      )
       throw error
     }
   }

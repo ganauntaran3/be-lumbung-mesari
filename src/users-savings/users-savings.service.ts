@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Knex } from 'knex'
+import { IncomeDestination } from 'src/cashbook/interfaces/cashbook.interface'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
 import { IncomesService } from '../incomes/incomes.service'
@@ -17,12 +18,6 @@ import { UsersRepository } from '../users/users.repository'
  *
  * Bridge service that handles cross-domain operations between users and savings.
  * This service eliminates circular dependencies between UsersModule and SavingsModule.
- *
- * Responsibilities:
- * - Approve principal savings when admin approves user
- * - Create principal savings after OTP verification
- * - Provide user query methods for savings operations
- * - Coordinate income and cashbook transaction creation
  */
 @Injectable()
 export class UsersSavingsService {
@@ -44,19 +39,21 @@ export class UsersSavingsService {
    * @param processedBy - ID of the admin who approved
    * @param trx - Database transaction to ensure consistency
    */
-  async approvePrincipalSavingsForUser(
+  async settlePrincipalSavings(
     userId: string,
-    processedBy: string,
-    trx: Knex.Transaction
+    adminId: string,
+    trx?: Knex.Transaction
   ): Promise<void> {
-    this.logger.log(`Approving principal savings for user ${userId}`)
+    this.logger.log(`Settling principal savings for user ${userId}`)
 
     // 1. Find principal savings
     const principalSavings =
       await this.savingsRepository.findPrincipalSavingsByUserId(userId)
 
     if (!principalSavings) {
-      throw new NotFoundException('Principal savings not found')
+      throw new NotFoundException(
+        `No principal savings for user with id ${userId}`
+      )
     }
 
     if (principalSavings.status === 'paid') {
@@ -68,7 +65,7 @@ export class UsersSavingsService {
       principalSavings.id,
       {
         status: 'paid',
-        processed_by: processedBy,
+        processed_by: adminId,
         processed_at: new Date()
       },
       trx
@@ -78,6 +75,7 @@ export class UsersSavingsService {
     const amount = parseFloat(principalSavings.amount)
     const income = await this.incomesService.createPrincipalSavingsIncome(
       userId,
+      principalSavings.id,
       amount,
       `Simpanan pokok dari ${principalSavings.user.fullname}`,
       trx
@@ -88,6 +86,7 @@ export class UsersSavingsService {
       income.id,
       userId,
       amount,
+      IncomeDestination.CAPITAL,
       undefined,
       trx
     )
@@ -126,25 +125,6 @@ export class UsersSavingsService {
     )
   }
 
-  /**
-   * Get count of active members
-   * Called from PrincipalSavingsService
-   *
-   * @returns Number of active members
-   */
-  async getActiveMemberCount(): Promise<number> {
-    this.logger.debug('Getting active member count')
-    const count = await this.usersRepository.getActiveMemberCount()
-    this.logger.debug(`Active member count: ${count}`)
-    return count
-  }
-
-  /**
-   * Get IDs of active members
-   * Called from MandatorySavingsService
-   *
-   * @returns Array of active member IDs
-   */
   async getActiveMemberIds(): Promise<string[]> {
     this.logger.debug('Getting active member IDs')
     const ids = await this.usersRepository.getActiveMemberIds()
@@ -152,13 +132,6 @@ export class UsersSavingsService {
     return ids
   }
 
-  /**
-   * Calculate principal savings amount
-   * Formula: total_balance / active_member_count
-   *
-   * @param trx - Optional transaction object
-   * @returns Calculated principal savings amount
-   */
   private async calculatePrincipalSavingsAmount(
     trx?: Knex.Transaction
   ): Promise<number> {
@@ -176,11 +149,6 @@ export class UsersSavingsService {
     return Math.max(amount, minAmount)
   }
 
-  /**
-   * Get minimum principal savings amount from configuration
-   *
-   * @returns Minimum amount (default: 50000)
-   */
   private getMinimumAmount(): number {
     return this.configService.get<number>('PRINCIPAL_SAVINGS_MIN_AMOUNT', 50000)
   }

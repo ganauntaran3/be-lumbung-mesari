@@ -220,8 +220,7 @@ export class AuthService {
           username: updatedUser.username,
           status: updatedUser.status
         },
-        message:
-          'OTP verified successfully. Please submit your deposit proof to complete registration.'
+        message: 'OTP verified successfully!'
       }
     } catch (error) {
       // Rollback transaction on any error

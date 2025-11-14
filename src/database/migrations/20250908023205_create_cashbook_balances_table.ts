@@ -15,147 +15,256 @@ export async function up(knex: Knex): Promise<void> {
 
   // Insert saldo awal
   await knex('cashbook_balances').insert([
-    { type: 'total', balance: 5000000.0 },
-    { type: 'capital', balance: 5000000.0 },
+    { type: 'total', balance: 5000000 },
+    { type: 'capital', balance: 5000000 },
     { type: 'shu', balance: 0 }
   ])
 
-  // Enhanced trigger function with category-based logic
+  // === CASHBOOK BALANCE TRIGGERS ===
+  // These triggers automatically update cashbook_balances when cashbook_transactions changes
+  // Application code is responsible for syncing expenses/incomes with cashbook_transactions
+
+  // 1. Handle cashbook_transactions INSERT - Add to balances
   await knex.raw(`
-    CREATE OR REPLACE FUNCTION update_cashbook_balance()
+    CREATE OR REPLACE FUNCTION cashbook_insert_balance()
     RETURNS TRIGGER AS $$
-    DECLARE
-      income_destination TEXT;
-      expense_source TEXT;
-      amount_val DECIMAL;
-      current_shu_balance DECIMAL;
-      current_capital_balance DECIMAL;
     BEGIN
-      amount_val := NEW.amount::DECIMAL;
-      
-      -- Handle INCOME transactions
-      IF NEW.income_id IS NOT NULL THEN
-        -- Get destination from category (no override for income)
-        SELECT ic.default_destination INTO income_destination
-        FROM incomes i
-        JOIN income_categories ic ON i.income_category_id = ic.id
-        WHERE i.id = NEW.income_id;
+      -- Handle INCOME transactions (direction = 'in')
+      IF NEW.direction = 'in' THEN
+        -- Add to specific balance (shu or capital)
+        IF NEW.shu_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance + NEW.shu_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'shu';
+        END IF;
         
-        -- Update total balance
+        IF NEW.capital_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance + NEW.capital_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'capital';
+        END IF;
+        
+        -- Add to total
         UPDATE cashbook_balances 
-        SET balance = balance + amount_val, updated_at = NOW()
+        SET balance = balance + (NEW.shu_amount::DECIMAL + NEW.capital_amount::DECIMAL), updated_at = NOW()
         WHERE type = 'total';
         
-        -- Update specific balance based on destination
+        RAISE NOTICE 'Income Added: SHU+%, Capital+%, Total+%', NEW.shu_amount::DECIMAL, NEW.capital_amount::DECIMAL, (NEW.shu_amount::DECIMAL + NEW.capital_amount::DECIMAL);
+      END IF;
+      
+      -- Handle EXPENSE transactions (direction = 'out')
+      IF NEW.direction = 'out' THEN
+        -- Deduct from specific balances
+        IF NEW.shu_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance - NEW.shu_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'shu';
+        END IF;
+        
+        IF NEW.capital_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance - NEW.capital_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'capital';
+        END IF;
+        
+        -- Deduct from total
         UPDATE cashbook_balances 
-        SET balance = balance + amount_val, updated_at = NOW()
-        WHERE type = income_destination;
+        SET balance = balance - (NEW.shu_amount::DECIMAL + NEW.capital_amount::DECIMAL), updated_at = NOW()
+        WHERE type = 'total';
         
-        RAISE NOTICE 'Income: Added % to % and total', amount_val, income_destination;
+        RAISE NOTICE 'Expense Added: SHU-%, Capital-%, Total-%', NEW.shu_amount::DECIMAL, NEW.capital_amount::DECIMAL, (NEW.shu_amount::DECIMAL + NEW.capital_amount::DECIMAL);
       END IF;
-      
-      -- Handle EXPENSE transactions
-      IF NEW.expense_id IS NOT NULL THEN
-        -- Get source (override or category default)
-        SELECT COALESCE(e.source, ec.default_source) INTO expense_source
-        FROM expenses e
-        JOIN expense_categories ec ON e.expense_category_id = ec.id
-        WHERE e.id = NEW.expense_id;
-        
-        -- Get current balances for validation
-        SELECT balance INTO current_shu_balance 
-        FROM cashbook_balances WHERE type = 'shu';
-        
-        SELECT balance INTO current_capital_balance 
-        FROM cashbook_balances WHERE type = 'capital';
-        
-        -- Handle different source types
-        CASE expense_source
-          WHEN 'shu' THEN
-            -- SHU only - validate sufficient balance
-            IF current_shu_balance < amount_val THEN
-              RAISE EXCEPTION 'Insufficient SHU balance. Available: %, Required: %', 
-                current_shu_balance, amount_val;
-            END IF;
-            
-            UPDATE cashbook_balances 
-            SET balance = balance - amount_val, updated_at = NOW()
-            WHERE type IN ('total', 'shu');
-            
-            RAISE NOTICE 'Expense: Deducted % from SHU and total', amount_val;
-            
-          WHEN 'capital' THEN
-            -- Capital only - validate sufficient balance
-            IF current_capital_balance < amount_val THEN
-              RAISE EXCEPTION 'Insufficient capital balance. Available: %, Required: %', 
-                current_capital_balance, amount_val;
-            END IF;
-            
-            UPDATE cashbook_balances 
-            SET balance = balance - amount_val, updated_at = NOW()
-            WHERE type IN ('total', 'capital');
-            
-            RAISE NOTICE 'Expense: Deducted % from capital and total', amount_val;
-            
-          WHEN 'auto' THEN
-            -- Smart selection: prefer SHU for operational expenses
-            IF current_shu_balance >= amount_val THEN
-              -- Use SHU if sufficient
-              UPDATE cashbook_balances 
-              SET balance = balance - amount_val, updated_at = NOW()
-              WHERE type IN ('total', 'shu');
-              
-              RAISE NOTICE 'Expense: Auto-deducted % from SHU and total', amount_val;
-            ELSE
-              -- Fallback to capital if SHU insufficient
-              IF current_capital_balance >= amount_val THEN
-                UPDATE cashbook_balances 
-                SET balance = balance - amount_val, updated_at = NOW()
-                WHERE type IN ('total', 'capital');
-                
-                RAISE NOTICE 'Expense: Auto-deducted % from capital and total (SHU insufficient)', amount_val;
-              ELSE
-                RAISE EXCEPTION 'Insufficient funds. SHU: %, Capital: %, Required: %', 
-                  current_shu_balance, current_capital_balance, amount_val;
-              END IF;
-            END IF;
-            
-          ELSE -- 'total'
-            -- Deduct from SHU by default for 'total' source
-            IF current_shu_balance >= amount_val THEN
-              UPDATE cashbook_balances 
-              SET balance = balance - amount_val, updated_at = NOW()
-              WHERE type IN ('total', 'shu');
-              
-              RAISE NOTICE 'Expense: Deducted % from SHU and total', amount_val;
-            ELSE
-              RAISE EXCEPTION 'Insufficient SHU balance for total source. Available: %, Required: %', 
-                current_shu_balance, amount_val;
-            END IF;
-        END CASE;
-      END IF;
-      
-
       
       RETURN NEW;
     END;
     $$ LANGUAGE plpgsql;
   `)
 
-  // Trigger pada cashbook_transactions
   await knex.raw(`
-    CREATE TRIGGER trg_update_cashbook_balance
+    CREATE TRIGGER trg_cashbook_insert_balance
     AFTER INSERT ON cashbook_transactions
     FOR EACH ROW
-    EXECUTE FUNCTION update_cashbook_balance();
+    EXECUTE FUNCTION cashbook_insert_balance();
+  `)
+
+  // 2. Handle cashbook_transactions UPDATE - Adjust balances
+  await knex.raw(`
+    CREATE OR REPLACE FUNCTION cashbook_update_balance()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      -- Only process if amounts or direction changed
+      IF OLD.shu_amount != NEW.shu_amount OR OLD.capital_amount != NEW.capital_amount OR OLD.direction != NEW.direction THEN
+        
+        -- First reverse the old transaction
+        IF OLD.direction = 'in' THEN
+          -- Subtract old income amounts
+          IF OLD.shu_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance - OLD.shu_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'shu';
+          END IF;
+          
+          IF OLD.capital_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance - OLD.capital_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'capital';
+          END IF;
+          
+          UPDATE cashbook_balances 
+          SET balance = balance - (OLD.shu_amount::DECIMAL + OLD.capital_amount::DECIMAL), updated_at = NOW()
+          WHERE type = 'total';
+        END IF;
+        
+        IF OLD.direction = 'out' THEN
+          -- Add back old expense amounts
+          IF OLD.shu_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance + OLD.shu_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'shu';
+          END IF;
+          
+          IF OLD.capital_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance + OLD.capital_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'capital';
+          END IF;
+          
+          UPDATE cashbook_balances 
+          SET balance = balance + (OLD.shu_amount::DECIMAL + OLD.capital_amount::DECIMAL), updated_at = NOW()
+          WHERE type = 'total';
+        END IF;
+        
+        -- Now apply the new transaction
+        IF NEW.direction = 'in' THEN
+          -- Add new income amounts
+          IF NEW.shu_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance + NEW.shu_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'shu';
+          END IF;
+          
+          IF NEW.capital_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance + NEW.capital_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'capital';
+          END IF;
+          
+          UPDATE cashbook_balances 
+          SET balance = balance + (NEW.shu_amount::DECIMAL + NEW.capital_amount::DECIMAL), updated_at = NOW()
+          WHERE type = 'total';
+        END IF;
+        
+        IF NEW.direction = 'out' THEN
+          -- Deduct new expense amounts
+          IF NEW.shu_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance - NEW.shu_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'shu';
+          END IF;
+          
+          IF NEW.capital_amount::DECIMAL > 0 THEN
+            UPDATE cashbook_balances 
+            SET balance = balance - NEW.capital_amount::DECIMAL, updated_at = NOW()
+            WHERE type = 'capital';
+          END IF;
+          
+          UPDATE cashbook_balances 
+          SET balance = balance - (NEW.shu_amount::DECIMAL + NEW.capital_amount::DECIMAL), updated_at = NOW()
+          WHERE type = 'total';
+        END IF;
+        
+        RAISE NOTICE 'Cashbook Updated: Old total %, New total %', (OLD.shu_amount::DECIMAL + OLD.capital_amount::DECIMAL), (NEW.shu_amount::DECIMAL + NEW.capital_amount::DECIMAL);
+      END IF;
+      
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+  `)
+
+  await knex.raw(`
+    CREATE TRIGGER trg_cashbook_update_balance
+    AFTER UPDATE ON cashbook_transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION cashbook_update_balance();
+  `)
+
+  // 3. Handle cashbook_transactions DELETE - Restore balances
+  await knex.raw(`
+    CREATE OR REPLACE FUNCTION cashbook_delete_balance()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      -- Handle INCOME deletion (subtract from balances)
+      IF OLD.direction = 'in' THEN
+        IF OLD.shu_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance - OLD.shu_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'shu';
+        END IF;
+        
+        IF OLD.capital_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance - OLD.capital_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'capital';
+        END IF;
+        
+        UPDATE cashbook_balances 
+        SET balance = balance - (OLD.shu_amount::DECIMAL + OLD.capital_amount::DECIMAL), updated_at = NOW()
+        WHERE type = 'total';
+        
+        RAISE NOTICE 'Income Deleted: Subtracted SHU-%, Capital-%, Total-%', OLD.shu_amount::DECIMAL, OLD.capital_amount::DECIMAL, (OLD.shu_amount::DECIMAL + OLD.capital_amount::DECIMAL);
+      END IF;
+      
+      -- Handle EXPENSE deletion (add back to balances)
+      IF OLD.direction = 'out' THEN
+        IF OLD.shu_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance + OLD.shu_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'shu';
+        END IF;
+        
+        IF OLD.capital_amount::DECIMAL > 0 THEN
+          UPDATE cashbook_balances 
+          SET balance = balance + OLD.capital_amount::DECIMAL, updated_at = NOW()
+          WHERE type = 'capital';
+        END IF;
+        
+        UPDATE cashbook_balances 
+        SET balance = balance + (OLD.shu_amount::DECIMAL + OLD.capital_amount::DECIMAL), updated_at = NOW()
+        WHERE type = 'total';
+        
+        RAISE NOTICE 'Expense Deleted: Added back SHU+%, Capital+%, Total+%', OLD.shu_amount::DECIMAL, OLD.capital_amount::DECIMAL, (OLD.shu_amount::DECIMAL + OLD.capital_amount::DECIMAL);
+      END IF;
+      
+      RETURN OLD;
+    END;
+    $$ LANGUAGE plpgsql;
+  `)
+
+  await knex.raw(`
+    CREATE TRIGGER trg_cashbook_delete_balance
+    AFTER DELETE ON cashbook_transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION cashbook_delete_balance();
   `)
 }
 
 export async function down(knex: Knex): Promise<void> {
+  // Drop triggers
   await knex.raw(
-    'DROP TRIGGER IF EXISTS trg_update_cashbook_balance ON cashbook_transactions'
+    'DROP TRIGGER IF EXISTS trg_cashbook_insert_balance ON cashbook_transactions'
   )
-  await knex.raw('DROP FUNCTION IF EXISTS update_cashbook_balance')
+  await knex.raw(
+    'DROP TRIGGER IF EXISTS trg_cashbook_update_balance ON cashbook_transactions'
+  )
+  await knex.raw(
+    'DROP TRIGGER IF EXISTS trg_cashbook_delete_balance ON cashbook_transactions'
+  )
+
+  // Drop functions
+  await knex.raw('DROP FUNCTION IF EXISTS cashbook_insert_balance')
+  await knex.raw('DROP FUNCTION IF EXISTS cashbook_update_balance')
+  await knex.raw('DROP FUNCTION IF EXISTS cashbook_delete_balance')
+
   await knex.raw('DROP INDEX IF EXISTS idx_cashbook_balances_type')
   await knex.schema.dropTableIfExists('cashbook_balances')
 }
