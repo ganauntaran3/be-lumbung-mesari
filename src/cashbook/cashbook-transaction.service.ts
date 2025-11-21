@@ -51,8 +51,7 @@ export class CashbookTransactionService {
           direction: 'in',
           shu_amount: destination === 'shu' ? amount : 0,
           capital_amount: destination === 'capital' ? amount : 0,
-          income_id: incomeId,
-          user_id: userId
+          income_id: incomeId
         },
         trx
       )
@@ -236,61 +235,6 @@ export class CashbookTransactionService {
     }
   }
 
-  async getTransactionHistory(filters: TransactionFilters = {}): Promise<{
-    transactions: CashbookTransactionTable[]
-    summary: TransactionSummary
-  }> {
-    try {
-      this.logger.log(
-        `Retrieving transaction history with filters:`,
-        JSON.stringify(filters)
-      )
-
-      const transactions =
-        await this.transactionRepository.getTransactionsWithFilters(filters)
-
-      // Calculate summary
-      const summary = this.calculateTransactionSummary(transactions)
-
-      this.logger.log(`Retrieved ${transactions.length} transactions`)
-
-      return {
-        transactions,
-        summary
-      }
-    } catch (error) {
-      this.logger.error('Failed to get transaction history:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Get transactions by date range
-   */
-  async getTransactionsByDateRange(
-    from: Date,
-    to: Date,
-    limit?: number
-  ): Promise<CashbookTransactionTable[]> {
-    try {
-      this.logger.log(
-        `Getting transactions from ${from.toISOString()} to ${to.toISOString()}`
-      )
-
-      const transactions =
-        await this.transactionRepository.getTransactionsWithFilters({
-          dateFrom: from,
-          dateTo: to,
-          limit
-        })
-
-      return transactions
-    } catch (error) {
-      this.logger.error('Failed to get transactions by date range:', error)
-      throw error
-    }
-  }
-
   /**
    * Get recent transactions
    */
@@ -310,37 +254,5 @@ export class CashbookTransactionService {
       this.logger.error('Failed to get recent transactions:', error)
       throw error
     }
-  }
-
-  /**
-   * Calculate transaction summary from transaction list
-   */
-  private calculateTransactionSummary(
-    transactions: CashbookTransactionTable[]
-  ): TransactionSummary {
-    const summary = transactions.reduce(
-      (acc, txn) => {
-        const amount = parseFloat(txn.amount)
-
-        if (txn.direction === 'in') {
-          acc.totalIncome += amount
-        } else {
-          acc.totalExpense += amount
-        }
-
-        acc.transactionCount++
-        return acc
-      },
-      {
-        totalIncome: 0,
-        totalExpense: 0,
-        netFlow: 0,
-        transactionCount: 0
-      }
-    )
-
-    summary.netFlow = summary.totalIncome - summary.totalExpense
-
-    return summary
   }
 }

@@ -30,9 +30,7 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
     trx?: Knex.Transaction
   ): Promise<CashbookTransactionTable> {
     try {
-      this.logger.debug(
-        `Creating cashbook transaction: ${data.direction} ${data.amount}`
-      )
+      this.logger.debug(`Creating cashbook transaction: ${data.direction}`)
 
       const query = trx
         ? trx('cashbook_transactions')
@@ -46,7 +44,7 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
         .returning('*')
 
       this.logger.log(
-        `Cashbook transaction created: ${result.id} (${data.direction} ${data.amount})`
+        `Cashbook transaction created: ${result.id} (${data.direction})`
       )
       return result as CashbookTransactionTable
     } catch (error) {
@@ -246,50 +244,6 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
       return parseInt(count as string, 10)
     } catch (error) {
       this.logger.error('Failed to get transaction count:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Get transaction summary (total income, expense, net flow)
-   */
-  async getTransactionSummary(
-    filters: Omit<TransactionFilters, 'limit' | 'offset'> = {}
-  ): Promise<{
-    totalIncome: number
-    totalExpense: number
-    netFlow: number
-    transactionCount: number
-  }> {
-    try {
-      const transactions = await this.getTransactionsWithFilters(filters)
-
-      const summary = transactions.reduce(
-        (acc, txn) => {
-          const amount = parseFloat(txn.amount)
-
-          if (txn.direction === 'in') {
-            acc.totalIncome += amount
-          } else {
-            acc.totalExpense += amount
-          }
-
-          acc.transactionCount++
-          return acc
-        },
-        {
-          totalIncome: 0,
-          totalExpense: 0,
-          netFlow: 0,
-          transactionCount: 0
-        }
-      )
-
-      summary.netFlow = summary.totalIncome - summary.totalExpense
-
-      return summary
-    } catch (error) {
-      this.logger.error('Failed to get transaction summary:', error)
       throw error
     }
   }
