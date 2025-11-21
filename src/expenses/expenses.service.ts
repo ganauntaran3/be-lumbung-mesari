@@ -30,7 +30,8 @@ import {
   ExpenseResponse,
   ExpenseWithCategoryTable,
   UpdateExpense,
-  NewExpense
+  NewExpense,
+  ExpenseCategoryTable
 } from './interfaces/expense'
 
 @Injectable()
@@ -46,12 +47,13 @@ export class ExpensesService {
 
   private async allocateAmounts(
     totalAmount: number,
-    source: 'auto' | 'total' | 'capital' | 'shu'
+    source: 'auto' | 'total' | 'capital' | 'shu',
+    trx: Knex.Transaction
   ): Promise<{ shuAmount: number; capitalAmount: number }> {
-    const knex = this.databaseService.getKnex()
-    const balances = await knex('cashbook_balances')
+    const balances = await trx('cashbook_balances')
       .select('type', 'balance')
       .whereIn('type', ['shu', 'capital'])
+      .forUpdate()
 
     const shuBalance = parseFloat(
       balances.find((b) => b.type === 'shu')?.balance || '0'
@@ -153,30 +155,32 @@ export class ExpensesService {
     const effectiveSource = (createExpenseDto.source ||
       category.default_source) as ExpenseSource
 
-    const { shuAmount, capitalAmount } = await this.allocateAmounts(
-      createExpenseDto.amount,
-      effectiveSource
-    )
-
-    this.logger.debug(
-      `Allocated amounts - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
-    )
-
     try {
-      const expenseData: NewExpense = {
-        expense_category_id: createExpenseDto.expenseCategoryId,
-        name: createExpenseDto.name,
-        shu_amount: shuAmount.toString(),
-        capital_amount: capitalAmount.toString(),
-        txn_date: createExpenseDto.transactionDate || new Date(),
-        user_id: createExpenseDto.userId || currentUserId,
-        loan_id: createExpenseDto.loanId,
-        notes: createExpenseDto.notes,
-        source: effectiveSource
-      }
-
       const knex = this.databaseService.getKnex()
       const result = await knex.transaction(async (trx: Knex.Transaction) => {
+        // Check balance and allocate amounts INSIDE transaction with lock
+        const { shuAmount, capitalAmount } = await this.allocateAmounts(
+          createExpenseDto.amount,
+          effectiveSource,
+          trx
+        )
+
+        this.logger.debug(
+          `Allocated amounts - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
+        )
+
+        const expenseData: NewExpense = {
+          expense_category_id: createExpenseDto.expenseCategoryId,
+          name: createExpenseDto.name,
+          shu_amount: shuAmount.toString(),
+          capital_amount: capitalAmount.toString(),
+          txn_date: createExpenseDto.transactionDate || new Date(),
+          user_id: createExpenseDto.userId || currentUserId,
+          loan_id: createExpenseDto.loanId,
+          notes: createExpenseDto.notes,
+          source: effectiveSource
+        }
+
         const expense = await this.expensesRepository.createExpense(
           expenseData,
           trx
@@ -271,7 +275,7 @@ export class ExpensesService {
     }
 
     // 3. Validate category if being updated
-    let category = null
+    let category: ExpenseCategoryTable | null | undefined = null
     if (updateExpenseDto.expenseCategoryId) {
       category = await this.expenseCategoriesRepository.findById(
         updateExpenseDto.expenseCategoryId
@@ -283,51 +287,53 @@ export class ExpensesService {
       }
     }
 
-    // 4. Prepare update data
-    const updateData: UpdateExpense = {}
-
-    // Handle amount change - recalculate shu_amount and capital_amount
-    if (updateExpenseDto.amount !== undefined) {
-      // Get the effective category (new or existing)
-      const effectiveCategory = category || existingExpense.category
-      const effectiveSource =
-        updateExpenseDto.source ||
-        existingExpense.source ||
-        effectiveCategory.default_source
-
-      // Allocate the new amount
-      const { shuAmount, capitalAmount } = await this.allocateAmounts(
-        updateExpenseDto.amount,
-        effectiveSource
-      )
-
-      updateData.shu_amount = shuAmount.toString()
-      updateData.capital_amount = capitalAmount.toString()
-
-      this.logger.log(
-        `Reallocated amounts for expense ${id} - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
-      )
-    }
-
-    if (updateExpenseDto.expenseCategoryId) {
-      updateData.expense_category_id = updateExpenseDto.expenseCategoryId
-    }
-    if (updateExpenseDto.name !== undefined) {
-      updateData.name = updateExpenseDto.name
-    }
-    if (updateExpenseDto.userId !== undefined) {
-      updateData.user_id = updateExpenseDto.userId
-    }
-    if (updateExpenseDto.loanId !== undefined) {
-      updateData.loan_id = updateExpenseDto.loanId
-    }
-    if (updateExpenseDto.notes !== undefined) {
-      updateData.notes = updateExpenseDto.notes
-    }
-
-    // 5. Update expense in transaction
+    // Start transaction for update
     const knex = this.databaseService.getKnex()
     await knex.transaction(async (trx: Knex.Transaction) => {
+      // 4. Prepare update data
+      const updateData: UpdateExpense = {}
+
+      // Handle amount change - recalculate shu_amount and capital_amount
+      if (updateExpenseDto.amount !== undefined) {
+        // Get the effective category (new or existing)
+        const effectiveCategory = category || existingExpense.category
+        const effectiveSource =
+          updateExpenseDto.source ||
+          existingExpense.source ||
+          effectiveCategory.default_source
+
+        // Allocate the new amount WITH LOCK
+        const { shuAmount, capitalAmount } = await this.allocateAmounts(
+          updateExpenseDto.amount,
+          effectiveSource,
+          trx
+        )
+
+        updateData.shu_amount = shuAmount.toString()
+        updateData.capital_amount = capitalAmount.toString()
+
+        this.logger.log(
+          `Reallocated amounts for expense ${id} - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
+        )
+      }
+
+      if (updateExpenseDto.expenseCategoryId) {
+        updateData.expense_category_id = updateExpenseDto.expenseCategoryId
+      }
+      if (updateExpenseDto.name !== undefined) {
+        updateData.name = updateExpenseDto.name
+      }
+      if (updateExpenseDto.userId !== undefined) {
+        updateData.user_id = updateExpenseDto.userId
+      }
+      if (updateExpenseDto.loanId !== undefined) {
+        updateData.loan_id = updateExpenseDto.loanId
+      }
+      if (updateExpenseDto.notes !== undefined) {
+        updateData.notes = updateExpenseDto.notes
+      }
+
+      // 5. Update expense in transaction
       await this.expensesRepository.updateExpenseById(id, updateData, trx)
 
       // Update cashbook transaction if amounts changed (application-level sync)
