@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { Knex } from 'knex'
 
 import { CashbookTransactionRepository } from './cashbook-transaction.repository'
 import { CashbookTransactionTable } from './interfaces/cashbook.interface'
@@ -35,21 +36,22 @@ export class CashbookTransactionService {
     incomeId: string,
     userId: string,
     amount: number,
+    destination: 'shu' | 'capital',
     txnDate?: Date,
     trx?: any
   ): Promise<CashbookTransactionTable> {
     try {
       this.logger.log(
-        `Creating income transaction: ${incomeId}, amount: ${amount}`
+        `Creating income transaction: ${incomeId}, amount: ${amount}, destination: ${destination}`
       )
 
       const transaction = await this.transactionRepository.createTransaction(
         {
           txn_date: txnDate || new Date(),
           direction: 'in',
-          amount: amount.toString(),
-          income_id: incomeId,
-          user_id: userId
+          shu_amount: destination === 'shu' ? amount : 0,
+          capital_amount: destination === 'capital' ? amount : 0,
+          income_id: incomeId
         },
         trx
       )
@@ -72,21 +74,28 @@ export class CashbookTransactionService {
   async createExpenseTransaction(
     expenseId: string,
     userId: string,
-    amount: number,
-    txnDate?: Date
+    shuAmount: number,
+    capitalAmount: number,
+    txnDate?: Date,
+    trx?: Knex.Transaction
   ): Promise<CashbookTransactionTable> {
     try {
+      const totalAmount = shuAmount + capitalAmount
       this.logger.log(
-        `Creating expense transaction: ${expenseId}, amount: ${amount}`
+        `Creating expense transaction: ${expenseId}, shu: ${shuAmount}, capital: ${capitalAmount}, total: ${totalAmount}`
       )
 
-      const transaction = await this.transactionRepository.createTransaction({
-        txn_date: txnDate || new Date(),
-        direction: 'out',
-        amount: amount.toString(),
-        expense_id: expenseId,
-        user_id: userId
-      })
+      const transaction = await this.transactionRepository.createTransaction(
+        {
+          txn_date: txnDate || new Date(),
+          direction: 'out',
+          shu_amount: shuAmount,
+          capital_amount: capitalAmount,
+          expense_id: expenseId,
+          user_id: userId
+        },
+        trx
+      )
 
       this.logger.log(`Expense transaction created: ${transaction.id}`)
       return transaction
@@ -100,59 +109,128 @@ export class CashbookTransactionService {
   }
 
   /**
-   * Get transaction history with filters
+   * Update cashbook transaction for expense
+   * Called when expense is updated
    */
-  async getTransactionHistory(filters: TransactionFilters = {}): Promise<{
-    transactions: CashbookTransactionTable[]
-    summary: TransactionSummary
-  }> {
+  async updateExpenseTransaction(
+    expenseId: string,
+    shuAmount: number,
+    capitalAmount: number,
+    txnDate?: Date,
+    trx?: Knex.Transaction
+  ): Promise<void> {
     try {
+      const totalAmount = shuAmount + capitalAmount
       this.logger.log(
-        `Retrieving transaction history with filters:`,
-        JSON.stringify(filters)
+        `Updating expense transaction for ${expenseId}: shu: ${shuAmount}, capital: ${capitalAmount}, total: ${totalAmount}`
       )
 
-      const transactions =
-        await this.transactionRepository.getTransactionsWithFilters(filters)
+      await this.transactionRepository.updateTransactionByExpenseId(
+        expenseId,
+        {
+          shu_amount: shuAmount,
+          capital_amount: capitalAmount,
+          txn_date: txnDate,
+          updated_at: new Date()
+        },
+        trx
+      )
 
-      // Calculate summary
-      const summary = this.calculateTransactionSummary(transactions)
-
-      this.logger.log(`Retrieved ${transactions.length} transactions`)
-
-      return {
-        transactions,
-        summary
-      }
+      this.logger.log(`Expense transaction updated for ${expenseId}`)
     } catch (error) {
-      this.logger.error('Failed to get transaction history:', error)
+      this.logger.error(
+        `Failed to update expense transaction for ${expenseId}:`,
+        error
+      )
       throw error
     }
   }
 
   /**
-   * Get transactions by date range
+   * Update cashbook transaction for income
+   * Called when income is updated
    */
-  async getTransactionsByDateRange(
-    from: Date,
-    to: Date,
-    limit?: number
-  ): Promise<CashbookTransactionTable[]> {
+  async updateIncomeTransaction(
+    incomeId: string,
+    amount: number,
+    destination: 'shu' | 'capital',
+    txnDate?: Date,
+    trx?: Knex.Transaction
+  ): Promise<void> {
     try {
       this.logger.log(
-        `Getting transactions from ${from.toISOString()} to ${to.toISOString()}`
+        `Updating income transaction for ${incomeId}: amount: ${amount}, destination: ${destination}`
       )
 
-      const transactions =
-        await this.transactionRepository.getTransactionsWithFilters({
-          dateFrom: from,
-          dateTo: to,
-          limit
-        })
+      await this.transactionRepository.updateTransactionByIncomeId(
+        incomeId,
+        {
+          shu_amount: destination === 'shu' ? amount : 0,
+          capital_amount: destination === 'capital' ? amount : 0,
+          txn_date: txnDate,
+          updated_at: new Date()
+        },
+        trx
+      )
 
-      return transactions
+      this.logger.log(`Income transaction updated for ${incomeId}`)
     } catch (error) {
-      this.logger.error('Failed to get transactions by date range:', error)
+      this.logger.error(
+        `Failed to update income transaction for ${incomeId}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Delete cashbook transaction by expense ID
+   * Called when expense is deleted
+   */
+  async deleteExpenseTransaction(
+    expenseId: string,
+    trx?: Knex.Transaction
+  ): Promise<void> {
+    try {
+      this.logger.log(`Deleting expense transaction for ${expenseId}`)
+
+      await this.transactionRepository.deleteTransactionByExpenseId(
+        expenseId,
+        trx
+      )
+
+      this.logger.log(`Expense transaction deleted for ${expenseId}`)
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete expense transaction for ${expenseId}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Delete cashbook transaction by income ID
+   * Called when income is deleted
+   */
+  async deleteIncomeTransaction(
+    incomeId: string,
+    trx?: Knex.Transaction
+  ): Promise<void> {
+    try {
+      this.logger.log(`Deleting income transaction for ${incomeId}`)
+
+      await this.transactionRepository.deleteTransactionByIncomeId(
+        incomeId,
+        trx
+      )
+
+      this.logger.log(`Income transaction deleted for ${incomeId}`)
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete income transaction for ${incomeId}:`,
+        error
+      )
       throw error
     }
   }
@@ -176,68 +254,5 @@ export class CashbookTransactionService {
       this.logger.error('Failed to get recent transactions:', error)
       throw error
     }
-  }
-
-  /**
-   * Get monthly transaction summary
-   */
-  async getMonthlyTransactionSummary(
-    year: number,
-    month: number
-  ): Promise<TransactionSummary> {
-    try {
-      const startDate = new Date(year, month - 1, 1)
-      const endDate = new Date(year, month, 0, 23, 59, 59)
-
-      this.logger.log(
-        `Getting monthly summary for ${year}-${month.toString().padStart(2, '0')}`
-      )
-
-      const transactions = await this.getTransactionsByDateRange(
-        startDate,
-        endDate
-      )
-      const summary = this.calculateTransactionSummary(transactions)
-
-      return summary
-    } catch (error) {
-      this.logger.error(
-        `Failed to get monthly summary for ${year}-${month}:`,
-        error
-      )
-      throw error
-    }
-  }
-
-  /**
-   * Calculate transaction summary from transaction list
-   */
-  private calculateTransactionSummary(
-    transactions: CashbookTransactionTable[]
-  ): TransactionSummary {
-    const summary = transactions.reduce(
-      (acc, txn) => {
-        const amount = parseFloat(txn.amount)
-
-        if (txn.direction === 'in') {
-          acc.totalIncome += amount
-        } else {
-          acc.totalExpense += amount
-        }
-
-        acc.transactionCount++
-        return acc
-      },
-      {
-        totalIncome: 0,
-        totalExpense: 0,
-        netFlow: 0,
-        transactionCount: 0
-      }
-    )
-
-    summary.netFlow = summary.totalIncome - summary.totalExpense
-
-    return summary
   }
 }

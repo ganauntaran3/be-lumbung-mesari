@@ -21,13 +21,22 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('expense_categories')
       .onDelete('RESTRICT')
       .notNullable()
-    table.decimal('amount', 12, 4).notNullable()
+    table.string('name', 255).notNullable()
+    table.decimal('shu_amount', 12, 4).notNullable().defaultTo(0)
+    table.decimal('capital_amount', 12, 4).notNullable().defaultTo(0)
     table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.uuid('loan_id').references('id').inTable('loans').onDelete('SET NULL')
     table.text('notes').nullable()
     table.enum('source', defaultSource).nullable()
+    table.date('txn_date').notNullable().defaultTo(knex.fn.now())
     table.timestamp('created_at').defaultTo(knex.fn.now())
     table.timestamp('updated_at').defaultTo(knex.fn.now())
+
+    table.check(
+      'shu_amount + capital_amount > 0',
+      [],
+      'chk_expense_amounts_positive'
+    )
   })
 }
 
