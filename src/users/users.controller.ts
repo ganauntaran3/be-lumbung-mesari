@@ -26,7 +26,11 @@ import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 
-import { ApproveUserDto, ApprovalResponseDto } from './dto/approve-user.dto'
+import {
+  ApproveUserDto,
+  ApprovalResponseDto,
+  RejectUserQueryDto
+} from './dto/approve-user.dto'
 import { UsersQueryDto } from './dto/users-query.dto'
 import { UsersPaginatedResponseDto } from './dto/users-response.dto'
 import { EmailNotificationFailedException } from './exceptions/user.exceptions'
@@ -93,9 +97,9 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
-    summary: 'Approve or reject a user registration',
+    summary: 'Approve a user registration',
     description:
-      'Approve or reject a pending user registration. Reason is optional for both actions. Note: If email notification fails, the approval will still succeed but a warning will be included in the response.'
+      'Approve a pending user registration. This will activate the user account and process their principal savings. Note: If email notification fails, the approval will still succeed but a warning will be included in the response.'
   })
   @ApiParam({
     name: 'id',
@@ -105,7 +109,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User approval/rejection processed successfully',
+    description: 'User approved successfully',
     type: ApprovalResponseDto
   })
   @ApiResponse({
@@ -134,6 +138,61 @@ export class UsersController {
         return {
           message: 'User approved successfully, but email notification failed',
           status: 'active',
+          userId: userId,
+          warning: 'Email notification could not be sent'
+        }
+      }
+      // Re-throw other errors
+      throw error
+    }
+  }
+
+  @Post(':id/reject')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiOperation({
+    summary: 'Reject a user registration',
+    description:
+      'Reject a pending user registration. The user status will be changed to waiting_deposit. A reason must be provided. Note: If email notification fails, the rejection will still succeed but a warning will be included in the response.'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID',
+    type: 'string',
+    format: 'uuid'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User rejected successfully',
+    type: ApprovalResponseDto
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Bad Request - Invalid action or user status'
+  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden - Insufficient permissions'
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
+  async rejectUser(
+    @Param('id') userId: string,
+    @Body() rejectionData: RejectUserQueryDto,
+    @CurrentUser() admin: any
+  ): Promise<ApprovalResponseDto> {
+    try {
+      return await this.usersService.rejectUser(userId, rejectionData, admin.id)
+    } catch (error) {
+      if (error instanceof EmailNotificationFailedException) {
+        this.logger.warn(
+          `User ${userId} rejected but email notification failed: ${error.message}`
+        )
+        // Return success response with warning
+        return {
+          message: 'User rejected successfully, but email notification failed',
+          status: 'waiting_deposit',
           userId: userId,
           warning: 'Email notification could not be sent'
         }

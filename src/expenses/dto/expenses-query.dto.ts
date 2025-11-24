@@ -3,7 +3,6 @@ import { Type } from 'class-transformer'
 import {
   IsOptional,
   IsString,
-  IsUUID,
   IsDateString,
   IsNumber,
   IsPositive,
@@ -35,7 +34,7 @@ export class ExpensesQueryDto extends PaginationQueryDto {
     example: '01234567-89ab-cdef-0123-456789abcdef'
   })
   @IsOptional()
-  @IsUUID(4, { message: 'User ID must be a valid UUID' })
+  @IsString({ message: 'User ID must be a valid ID' })
   userId?: string
 
   @ApiPropertyOptional({

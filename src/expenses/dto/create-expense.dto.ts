@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import {
-  IsUUID,
   IsNotEmpty,
   IsNumber,
   IsPositive,
@@ -18,7 +17,7 @@ export class CreateExpenseDto {
     example: '01234567-89ab-cdef-0123-456789abcdef',
     required: true
   })
-  @IsUUID(7, { message: 'Expense category ID must be a valid UUID' })
+  @IsString()
   @IsNotEmpty({ message: 'Expense category ID is required' })
   expenseCategoryId!: string
 
@@ -65,7 +64,7 @@ export class CreateExpenseDto {
     example: '01234567-89ab-cdef-0123-456789abcdef'
   })
   @IsOptional()
-  @IsUUID(7, { message: 'Loan ID must be a valid UUID' })
+  @IsString({ message: 'Loan ID must be a valid ID' })
   loanId?: string
 
   @ApiPropertyOptional({
