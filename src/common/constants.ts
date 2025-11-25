@@ -2,7 +2,8 @@ export enum UserStatus {
   WAITING_DEPOSIT = 'waiting_deposit',
   PENDING = 'pending',
   ACTIVE = 'active',
-  SUSPENDED = 'suspended'
+  INACTIVE = 'inactive',
+  REJECTED = 'rejected'
 }
 
 export enum UserRole {

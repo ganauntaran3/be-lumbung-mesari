@@ -305,6 +305,7 @@ export class UsersService {
     adminId: string
   ): Promise<ApprovalResponseDto> {
     const user = await this.findById(userId)
+
     if (!user) {
       throw new NotFoundException('User not found')
     }
@@ -321,12 +322,7 @@ export class UsersService {
     try {
       this.logger.log(`Starting user rejection transaction for user ${userId}`)
 
-      // Update user status to waiting_deposit (back to initial state)
-      await this.usersRepository.updateStatus(
-        userId,
-        UserStatus.WAITING_DEPOSIT,
-        trx
-      )
+      await this.usersRepository.updateStatus(userId, UserStatus.REJECTED, trx)
 
       await trx.commit()
       this.logger.log(
@@ -341,15 +337,12 @@ export class UsersService {
           rejectionData.reason
         )
       } catch (emailError) {
-        // Handle email notification failure
         if (emailError instanceof EmailNotificationFailedException) {
           this.logger.warn(
             `User ${userId} rejected successfully but email notification failed`
           )
-          // Re-throw to let controller handle it
           throw emailError
         }
-        // For other unexpected errors, log but don't fail the rejection
         this.logger.error(
           `Unexpected error sending rejection email:`,
           emailError
@@ -369,7 +362,6 @@ export class UsersService {
         userId: userId
       }
     } catch (error) {
-      // Only rollback if transaction hasn't been committed
       if (!trx.isCompleted()) {
         await trx.rollback()
         this.logger.error(`Transaction rolled back for user ${userId}`)
