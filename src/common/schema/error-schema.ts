@@ -36,16 +36,6 @@ export const createInternalServerErrorSchema = (
   message = 'Internal server error occurred'
 ) => createErrorResponseSchema(500, 'Internal Server Error', message)
 
-// Pre-defined common schemas with default messages
-export const ErrorResponseSchema = {
-  type: 'object',
-  properties: {
-    statusCode: { type: 'number' },
-    message: { type: 'string' },
-    error: { type: 'string' }
-  }
-}
-
 export const UnauthorizedResponseSchema = createUnauthorizedSchema()
 export const BadRequestResponseSchema = createBadRequestSchema()
 export const ConflictResponseSchema = createConflictSchema(
@@ -87,5 +77,8 @@ export const AuthErrorSchemas = {
   emailExists: createConflictSchema('Email address is already registered'),
   usernameExists: createConflictSchema('Username is already taken'),
   userNotFound: createNotFoundSchema('User not found'),
-  validationFailed: createBadRequestSchema('Validation failed')
+  validationFailed: createBadRequestSchema('Validation failed'),
+  insufficientPermissions: createForbiddenSchema(
+    'User with role {role} does not have sufficient permissions'
+  )
 }

@@ -6,11 +6,7 @@ import { CashbookTransactionService } from '../cashbook/cashbook-transaction.ser
 import { DatabaseService } from '../database/database.service'
 
 import { CreateExpenseDto } from './dto/create-expense.dto'
-import {
-  ExpenseResponseDto,
-  ExpensesPaginatedResponseDto,
-  ExpenseCategoryResponseDto
-} from './dto/expense-response.dto'
+import { ExpenseCategoryResponseDto } from './dto/expense-response.dto'
 import { ExpensesQueryDto } from './dto/expenses-query.dto'
 import { UpdateExpenseDto } from './dto/update-expense.dto'
 import {
@@ -22,10 +18,7 @@ import {
 } from './exceptions/expense.exceptions'
 import { ExpenseCategoriesRepository } from './expense-categories.repository'
 import { ExpensesRepository } from './expenses.repository'
-import {
-  ExpensesPaginatedResponse,
-  ExpenseTransformResponse
-} from './interfaces'
+import { ExpensesPaginatedResponse } from './interfaces'
 import {
   ExpenseResponse,
   ExpenseWithCategoryTable,
@@ -85,8 +78,8 @@ export class ExpensesService {
         if (capitalBalance >= totalAmount) {
           return { shuAmount: 0, capitalAmount: totalAmount }
         } else if (shuBalance + capitalBalance >= totalAmount) {
-          const remainingAmount = totalAmount - shuBalance
-          return { shuAmount: shuBalance, capitalAmount: remainingAmount }
+          const remainingAmount = totalAmount - capitalBalance
+          return { shuAmount: remainingAmount, capitalAmount: capitalBalance }
         } else {
           throw new InsufficientFundsError(
             totalAmount,

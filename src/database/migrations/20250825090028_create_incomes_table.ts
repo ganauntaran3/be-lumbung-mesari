@@ -28,7 +28,7 @@ export async function up(knex: Knex): Promise<void> {
     table
       .uuid('installment_id')
       .references('id')
-      .inTable('loans')
+      .inTable('installments')
       .onDelete('SET NULL')
     table
       .uuid('principal_saving_id')

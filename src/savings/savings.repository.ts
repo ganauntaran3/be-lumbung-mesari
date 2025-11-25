@@ -24,10 +24,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     super(databaseService, 'mandatory_savings')
   }
 
-  /**
-   * Find all mandatory savings with user information and pagination
-   * Supports period filtering and default 30-day range
-   */
   async findAllWithUsers(
     options: SavingsQueryDto
   ): Promise<MandatorySavingsPaginatedResponse> {
@@ -47,7 +43,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
 
       const offset = (page - 1) * limit
 
-      // Build base query with joins
       let baseQuery = this.knex('mandatory_savings as ms')
         .join('users as u', 'ms.user_id', 'u.id')
         .leftJoin('users as pb', 'ms.processed_by', 'pb.id')
@@ -142,10 +137,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     }
   }
 
-  /**
-   * Find mandatory savings for a specific user with pagination
-   * Supports period filtering and default 30-day range
-   */
   async findByUserIdWithPagination(
     userId: string,
     options: SavingsQueryDto
@@ -166,7 +157,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
 
       const offset = (page - 1) * limit
 
-      // Build base query with joins
       let baseQuery = this.knex('mandatory_savings as ms')
         .join('users as u', 'ms.user_id', 'u.id')
         .leftJoin('users as pb', 'ms.processed_by', 'pb.id')
@@ -264,10 +254,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     }
   }
 
-  /**
-   * Generate mandatory savings for remaining months of current year
-   * Used for development/manual trigger
-   */
   async generateRemainingYearSavings(
     userIds: string[],
     amount: number,
@@ -322,10 +308,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     }
   }
 
-  /**
-   * Update mandatory savings record by ID
-   * Only allows updating status, payment, and processing information
-   */
   async updateMandatorySavings(
     id: string,
     updateData: UpdateMandatorySavings
@@ -337,10 +319,7 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
 
       const [result] = await this.knex(this.tableName)
         .where('id', id)
-        .update({
-          ...updateData,
-          updated_at: new Date()
-        })
+        .update(updateData)
         .returning('*')
 
       if (!result) {

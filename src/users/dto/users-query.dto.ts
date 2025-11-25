@@ -10,6 +10,13 @@ export enum UserStatusFilter {
   SUSPENDED = 'suspended'
 }
 
+export enum UserSortBy {
+  CREATED_AT = 'createdAt',
+  UPDATED_AT = 'updatedAt',
+  ID = 'id',
+  USERNAME = 'username'
+}
+
 /**
  * DTO for users query parameters including pagination and filtering
  */
@@ -25,8 +32,7 @@ export class UsersQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({
     description: 'Filter by user status',
-    enum: UserStatusFilter,
-    example: UserStatusFilter.PENDING
+    enum: UserStatusFilter
   })
   @IsOptional()
   @IsEnum(UserStatusFilter, { message: 'Status must be a valid user status' })
@@ -34,9 +40,21 @@ export class UsersQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({
     description: 'Search by name or email',
-    example: 'john doe'
+    example: ''
   })
   @IsOptional()
   @IsString({ message: 'Search must be a string' })
   search?: string
+
+  @ApiPropertyOptional({
+    description: 'Column to sort by',
+    enum: UserSortBy,
+    default: UserSortBy.CREATED_AT,
+    example: UserSortBy.CREATED_AT
+  })
+  @IsOptional()
+  @IsEnum(UserSortBy, {
+    message: 'SortBy must be one of: createdAt, updatedAt, id, username'
+  })
+  sortBy?: UserSortBy
 }

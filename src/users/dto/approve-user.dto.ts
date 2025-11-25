@@ -26,7 +26,7 @@ export class RejectUserQueryDto {
   })
   @IsString({ message: 'Reason must be a string' })
   @MaxLength(500, { message: 'Reason cannot exceed 500 characters' })
-  reason?: string
+  reason!: string
 }
 
 export class ApprovalResponseDto {

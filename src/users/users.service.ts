@@ -129,9 +129,7 @@ export class UsersService {
 
       if (!user) {
         this.logger.error(`User not found for ID: ${id}`)
-        throw new NotFoundException({
-          message: 'User not found'
-        })
+        throw new NotFoundException('User not found')
       }
 
       const { password, deposit_image_url, ...safeUserData } = user
@@ -157,9 +155,7 @@ export class UsersService {
 
       if (!user) {
         this.logger.error(`User not found for ID: ${id}`)
-        throw new NotFoundException({
-          message: 'User not found'
-        })
+        throw new NotFoundException('User not found')
       }
 
       const {
@@ -204,6 +200,7 @@ export class UsersService {
     } = {}
   ): Promise<UsersPaginatedResponse> {
     const result = await this.usersRepository.findAllWithRoles(options)
+    console.log(result)
 
     return {
       ...result,
@@ -229,9 +226,6 @@ export class UsersService {
     adminId: string
   ): Promise<ApprovalResponseDto> {
     const user = await this.findById(userId)
-    if (!user) {
-      throw new NotFoundException('User not found')
-    }
 
     if (user.status !== UserStatus.WAITING_DEPOSIT) {
       throw new BadRequestException(
@@ -305,10 +299,6 @@ export class UsersService {
     adminId: string
   ): Promise<ApprovalResponseDto> {
     const user = await this.findById(userId)
-
-    if (!user) {
-      throw new NotFoundException('User not found')
-    }
 
     if (user.status !== UserStatus.WAITING_DEPOSIT) {
       throw new BadRequestException(
@@ -401,7 +391,6 @@ export class UsersService {
         `Failed to send ${action} email to ${user.email}:`,
         error
       )
-      // Throw custom exception for email failures
       throw new EmailNotificationFailedException(user.email, action, error)
     }
   }

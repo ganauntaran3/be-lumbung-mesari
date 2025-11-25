@@ -27,7 +27,7 @@ export interface PaginationOptions {
 export const PAGINATION_DEFAULTS = {
   page: 1,
   limit: 10,
-  sortBy: 'created_at',
+  sortBy: 'createdAt',
   sortOrder: 'desc' as const,
   maxLimit: 100
 } as const

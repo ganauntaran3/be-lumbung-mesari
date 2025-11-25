@@ -15,11 +15,18 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiUnauthorizedResponse
+  ApiUnauthorizedResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse
 } from '@nestjs/swagger'
 import { UserProfileResponseSchema } from 'src/auth/dto/profile-response.dto'
 import { UserRole } from 'src/common/constants'
-import { TokenErrorSchemas } from 'src/common/schema/error-schema'
+import {
+  AuthErrorSchemas,
+  TokenErrorSchemas
+} from 'src/common/schema/error-schema'
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
@@ -38,6 +45,7 @@ import { UserJWT } from './interface/users'
 import { UsersService } from './users.service'
 
 @ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   private readonly logger = new Logger(UsersController.name)
@@ -57,12 +65,8 @@ export class UsersController {
     schema: UserProfileResponseSchema
   })
   @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid token',
+    description: 'Unauthorized - Invalid or expired token',
     schema: TokenErrorSchemas.invalidToken
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Expired token',
-    schema: TokenErrorSchemas.expiredToken
   })
   async getProfile(@CurrentUser() user: UserJWT) {
     const fullUser = await this.usersService.findById(user.id)
@@ -82,10 +86,13 @@ export class UsersController {
     description: 'Users retrieved successfully',
     type: UsersPaginatedResponseDto
   })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - Insufficient permissions'
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: TokenErrorSchemas.invalidToken
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions',
+    schema: AuthErrorSchemas.insufficientPermissions
   })
   async findAll(@Query() queryParams: UsersQueryDto) {
     const result = await this.usersService.findAllWithPagination(queryParams)
@@ -112,16 +119,25 @@ export class UsersController {
     description: 'User approved successfully',
     type: ApprovalResponseDto
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Bad Request - Invalid action or user status'
+  @ApiBadRequestResponse({
+    description: 'Bad Request - Invalid action or user status',
+    example: {
+      message: 'Cannot approve user with status: active',
+      statusCode: 400,
+      error: 'Bad Request'
+    }
   })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - Insufficient permissions'
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: TokenErrorSchemas.invalidToken
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions',
+    schema: AuthErrorSchemas.insufficientPermissions
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found - User not found'
+  })
   async approveUser(
     @Param('id') userId: string,
     @Body() approvalData: ApproveUserDto,
