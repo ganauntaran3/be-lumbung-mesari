@@ -21,7 +21,8 @@ import { UsersSavingsService } from '../users-savings/users-savings.service'
 import {
   ApproveUserDto,
   ApprovalAction,
-  ApprovalResponseDto
+  ApprovalResponseDto,
+  RejectUserQueryDto
 } from './dto/approve-user.dto'
 import { EmailNotificationFailedException } from './exceptions/user.exceptions'
 import {
@@ -286,6 +287,85 @@ export class UsersService {
       return {
         message: 'User approved successfully!',
         status: UserStatus.ACTIVE,
+        userId: userId
+      }
+    } catch (error) {
+      // Only rollback if transaction hasn't been committed
+      if (!trx.isCompleted()) {
+        await trx.rollback()
+        this.logger.error(`Transaction rolled back for user ${userId}`)
+      }
+      throw error
+    }
+  }
+
+  async rejectUser(
+    userId: string,
+    rejectionData: RejectUserQueryDto,
+    adminId: string
+  ): Promise<ApprovalResponseDto> {
+    const user = await this.findById(userId)
+    if (!user) {
+      throw new NotFoundException('User not found')
+    }
+
+    if (user.status !== UserStatus.WAITING_DEPOSIT) {
+      throw new BadRequestException(
+        `Cannot reject user with status: ${user.status}`
+      )
+    }
+
+    const knex = this.databaseService.getKnex()
+    const trx = await knex.transaction()
+
+    try {
+      this.logger.log(`Starting user rejection transaction for user ${userId}`)
+
+      // Update user status to waiting_deposit (back to initial state)
+      await this.usersRepository.updateStatus(
+        userId,
+        UserStatus.WAITING_DEPOSIT,
+        trx
+      )
+
+      await trx.commit()
+      this.logger.log(
+        `Transaction committed successfully for user ${userId} rejection`
+      )
+
+      // Send rejection email (outside transaction)
+      try {
+        await this.sendApprovalEmail(
+          user,
+          ApprovalAction.REJECT,
+          rejectionData.reason
+        )
+      } catch (emailError) {
+        // Handle email notification failure
+        if (emailError instanceof EmailNotificationFailedException) {
+          this.logger.warn(
+            `User ${userId} rejected successfully but email notification failed`
+          )
+          // Re-throw to let controller handle it
+          throw emailError
+        }
+        // For other unexpected errors, log but don't fail the rejection
+        this.logger.error(
+          `Unexpected error sending rejection email:`,
+          emailError
+        )
+      }
+
+      const reasonText = rejectionData.reason
+        ? ` - Reason: ${rejectionData.reason}`
+        : ''
+      this.logger.log(
+        `User ${userId} rejected by admin ${adminId}${reasonText}`
+      )
+
+      return {
+        message: 'User rejected successfully',
+        status: UserStatus.WAITING_DEPOSIT,
         userId: userId
       }
     } catch (error) {
