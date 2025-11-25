@@ -26,7 +26,7 @@ export class IncomesRepository extends BaseRepository<IncomeTable> {
       const [result] = await query
         .insert({
           ...data,
-          created_at: new Date()
+          txn_date: new Date()
         })
         .returning('*')
 

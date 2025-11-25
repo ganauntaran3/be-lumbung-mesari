@@ -5,6 +5,7 @@ import {
   UseGuards,
   HttpException,
   HttpStatus,
+  HttpCode,
   BadRequestException,
   InternalServerErrorException
 } from '@nestjs/common'
@@ -43,6 +44,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'User login with email or username',
     description: `Authenticate user and return access tokens. 
@@ -162,6 +164,7 @@ export class AuthController {
     summary: 'Verify OTP code (Step 2: Email Verification)',
     description: `Verify the OTP code sent to user's email during registration. Requires authentication token from registration.`
   })
+  @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
     description:
@@ -226,6 +229,7 @@ export class AuthController {
     summary: 'Resend OTP code to email',
     description: `Resend OTP verification code to user's email address. Requires authentication token from registration.`
   })
+  @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'New OTP sent successfully to email',
@@ -279,6 +283,7 @@ export class AuthController {
   - New tokens are generated with updated expiration times
     - Old tokens remain valid until their natural expiration`
   })
+  @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Token refreshed successfully',

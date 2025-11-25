@@ -7,6 +7,7 @@ import {
   InternalServerErrorException
 } from '@nestjs/common'
 import { Knex } from 'knex'
+import { UserStatus } from 'src/common/constants'
 import { DatabaseService } from 'src/database/database.service'
 import { PaginationQueryDto } from 'src/database/dto/pagination.dto'
 
@@ -20,8 +21,10 @@ import { UsersSavingsService } from '../users-savings/users-savings.service'
 import {
   ApproveUserDto,
   ApprovalAction,
-  ApprovalResponseDto
+  ApprovalResponseDto,
+  RejectUserQueryDto
 } from './dto/approve-user.dto'
+import { EmailNotificationFailedException } from './exceptions/user.exceptions'
 import {
   CreatedUser,
   UpdateUserDto,
@@ -126,9 +129,7 @@ export class UsersService {
 
       if (!user) {
         this.logger.error(`User not found for ID: ${id}`)
-        throw new NotFoundException({
-          message: 'User not found'
-        })
+        throw new NotFoundException('User not found')
       }
 
       const { password, deposit_image_url, ...safeUserData } = user
@@ -154,9 +155,7 @@ export class UsersService {
 
       if (!user) {
         this.logger.error(`User not found for ID: ${id}`)
-        throw new NotFoundException({
-          message: 'User not found'
-        })
+        throw new NotFoundException('User not found')
       }
 
       const {
@@ -201,6 +200,7 @@ export class UsersService {
     } = {}
   ): Promise<UsersPaginatedResponse> {
     const result = await this.usersRepository.findAllWithRoles(options)
+    console.log(result)
 
     return {
       ...result,
@@ -226,145 +226,137 @@ export class UsersService {
     adminId: string
   ): Promise<ApprovalResponseDto> {
     const user = await this.findById(userId)
-    if (!user) {
-      throw new NotFoundException('User not found')
-    }
 
-    if (user.status !== 'pending') {
+    if (user.status !== UserStatus.WAITING_DEPOSIT) {
       throw new BadRequestException(
-        `Cannot ${approvalData.action} user with status: ${user.status}`
+        `Cannot approve user with status: ${user.status}`
       )
     }
-
-    const oldStatus = user.status
-    let newStatus: string
-    let message: string
 
     const knex = this.databaseService.getKnex()
     const trx = await knex.transaction()
 
     try {
-      if (approvalData.action === ApprovalAction.APPROVE) {
-        newStatus = 'active'
-        message = 'User approved successfully'
+      this.logger.log(`Starting user approval transaction for user ${userId}`)
 
-        this.logger.log(`Starting user approval transaction for user ${userId}`)
+      // 1. Update user status to active
+      await this.usersRepository.updateStatus(userId, UserStatus.ACTIVE, trx)
 
-        // 1. Update user status to active
-        await this.usersRepository.updateStatus(userId, newStatus, trx)
-        this.logger.debug(
-          `User status updated to ${newStatus} for user ${userId}`
+      // 2. Approve principal savings (mark as paid, create income, create cashbook transaction)
+      await this.usersSavingsService.settlePrincipalSavings(
+        userId,
+        adminId,
+        trx
+      )
+      await trx.commit()
+      this.logger.log(
+        `Transaction committed successfully for user ${userId} approval`
+      )
+
+      try {
+        await this.sendApprovalEmail(
+          user,
+          ApprovalAction.APPROVE,
+          approvalData.reason
         )
-
-        // 2. Approve principal savings (mark as paid, create income, create cashbook transaction)
-        await this.usersSavingsService.approvePrincipalSavingsForUser(
-          userId,
-          adminId,
-          trx
-        )
-        this.logger.debug(`Principal savings approved for user ${userId}`)
-
-        // Commit transaction before sending email
-        await trx.commit()
-        this.logger.log(
-          `Transaction committed successfully for user ${userId} approval`
-        )
-
-        // 3. Send approval email (outside transaction)
-        try {
-          await this.sendApprovalEmail(
-            user,
-            approvalData.action,
-            approvalData.reason
-          )
-        } catch (emailError) {
-          // Log email error but don't fail the approval since transaction is already committed
+      } catch (emailError) {
+        // Handle email notification failure
+        if (emailError instanceof EmailNotificationFailedException) {
           this.logger.error(
-            `Failed to send approval email to ${user.email}:`,
-            emailError
-          )
-          this.logger.warn(
             `User ${userId} approved successfully but email notification failed`
           )
+          throw emailError
         }
-
-        this.logger.log(`User ${userId} approved by admin ${adminId}`)
-      } else {
-        newStatus = 'waiting_deposit'
-        message = 'User rejected successfully'
-
-        this.logger.log(
-          `Starting user rejection transaction for user ${userId}`
-        )
-
-        // Update user status to waiting_deposit
-        await this.usersRepository.updateStatus(userId, newStatus, trx)
-        this.logger.debug(
-          `User status updated to ${newStatus} for user ${userId}`
-        )
-
-        // Commit transaction before sending email
-        await trx.commit()
-        this.logger.log(
-          `Transaction committed successfully for user ${userId} rejection`
-        )
-
-        // Send rejection email (outside transaction)
-        try {
-          await this.sendApprovalEmail(
-            user,
-            approvalData.action,
-            approvalData.reason
-          )
-        } catch (emailError) {
-          // Log email error but don't fail the rejection since transaction is already committed
-          this.logger.error(
-            `Failed to send rejection email to ${user.email}:`,
-            emailError
-          )
-          this.logger.warn(
-            `User ${userId} rejected successfully but email notification failed`
-          )
-        }
-
-        this.logger.log(
-          `User ${userId} rejected by admin ${adminId}. Reason: ${approvalData.reason}`
+        this.logger.error(
+          `Unexpected error sending approval email:`,
+          emailError
         )
       }
 
       const reasonText = approvalData.reason
         ? ` - Reason: ${approvalData.reason}`
         : ''
-      this.logger.log(
-        `User ${userId} status changed from ${oldStatus} to ${newStatus} by admin ${adminId}${reasonText}`
-      )
+      this.logger.log(`User ${userId} approved, reason: ${reasonText}`)
 
       return {
-        message,
-        status: newStatus,
+        message: 'User approved successfully!',
+        status: UserStatus.ACTIVE,
         userId: userId
       }
     } catch (error) {
-      // Rollback transaction on any error
-      try {
+      // Only rollback if transaction hasn't been committed
+      if (!trx.isCompleted()) {
         await trx.rollback()
-        this.logger.log(
-          `Transaction rolled back for user ${userId} ${approvalData.action}`
+        this.logger.error(`Transaction rolled back for user ${userId}`)
+      }
+      throw error
+    }
+  }
+
+  async rejectUser(
+    userId: string,
+    rejectionData: RejectUserQueryDto,
+    adminId: string
+  ): Promise<ApprovalResponseDto> {
+    const user = await this.findById(userId)
+
+    if (user.status !== UserStatus.WAITING_DEPOSIT) {
+      throw new BadRequestException(
+        `Cannot reject user with status: ${user.status}`
+      )
+    }
+
+    const knex = this.databaseService.getKnex()
+    const trx = await knex.transaction()
+
+    try {
+      this.logger.log(`Starting user rejection transaction for user ${userId}`)
+
+      await this.usersRepository.updateStatus(userId, UserStatus.REJECTED, trx)
+
+      await trx.commit()
+      this.logger.log(
+        `Transaction committed successfully for user ${userId} rejection`
+      )
+
+      // Send rejection email (outside transaction)
+      try {
+        await this.sendApprovalEmail(
+          user,
+          ApprovalAction.REJECT,
+          rejectionData.reason
         )
-      } catch (rollbackError) {
+      } catch (emailError) {
+        if (emailError instanceof EmailNotificationFailedException) {
+          this.logger.warn(
+            `User ${userId} rejected successfully but email notification failed`
+          )
+          throw emailError
+        }
         this.logger.error(
-          `Failed to rollback transaction for user ${userId}:`,
-          rollbackError
+          `Unexpected error sending rejection email:`,
+          emailError
         )
       }
 
-      this.logger.error(
-        `Failed to ${approvalData.action} user ${userId}:`,
-        error
+      const reasonText = rejectionData.reason
+        ? ` - Reason: ${rejectionData.reason}`
+        : ''
+      this.logger.log(
+        `User ${userId} rejected by admin ${adminId}${reasonText}`
       )
-      throw new BadRequestException(
-        `Failed to ${approvalData.action} user: ${error}`
-      )
+
+      return {
+        message: 'User rejected successfully',
+        status: UserStatus.WAITING_DEPOSIT,
+        userId: userId
+      }
+    } catch (error) {
+      if (!trx.isCompleted()) {
+        await trx.rollback()
+        this.logger.error(`Transaction rolled back for user ${userId}`)
+      }
+      throw error
     }
   }
 
@@ -399,9 +391,7 @@ export class UsersService {
         `Failed to send ${action} email to ${user.email}:`,
         error
       )
-      this.logger.warn(
-        `Failed to send ${action} notification email to ${user.email} - approval still processed successfully`
-      )
+      throw new EmailNotificationFailedException(user.email, action, error)
     }
   }
 }

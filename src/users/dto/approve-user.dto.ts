@@ -1,5 +1,5 @@
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsOptional, IsString, MaxLength } from 'class-validator'
 
 export enum ApprovalAction {
   APPROVE = 'approve',
@@ -7,18 +7,8 @@ export enum ApprovalAction {
 }
 
 export class ApproveUserDto {
-  @ApiProperty({
-    description: 'Action to perform on the user',
-    enum: ApprovalAction,
-    example: ApprovalAction.APPROVE
-  })
-  @IsEnum(ApprovalAction, {
-    message: 'Action must be either approve or reject'
-  })
-  action!: ApprovalAction
-
   @ApiPropertyOptional({
-    description: 'Optional reason for the action (mainly for rejection)',
+    description: 'Optional reason for the acceptance action',
     example: 'Deposit proof image is not clear',
     maxLength: 500
   })
@@ -26,6 +16,17 @@ export class ApproveUserDto {
   @IsString({ message: 'Reason must be a string' })
   @MaxLength(500, { message: 'Reason cannot exceed 500 characters' })
   reason?: string
+}
+
+export class RejectUserQueryDto {
+  @ApiProperty({
+    description: 'Reason for the rejection action (mainly for rejection)',
+    example: 'Deposit proof image is not clear',
+    maxLength: 500
+  })
+  @IsString({ message: 'Reason must be a string' })
+  @MaxLength(500, { message: 'Reason cannot exceed 500 characters' })
+  reason!: string
 }
 
 export class ApprovalResponseDto {
@@ -46,4 +47,10 @@ export class ApprovalResponseDto {
     example: '123e4567-e89b-12d3-a456-426614174000'
   })
   userId!: string
+
+  @ApiPropertyOptional({
+    description: 'Warning message if email notification failed',
+    example: 'Email notification could not be sent'
+  })
+  warning?: string
 }

@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
+import { IsOptional, IsString, IsEnum } from 'class-validator'
+
 import { PaginationQueryDto } from '../../database/dto/pagination.dto'
 
 export enum UserStatusFilter {
@@ -7,6 +8,13 @@ export enum UserStatusFilter {
   PENDING = 'pending',
   ACTIVE = 'active',
   SUSPENDED = 'suspended'
+}
+
+export enum UserSortBy {
+  CREATED_AT = 'createdAt',
+  UPDATED_AT = 'updatedAt',
+  ID = 'id',
+  USERNAME = 'username'
 }
 
 /**
@@ -24,8 +32,7 @@ export class UsersQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({
     description: 'Filter by user status',
-    enum: UserStatusFilter,
-    example: UserStatusFilter.PENDING
+    enum: UserStatusFilter
   })
   @IsOptional()
   @IsEnum(UserStatusFilter, { message: 'Status must be a valid user status' })
@@ -33,9 +40,21 @@ export class UsersQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({
     description: 'Search by name or email',
-    example: 'john doe'
+    example: ''
   })
   @IsOptional()
   @IsString({ message: 'Search must be a string' })
   search?: string
+
+  @ApiPropertyOptional({
+    description: 'Column to sort by',
+    enum: UserSortBy,
+    default: UserSortBy.CREATED_AT,
+    example: UserSortBy.CREATED_AT
+  })
+  @IsOptional()
+  @IsEnum(UserSortBy, {
+    message: 'SortBy must be one of: createdAt, updatedAt, id, username'
+  })
+  sortBy?: UserSortBy
 }

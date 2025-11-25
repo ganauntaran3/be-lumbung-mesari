@@ -46,24 +46,13 @@ export class UserResponseDto {
   })
   status!: string
 
-  @ApiProperty({
-    description: 'User role ID',
-    example: 'member'
-  })
-  roleId!: string
-
-  @ApiProperty({
-    description: 'URL of deposit proof image',
-    example: 'https://example.com/deposits/image.jpg',
-    nullable: true
-  })
-  depositImageUrl?: string
-
-  @ApiProperty({
-    description: 'Whether OTP has been verified',
-    example: true
-  })
-  otpVerified!: boolean
+  // NOT USED YET
+  // @ApiProperty({
+  //   description: 'URL of deposit proof image',
+  //   example: 'https://example.com/deposits/image.jpg',
+  //   nullable: true
+  // })
+  // depositImageUrl?: string
 
   @ApiProperty({
     description: 'Account creation timestamp',

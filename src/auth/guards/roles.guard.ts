@@ -5,8 +5,10 @@ import {
   ForbiddenException
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { ROLES_KEY } from '../decorators/roles.decorator'
 import { UserRole } from 'src/common/constants'
+import { generateInsufficientPermissionsMessage } from 'src/common/constants'
+
+import { ROLES_KEY } from '../decorators/roles.decorator'
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -32,7 +34,7 @@ export class RolesGuard implements CanActivate {
 
     if (!hasRole) {
       throw new ForbiddenException(
-        `User with role ${user.role} does not have sufficient permissions. Required: [${requiredRoles.join(', ')}]`
+        generateInsufficientPermissionsMessage(user.role)
       )
     }
 

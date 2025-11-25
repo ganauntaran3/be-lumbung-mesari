@@ -2,7 +2,8 @@ export enum UserStatus {
   WAITING_DEPOSIT = 'waiting_deposit',
   PENDING = 'pending',
   ACTIVE = 'active',
-  SUSPENDED = 'suspended'
+  INACTIVE = 'inactive',
+  REJECTED = 'rejected'
 }
 
 export enum UserRole {
@@ -10,3 +11,7 @@ export enum UserRole {
   ADMIN = 'administrator',
   MEMBER = 'member'
 }
+
+// ERROR MESSAGES
+export const generateInsufficientPermissionsMessage = (role: string) =>
+  `User with role ${role} does not have sufficient permissions.`

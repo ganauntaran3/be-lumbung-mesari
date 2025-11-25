@@ -98,7 +98,7 @@ export class UsersRepository extends BaseRepository<User> {
       search,
       page = 1,
       limit = 10,
-      sortBy = 'created_at',
+      sortBy = 'createdAt',
       sortOrder = 'desc'
     } = options
     try {
@@ -107,7 +107,7 @@ export class UsersRepository extends BaseRepository<User> {
       let query = this.knex('users')
 
       if (role) {
-        query = query.where('roles.id', role)
+        query = query.where('users.role_id', role)
       }
 
       if (status) {
@@ -134,12 +134,20 @@ export class UsersRepository extends BaseRepository<User> {
         'users.phone_number',
         'users.address',
         'users.status',
-        'users.deposit_image_url',
         'users.created_at',
         'users.updated_at'
       ])
 
-      const sortColumn = sortBy.includes('.') ? sortBy : `users.${sortBy}`
+      // Map camelCase to snake_case for database columns
+      const sortByMap: Record<string, string> = {
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
+        id: 'id',
+        username: 'username'
+      }
+
+      const dbSortBy = sortByMap[sortBy] || sortBy
+      const sortColumn = dbSortBy.includes('.') ? dbSortBy : `users.${dbSortBy}`
       const data = await dataQuery
         .orderBy(sortColumn, sortOrder)
         .limit(limit)
@@ -240,6 +248,7 @@ export class UsersRepository extends BaseRepository<User> {
     const query = trx ? trx('users') : this.knex('users')
     const result = await query
       .where('status', 'active')
+      .where('role_id', 'member')
       .count('id as count')
       .first()
 
@@ -249,6 +258,7 @@ export class UsersRepository extends BaseRepository<User> {
   async getActiveMemberIds(): Promise<string[]> {
     const results = await this.knex('users')
       .where('status', 'active')
+      .where('role_id', 'member')
       .select('id')
 
     return results.map((row) => row.id)

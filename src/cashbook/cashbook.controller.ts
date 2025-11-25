@@ -4,8 +4,13 @@ import {
   ApiOperation,
   ApiResponse,
   ApiUnauthorizedResponse,
-  ApiForbiddenResponse
+  ApiForbiddenResponse,
+  ApiBearerAuth
 } from '@nestjs/swagger'
+import {
+  AuthErrorSchemas,
+  TokenErrorSchemas
+} from 'src/common/schema/error-schema'
 
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
@@ -16,6 +21,7 @@ import { CashbookBalanceService } from './cashbook-balance.service'
 
 @ApiTags('Cashbook')
 @Controller('cashbook')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
 export class CashbookController {
@@ -56,11 +62,13 @@ export class CashbookController {
     }
   })
   @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing token'
+    description: 'Unauthorized - Invalid or expired token',
+    schema: TokenErrorSchemas.invalidToken
   })
   @ApiForbiddenResponse({
     description:
-      'Forbidden - Insufficient permissions (Admin/SuperAdmin required)'
+      'Forbidden - Insufficient permissions (Admin/SuperAdmin required)',
+    schema: AuthErrorSchemas.insufficientPermissions
   })
   async getBalances() {
     try {

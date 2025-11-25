@@ -9,12 +9,17 @@ export interface IncomeCategoryTable {
 
 export interface IncomeTable {
   id: string
+  name: string
   income_category_id: string
   amount: string
   user_id?: string
   loan_id?: string
+  principal_saving_id?: string
+  mandatory_saving_id?: string
+  txn_date?: Date
   notes?: string
-  created_at: Date
+  created_at?: Date
+  updated_at?: Date
 }
 
 export interface IncomeWithCategory {

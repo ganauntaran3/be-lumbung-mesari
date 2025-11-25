@@ -15,6 +15,7 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable('incomes', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.string('name', 255).notNullable()
     table
       .uuid('income_category_id')
       .references('id')
@@ -24,6 +25,11 @@ export async function up(knex: Knex): Promise<void> {
     table.decimal('amount', 12, 4).notNullable()
     table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.uuid('loan_id').references('id').inTable('loans').onDelete('SET NULL')
+    table
+      .uuid('installment_id')
+      .references('id')
+      .inTable('installments')
+      .onDelete('SET NULL')
     table
       .uuid('principal_saving_id')
       .references('id')
@@ -35,7 +41,9 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('mandatory_savings')
       .onDelete('SET NULL')
     table.text('notes').nullable()
+    table.timestamp('txn_date').defaultTo(knex.fn.now())
     table.timestamp('created_at').defaultTo(knex.fn.now())
+    table.timestamp('updated_at').defaultTo(knex.fn.now())
   })
 }
 

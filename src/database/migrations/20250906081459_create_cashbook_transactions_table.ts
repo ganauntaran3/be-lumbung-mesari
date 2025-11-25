@@ -5,21 +5,27 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
     table.date('txn_date').notNullable().defaultTo(knex.fn.now())
     table.enum('direction', ['in', 'out']).notNullable()
-    table.decimal('amount', 12, 4).notNullable()
+    table.decimal('shu_amount', 12, 4).notNullable().defaultTo(0)
+    table.decimal('capital_amount', 12, 4).notNullable().defaultTo(0)
 
     table
       .uuid('income_id')
       .references('id')
       .inTable('incomes')
-      .onDelete('SET NULL')
+      .onDelete('CASCADE')
     table
       .uuid('expense_id')
       .references('id')
       .inTable('expenses')
-      .onDelete('SET NULL')
-
-    table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
+      .onDelete('CASCADE')
     table.timestamp('created_at').defaultTo(knex.fn.now())
+    table.timestamp('updated_at').defaultTo(knex.fn.now())
+
+    table.check(
+      'shu_amount + capital_amount > 0',
+      [],
+      'chk_cashbook_amounts_positive'
+    )
   })
 }
 
