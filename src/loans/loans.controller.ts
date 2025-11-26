@@ -50,6 +50,31 @@ export class LoansController {
 
   constructor(private readonly loansService: LoansService) {}
 
+  @Get('periods')
+  @ApiOperation({
+    summary: 'Get all available loan periods',
+    description:
+      'Retrieve all loan period options with tenor and interest rates'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Loan periods retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          tenor: { type: 'number', example: 12 },
+          interestRate: { type: 'number', example: 1 }
+        }
+      }
+    }
+  })
+  async getLoanPeriods() {
+    return await this.loansService.findAllPeriods()
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)

@@ -7,11 +7,11 @@ import { PaginationOptions, PaginationResult } from '../interface/pagination'
 
 import {
   CreateLoanData,
-  Installment,
   Loan,
-  LoanPeriod,
+  LoanPeriodTable,
   LoanWithUser
 } from './interface/loans.interface'
+import { Installment } from './interface/installment.interface'
 
 @Injectable()
 export class LoansRepository extends BaseRepository<Loan> {
@@ -21,9 +21,16 @@ export class LoansRepository extends BaseRepository<Loan> {
     super(databaseService, 'loans')
   }
 
-  async findLoanPeriodById(id: string): Promise<LoanPeriod | undefined> {
+  async findLoanPeriodById(id: string): Promise<LoanPeriodTable | undefined> {
     const result = await this.knex('loan_periods').where('id', id).first()
-    return result as LoanPeriod | undefined
+    return result
+  }
+
+  async findAllLoanPeriods(): Promise<LoanPeriodTable[]> {
+    const results = await this.knex('loan_periods')
+      .select('id', 'tenor', 'interest_rate')
+      .orderBy('tenor', 'asc')
+    return results
   }
 
   async createLoan(

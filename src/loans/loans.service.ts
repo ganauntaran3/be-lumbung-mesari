@@ -12,8 +12,9 @@ import { DatabaseService } from '../database/database.service'
 import { CreateLoanDto } from './dto/create-loan.dto'
 import { ApproveLoanDto, RejectLoanDto } from './dto/loan-approval.dto'
 import { LoansQueryDto } from './dto/loans-query.dto'
-import { Installment, LoanWithUser } from './interface/loans.interface'
+import { LoanPeriodTable, LoanWithUser } from './interface/loans.interface'
 import { LoansRepository } from './loans.repository'
+import { Installment } from './interface/installment.interface'
 
 @Injectable()
 export class LoansService {
@@ -24,12 +25,25 @@ export class LoansService {
     private readonly databaseService: DatabaseService
   ) {}
 
+  private transformLoanPeriods(loanPeriods: LoanPeriodTable[]) {
+    return loanPeriods.map((loanPeriod) => ({
+      id: loanPeriod.id,
+      tenor: loanPeriod.tenor,
+      interest_rate: loanPeriod.interest_rate
+    }))
+  }
+
+  async findAllPeriods() {
+    const loanPeriods = await this.loansRepository.findAllLoanPeriods()
+    return this.transformLoanPeriods(loanPeriods)
+  }
+
   async createLoan(userId: string, createLoanDto: CreateLoanDto) {
     const { loanPeriodId, principalAmount, notes } = createLoanDto
 
-    // Verify loan period exists
     const loanPeriod =
       await this.loansRepository.findLoanPeriodById(loanPeriodId)
+
     if (!loanPeriod) {
       throw new NotFoundException('Loan period not found')
     }
