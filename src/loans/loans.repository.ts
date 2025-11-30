@@ -171,6 +171,25 @@ export class LoansRepository extends BaseRepository<Loan> {
     return result as Loan
   }
 
+  async disburseLoan(loanId: string, trx?: Knex.Transaction): Promise<Loan> {
+    const query = trx ? trx('loans') : this.knex('loans')
+
+    const [result] = await query
+      .where('id', loanId)
+      .update({
+        status: 'active',
+        disbursed_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*')
+
+    if (!result) {
+      throw new Error(`Loan with id ${loanId} not found`)
+    }
+
+    return result as Loan
+  }
+
   async createInstallments(
     installments: Partial<Installment>[],
     trx?: Knex.Transaction

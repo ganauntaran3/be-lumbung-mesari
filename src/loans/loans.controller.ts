@@ -35,6 +35,10 @@ import { UserJWT } from '../users/interface/users'
 
 import { CreateLoanDto } from './dto/create-loan.dto'
 import {
+  CalculateLoanRequestDto,
+  CalculateLoanResponseDto
+} from './dto/calculate-loan.dto'
+import {
   ApproveLoanDto,
   LoanApprovalResponseDto,
   RejectLoanDto
@@ -73,6 +77,29 @@ export class LoansController {
   })
   async getLoanPeriods() {
     return await this.loansService.findAllPeriods()
+  }
+
+  @Post('calculate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Calculate loan details',
+    description:
+      'Preview loan calculation without creating a loan request. Shows monthly payment and total payable with rounding.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Loan calculation completed successfully',
+    type: CalculateLoanResponseDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - Invalid input data'
+  })
+  @ApiNotFoundResponse({
+    description: 'Loan period not found',
+    schema: NotFoundResponseSchema
+  })
+  async calculateLoan(@Body() calculateDto: CalculateLoanRequestDto) {
+    return await this.loansService.calculateLoan(calculateDto)
   }
 
   @Get()
@@ -238,5 +265,47 @@ export class LoansController {
     @CurrentUser() admin: UserJWT
   ): Promise<LoanApprovalResponseDto> {
     return await this.loansService.rejectLoan(loanId, rejectDto, admin.id)
+  }
+
+  @Post(':id/disburse')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  @ApiOperation({
+    summary: 'Disburse an approved loan',
+    description:
+      'Disburse cash for an approved loan and generate installments. SuperAdmin only.'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Loan ID',
+    type: 'string',
+    format: 'uuid'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Loan disbursed successfully, installments generated',
+    type: LoanApprovalResponseDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - Loan must be approved first'
+  })
+  @ApiNotFoundResponse({
+    description: 'Loan not found',
+    schema: NotFoundResponseSchema
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: AuthErrorSchemas.invalidCredentials
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions',
+    schema: AuthErrorSchemas.insufficientPermissions
+  })
+  async disburseLoan(
+    @Param('id') loanId: string,
+    @CurrentUser() admin: UserJWT
+  ): Promise<LoanApprovalResponseDto> {
+    return await this.loansService.disburseLoan(loanId, admin.id)
   }
 }

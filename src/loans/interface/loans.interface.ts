@@ -7,6 +7,7 @@ export interface Loan {
   disbursed_amount: string
   interest_amount: string
   monthly_payment: string
+  last_month_payment: string
   total_payable_amount: string
   installment_late_amount: number | null
   start_date: Date
@@ -14,6 +15,7 @@ export interface Loan {
   status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed'
   approved_by: string | null
   approved_at: Date | null
+  disbursed_at: Date | null
   notes: string | null
   created_at: Date
   updated_at: Date
@@ -46,6 +48,7 @@ export interface CreateLoanData {
   disbursed_amount: number
   interest_amount: number
   monthly_payment: number
+  last_month_payment: number
   total_payable_amount: number
   start_date: Date
   end_date: Date

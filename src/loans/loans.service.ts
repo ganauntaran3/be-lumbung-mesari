@@ -15,6 +15,8 @@ import { LoansQueryDto } from './dto/loans-query.dto'
 import { LoanPeriodTable, LoanWithUser } from './interface/loans.interface'
 import { LoansRepository } from './loans.repository'
 import { Installment } from './interface/installment.interface'
+import { roundUpToNearest500Or1000 } from './utils'
+import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
 
 @Injectable()
 export class LoansService {
@@ -45,7 +47,11 @@ export class LoansService {
       await this.loansRepository.findLoanPeriodById(loanPeriodId)
 
     if (!loanPeriod) {
-      throw new NotFoundException('Loan period not found')
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'Loan period not found',
+        error: 'Not Found'
+      })
     }
 
     // Calculate loan details
@@ -53,18 +59,35 @@ export class LoansService {
     const interestRate = new Decimal(loanPeriod.interest_rate)
     const tenor = loanPeriod.tenor
 
-    // Admin fee: 1% of principal
-    const adminFee = principal.mul(0.01)
+    // Admin fee: 2% of principal
+    const adminFee = principal.mul(0.02)
     const disbursedAmount = principal.minus(adminFee)
 
-    // Monthly interest
+    // Monthly interest (in IDR)
     const monthlyInterest = principal.mul(interestRate).div(100)
 
-    // Monthly payment = principal/tenor + monthly interest
-    const monthlyPayment = principal.div(tenor).plus(monthlyInterest)
+    // Monthly payment = principal/tenor + monthly interest (before rounding)
+    const monthlyPrincipal = principal.div(tenor)
+    const monthlyPaymentBeforeRounding = monthlyPrincipal.plus(monthlyInterest)
 
-    // Total payable = monthly payment * tenor
-    const totalPayable = monthlyPayment.mul(tenor)
+    // Round monthly payment
+    const roundedMonthlyPayment = roundUpToNearest500Or1000(
+      monthlyPaymentBeforeRounding.toNumber()
+    )
+
+    // Calculate overpayment and last month payment
+    const overpaymentPerMonth =
+      roundedMonthlyPayment - monthlyPaymentBeforeRounding.toNumber()
+    const totalOverpayment = overpaymentPerMonth * (tenor - 1)
+    const lastMonthPaymentBeforeRounding =
+      roundedMonthlyPayment - totalOverpayment
+    const roundedLastMonthPayment = roundUpToNearest500Or1000(
+      lastMonthPaymentBeforeRounding
+    )
+
+    // Total payable = (rounded monthly payment × (tenor - 1)) + last month payment
+    const totalPayable =
+      roundedMonthlyPayment * (tenor - 1) + roundedLastMonthPayment
 
     // Calculate dates
     const startDate = new Date()
@@ -78,8 +101,9 @@ export class LoansService {
       admin_fee_amount: adminFee.toNumber(),
       disbursed_amount: disbursedAmount.toNumber(),
       interest_amount: monthlyInterest.toNumber(),
-      monthly_payment: monthlyPayment.toNumber(),
-      total_payable_amount: totalPayable.toNumber(),
+      monthly_payment: roundedMonthlyPayment,
+      last_month_payment: roundedLastMonthPayment,
+      total_payable_amount: totalPayable,
       start_date: startDate,
       end_date: endDate,
       status: 'pending' as const,
@@ -91,6 +115,64 @@ export class LoansService {
     this.logger.log(`Loan created for user ${userId}: ${loan.id}`)
 
     return loan
+  }
+
+  async calculateLoan(calculateDto: CalculateLoanRequestDto) {
+    const { amount, loanPeriodId } = calculateDto
+
+    const loanPeriod =
+      await this.loansRepository.findLoanPeriodById(loanPeriodId)
+
+    if (!loanPeriod) {
+      throw new NotFoundException('Loan period not found')
+    }
+
+    // Calculate loan details
+    const loanAmount = new Decimal(amount)
+    const interestRate = new Decimal(loanPeriod.interest_rate)
+    const tenor = loanPeriod.tenor
+
+    // Admin fee: 2% of principal
+    const adminFee = loanAmount.mul(0.02)
+    const disbursedAmount = loanAmount.minus(adminFee)
+
+    // Monthly interest (in IDR)
+    const monthlyInterest = loanAmount.mul(interestRate).div(100)
+
+    // Monthly payment = principal/tenor + monthly interest (before rounding)
+    const monthlyPrincipal = loanAmount.div(tenor)
+    const monthlyPaymentBeforeRounding = monthlyPrincipal.plus(monthlyInterest)
+
+    // Round monthly payment
+    const roundedMonthlyPayment = roundUpToNearest500Or1000(
+      monthlyPaymentBeforeRounding.toNumber()
+    )
+
+    // Calculate overpayment and last month payment
+    const overpaymentPerMonth =
+      roundedMonthlyPayment - monthlyPaymentBeforeRounding.toNumber()
+    const totalOverpayment = overpaymentPerMonth * (tenor - 1)
+    const lastMonthPaymentBeforeRounding =
+      roundedMonthlyPayment - totalOverpayment
+    const roundedLastMonthPayment = roundUpToNearest500Or1000(
+      lastMonthPaymentBeforeRounding
+    )
+
+    return {
+      loanAmount: loanAmount.toNumber(),
+      adminFee: adminFee.toNumber(),
+      disbursedAmount: disbursedAmount.toNumber(),
+      tenor,
+      interestRate: interestRate.toNumber(),
+      monthlyInterest: monthlyInterest.toNumber(),
+      monthlyPayment: roundedMonthlyPayment,
+      lastMonthlyPayment: roundedLastMonthPayment
+    }
+
+    // Only include lastMonthlyPayment if it's different from monthlyPayment
+    // if (roundedLastMonthPayment !== roundedMonthlyPayment) {
+    //   response.lastMonthlyPayment = roundedLastMonthPayment
+    // }
   }
 
   async findAll(queryDto: LoansQueryDto, userId?: string) {
@@ -123,40 +205,76 @@ export class LoansService {
     const loan = await this.loansRepository.findById(loanId)
 
     if (!loan) {
-      throw new NotFoundException('Loan not found')
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'Loan not found',
+        error: 'Not Found'
+      })
     }
 
     if (loan.status !== 'pending') {
-      throw new BadRequestException(
-        `Cannot approve loan with status: ${loan.status}`
-      )
+      throw new BadRequestException({
+        statusCode: 400,
+        message: `Cannot approve loan with status: ${loan.status}`,
+        error: 'Bad Request'
+      })
+    }
+
+    // Update loan status to approved (no installments generated yet)
+    await this.loansRepository.updateLoanStatus(
+      loanId,
+      'approved',
+      adminId,
+      approvalDto.notes || null
+    )
+
+    this.logger.log(`Loan ${loanId} approved by admin ${adminId}`)
+
+    return {
+      message: 'Loan approved successfully',
+      status: 'approved',
+      loanId
+    }
+  }
+
+  async disburseLoan(loanId: string, adminId: string) {
+    const loan = await this.loansRepository.findById(loanId)
+
+    if (!loan) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: 'Loan not found',
+        error: 'Not Found'
+      })
+    }
+
+    if (loan.status !== 'approved') {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: `Cannot disburse loan with status: ${loan.status}. Loan must be approved first.`,
+        error: 'Bad Request'
+      })
     }
 
     const knex = this.databaseService.getKnex()
     const trx = await knex.transaction()
 
     try {
-      this.logger.log(`Starting loan approval for loan ${loanId}`)
+      this.logger.log(`Starting loan disbursement for loan ${loanId}`)
 
-      // Update loan status to approved
-      await this.loansRepository.updateLoanStatus(
-        loanId,
-        'approved',
-        adminId,
-        approvalDto.notes || null,
-        trx
-      )
+      // Update loan status to active and set disbursed_at
+      await this.loansRepository.disburseLoan(loanId, trx)
 
-      // Generate installments
-      const installments = this.generateInstallments(loan, adminId)
+      // Generate installments with rounding
+      const installments = await this.generateInstallments(loan, adminId)
       await this.loansRepository.createInstallments(installments, trx)
 
       await trx.commit()
-      this.logger.log(`Loan ${loanId} approved successfully`)
+      this.logger.log(`Loan ${loanId} disbursed successfully`)
 
       return {
-        message: 'Loan approved successfully',
-        status: 'approved',
+        message: 'Loan disbursed successfully, installments generated',
+        status: 'active',
         loanId
       }
     } catch (error) {
@@ -197,19 +315,25 @@ export class LoansService {
     }
   }
 
-  private generateInstallments(
+  private async generateInstallments(
     loan: LoanWithUser,
     processedBy: string
-  ): Partial<Installment>[] {
+  ): Promise<Partial<Installment>[]> {
     const installments: Partial<Installment>[] = []
     const tenor = loan.tenor
+
+    // Use the pre-calculated rounded values from the loan
+    const monthlyPayment = new Decimal(loan.monthly_payment)
+    const lastMonthPayment = new Decimal(loan.last_month_payment)
     const monthlyPrincipal = new Decimal(loan.principal_amount).div(tenor)
     const monthlyInterest = new Decimal(loan.interest_amount)
-    const monthlyPayment = new Decimal(loan.monthly_payment)
 
     for (let i = 1; i <= tenor; i++) {
       const dueDate = new Date(loan.start_date)
       dueDate.setMonth(dueDate.getMonth() + i)
+
+      // Use last month payment for the final installment
+      const totalAmount = i === tenor ? lastMonthPayment : monthlyPayment
 
       installments.push({
         loan_id: loan.id,
@@ -218,7 +342,7 @@ export class LoansService {
         principal_amount: monthlyPrincipal.toFixed(4),
         interest_amount: monthlyInterest.toFixed(4),
         penalty_amount: '0.0000',
-        total_amount: monthlyPayment.toFixed(4),
+        total_amount: totalAmount.toFixed(4),
         status: 'due',
         processed_by: processedBy
       })

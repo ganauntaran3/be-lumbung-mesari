@@ -25,11 +25,13 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable()
     table.decimal('principal_amount', 12, 4).notNullable() // Jumlah pokok pinjaman
     table.decimal('admin_fee_amount', 12, 4).notNullable() // Biaya admin
-    table.decimal('disbursed_amount', 12, 4).notNullable() // Jumlah yang diberikan
-    table.decimal('interest_amount', 12, 4).notNullable() // Bunga tiap bulan
+    table.decimal('disbursed_amount', 12, 4).notNullable() // Jumlah yang akan dibayarkan ke anggota
+    table.decimal('interest_amount', 12, 4).notNullable() // Jumlah Bunga tiap bulan (dalam bentuk rupiah)
     table.decimal('monthly_payment', 12, 4).notNullable() // Total uang yang harus disetorkan tiap bulan
+    table.decimal('last_month_payment', 12, 4).notNullable() // Total uang yang harus disetorkan bulan terakhir
     table.decimal('total_payable_amount', 12, 4).notNullable() // Total uang yang harus dikembalikan
-    table.integer('installment_late_amount').nullable()
+    table.integer('installment_late_amount').nullable() // Jumlah cicilan yang terlambat
+    table.date('disbursed_at').nullable()
     table.date('start_date').notNullable()
     table.date('end_date').notNullable()
     table
@@ -41,14 +43,16 @@ export async function up(knex: Knex): Promise<void> {
         'completed'
       ])
       .notNullable()
+    // Approved -> pinjaman disetujui
+    // Active -> uang sudah diberikan dan cicilan berlangsung
     table
       .uuid('approved_by')
       .references('id')
       .inTable('users')
       .onDelete('RESTRICT')
       .nullable()
-    table.timestamp('approved_at').nullable()
     table.text('notes').nullable()
+    table.timestamp('approved_at').nullable()
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
     table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
   })
