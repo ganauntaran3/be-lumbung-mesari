@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger'
 import {
   AuthErrorSchemas,
+  BadRequestResponseSchema,
   NotFoundResponseSchema
 } from 'src/common/schema/error-schema'
 
@@ -55,6 +56,8 @@ export class LoansController {
   constructor(private readonly loansService: LoansService) {}
 
   @Get('periods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Get all available loan periods',
     description:
@@ -81,6 +84,7 @@ export class LoansController {
 
   @Post('calculate')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Calculate loan details',
     description:
@@ -92,7 +96,8 @@ export class LoansController {
     type: CalculateLoanResponseDto
   })
   @ApiBadRequestResponse({
-    description: 'Bad Request - Invalid input data'
+    description: 'Bad Request - Invalid input data',
+    schema: BadRequestResponseSchema
   })
   @ApiNotFoundResponse({
     description: 'Loan period not found',

@@ -7,14 +7,14 @@ import { PaginationOptions, PaginationResult } from '../interface/pagination'
 
 import {
   CreateLoanData,
-  Loan,
+  LoanTable,
   LoanPeriodTable,
   LoanWithUser
 } from './interface/loans.interface'
 import { Installment } from './interface/installment.interface'
 
 @Injectable()
-export class LoansRepository extends BaseRepository<Loan> {
+export class LoansRepository extends BaseRepository<LoanTable> {
   private readonly logger = new Logger(LoansRepository.name)
 
   constructor(protected readonly databaseService: DatabaseService) {
@@ -36,10 +36,10 @@ export class LoansRepository extends BaseRepository<Loan> {
   async createLoan(
     loanData: CreateLoanData,
     trx?: Knex.Transaction
-  ): Promise<Loan> {
+  ): Promise<LoanTable> {
     const query = trx ? trx('loans') : this.knex('loans')
     const [result] = await query.insert(loanData).returning('*')
-    return result as Loan
+    return result as LoanTable
   }
 
   async findAllWithPagination(
@@ -130,13 +130,12 @@ export class LoansRepository extends BaseRepository<Loan> {
         'loans.*',
         'users.fullname as user_fullname',
         'users.email as user_email',
-        'loan_periods.tenor',
-        'loan_periods.interest_rate'
+        'loan_periods.tenor'
       ])
       .where('loans.id', id)
       .first()
 
-    return result as LoanWithUser | undefined
+    return result
   }
 
   async updateLoanStatus(
@@ -145,7 +144,7 @@ export class LoansRepository extends BaseRepository<Loan> {
     approvedBy: string | null,
     notes: string | null,
     trx?: Knex.Transaction
-  ): Promise<Loan> {
+  ): Promise<LoanTable> {
     const query = trx ? trx('loans') : this.knex('loans')
 
     const updateData: any = {
@@ -168,10 +167,13 @@ export class LoansRepository extends BaseRepository<Loan> {
       throw new Error(`Loan with id ${loanId} not found`)
     }
 
-    return result as Loan
+    return result
   }
 
-  async disburseLoan(loanId: string, trx?: Knex.Transaction): Promise<Loan> {
+  async disburseLoan(
+    loanId: string,
+    trx?: Knex.Transaction
+  ): Promise<LoanTable> {
     const query = trx ? trx('loans') : this.knex('loans')
 
     const [result] = await query
@@ -187,7 +189,7 @@ export class LoansRepository extends BaseRepository<Loan> {
       throw new Error(`Loan with id ${loanId} not found`)
     }
 
-    return result as Loan
+    return result as LoanTable
   }
 
   async createInstallments(
@@ -205,5 +207,70 @@ export class LoansRepository extends BaseRepository<Loan> {
       .orderBy('installment_number', 'asc')
 
     return results as Installment[]
+  }
+
+  async findOverdueInstallments(beforeDate: Date): Promise<Installment[]> {
+    const results = await this.knex('installments')
+      .where('status', 'due')
+      .where('due_date', '<=', beforeDate)
+      .orderBy('loan_id', 'asc')
+      .orderBy('installment_number', 'asc')
+
+    return results as Installment[]
+  }
+
+  async updateInstallmentStatus(
+    installmentId: string,
+    status: 'due' | 'overdue' | 'paid' | 'partially_paid',
+    trx?: Knex.Transaction
+  ): Promise<Installment> {
+    const query = trx ? trx('installments') : this.knex('installments')
+
+    const [result] = await query
+      .where('id', installmentId)
+      .update({
+        status,
+        updated_at: new Date()
+      })
+      .returning('*')
+
+    if (!result) {
+      throw new Error(`Installment with id ${installmentId} not found`)
+    }
+
+    return result as Installment
+  }
+
+  async addPenaltyToInstallment(
+    installmentId: string,
+    penaltyAmount: number,
+    trx?: Knex.Transaction
+  ): Promise<Installment> {
+    const query = trx ? trx('installments') : this.knex('installments')
+
+    // Get current penalty amount
+    const [currentInstallment] = await query
+      .where('id', installmentId)
+      .select('penalty_amount', 'total_amount')
+
+    if (!currentInstallment) {
+      throw new Error(`Installment with id ${installmentId} not found`)
+    }
+
+    const currentPenalty = parseFloat(currentInstallment.penalty_amount) || 0
+    const currentTotal = parseFloat(currentInstallment.total_amount) || 0
+    const newPenalty = currentPenalty + penaltyAmount
+    const newTotal = currentTotal + penaltyAmount
+
+    const [result] = await query
+      .where('id', installmentId)
+      .update({
+        penalty_amount: newPenalty.toFixed(4),
+        total_amount: newTotal.toFixed(4),
+        updated_at: new Date()
+      })
+      .returning('*')
+
+    return result as Installment
   }
 }

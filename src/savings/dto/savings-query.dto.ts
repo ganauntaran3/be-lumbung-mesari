@@ -49,4 +49,13 @@ export class SavingsQueryDto extends PaginationQueryDto {
   @Min(2000, { message: 'Year must be 2000 or later' })
   @Max(2100, { message: 'Year must be 2100 or earlier' })
   year?: number
+
+  @ApiPropertyOptional({
+    description: 'Sort by field',
+    default: 'period_date',
+    example: 'period_date'
+  })
+  @IsOptional()
+  @IsString()
+  override sortBy?: string = 'period_date'
 }

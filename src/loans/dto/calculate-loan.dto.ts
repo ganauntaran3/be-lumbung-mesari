@@ -54,5 +54,5 @@ export class CalculateLoanResponseDto {
     description: 'Last month payment amount (only if different from monthly)',
     example: 467000
   })
-  lastMonthlyPayment?: number
+  lastMonthPayment?: number
 }

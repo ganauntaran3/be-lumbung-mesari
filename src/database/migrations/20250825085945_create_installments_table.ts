@@ -15,7 +15,7 @@ export async function up(knex: Knex): Promise<void> {
     table.decimal('interest_amount', 12, 4).notNullable()
     table.decimal('penalty_amount', 12, 4).notNullable().defaultTo(0)
     table.decimal('total_amount', 12, 4).notNullable()
-    table.date('paid_date').nullable()
+    table.date('paid_at').nullable()
     table.decimal('paid_amount', 12, 4).nullable()
     table
       .enum('status', ['due', 'paid', 'overdue', 'partial'])

@@ -1,4 +1,4 @@
-export interface Loan {
+export interface LoanTable {
   id: string
   user_id: string
   loan_period_id: string
@@ -33,7 +33,7 @@ export interface LoanPeriodResponse {
   interest_rate: string
 }
 
-export interface LoanWithUser extends Loan {
+export interface LoanWithUser extends LoanTable {
   user_fullname: string
   user_email: string
   tenor: number
@@ -54,4 +54,16 @@ export interface CreateLoanData {
   end_date: Date
   status: 'pending'
   notes: string | null
+}
+
+export interface CalculateLoanResponse {
+  loanAmount: number
+  adminFee: number
+  disbursedAmount: number
+  tenor: number
+  interestRate: string
+  monthlyInterest: number
+  monthlyPayment: number
+  lastMonthPayment?: number
+  totalPayable: number
 }

@@ -84,6 +84,13 @@ export class AuthController {
           identifier: 'admin',
           password: 'admin123'
         }
+      },
+      'Login as user': {
+        summary: 'Login as user for development',
+        value: {
+          identifier: 'joko_widodo',
+          password: 'member123'
+        }
       }
     }
   })
