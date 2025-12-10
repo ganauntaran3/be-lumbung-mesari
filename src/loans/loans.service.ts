@@ -103,7 +103,34 @@ export class LoansService {
 
     this.logger.log(`Loan created for user ${userId}: ${loan.id}`)
 
-    return loan
+    return this.transformLoanRecord(loan)
+  }
+
+  private transformLoanRecord(loan: any) {
+    return {
+      id: loan.id,
+      userId: loan.user_id,
+      loanPeriodId: loan.loan_period_id,
+      principalAmount: parseFloat(loan.principal_amount),
+      adminFeeAmount: parseFloat(loan.admin_fee_amount),
+      disbursedAmount: parseFloat(loan.disbursed_amount),
+      interestAmount: parseFloat(loan.interest_amount),
+      monthlyPayment: parseFloat(loan.monthly_payment),
+      lastMonthPayment: parseFloat(loan.last_month_payment),
+      totalPayableAmount: parseFloat(loan.total_payable_amount),
+      installmentLateAmount: loan.installment_late_amount
+        ? parseFloat(loan.installment_late_amount)
+        : null,
+      startDate: loan.start_date,
+      endDate: loan.end_date,
+      status: loan.status,
+      approvedBy: loan.approved_by,
+      approvedAt: loan.approved_at,
+      disbursedAt: loan.disbursed_at,
+      notes: loan.notes,
+      createdAt: loan.created_at,
+      updatedAt: loan.updated_at
+    }
   }
 
   async calculateLoan(

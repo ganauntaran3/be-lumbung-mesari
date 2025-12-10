@@ -66,7 +66,7 @@ export class SavingsController {
     }
   }
 
-  @Get('all')
+  @Get()
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
