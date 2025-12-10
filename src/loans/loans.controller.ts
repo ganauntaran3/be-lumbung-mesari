@@ -56,8 +56,7 @@ export class LoansController {
   constructor(private readonly loansService: LoansService) {}
 
   @Get('periods')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get all available loan periods',
     description:
