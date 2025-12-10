@@ -18,7 +18,8 @@ import {
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
   ApiParam,
-  ApiBadRequestResponse
+  ApiBadRequestResponse,
+  ApiBearerAuth
 } from '@nestjs/swagger'
 import { UserRole } from 'src/common/constants'
 
@@ -40,6 +41,7 @@ import { MandatorySavingsService } from './mandatory-savings.service'
 @ApiTags('Savings')
 @Controller('savings')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class SavingsController {
   private readonly logger = new Logger(SavingsController.name)
 
