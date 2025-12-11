@@ -37,6 +37,7 @@ import {
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponseDto } from './dto/savings-response.dto'
 import { MandatorySavingsService } from './mandatory-savings.service'
+import { UserJWT } from 'src/users/interface/users'
 
 @ApiTags('Savings')
 @Controller('savings')
@@ -182,7 +183,7 @@ export class SavingsController {
   async findUserMandatorySavings(
     @Param('userId') userId: string,
     @Query() queryParams: SavingsQueryDto,
-    @CurrentUser() currentUser: any
+    @CurrentUser() currentUser: UserJWT
   ) {
     try {
       if (!userId || userId.trim() === '') {
@@ -198,13 +199,13 @@ export class SavingsController {
 
       // Check if user is trying to access their own records or is an admin
       const isAdmin =
-        currentUser.role_id === UserRole.ADMIN ||
-        currentUser.role_id === UserRole.SUPERADMIN
+        currentUser.role === UserRole.ADMIN ||
+        currentUser.role === UserRole.SUPERADMIN
       const isOwnRecord = currentUser.id === userId
 
       if (!isAdmin && !isOwnRecord) {
         this.logger.warn(
-          `User ${currentUser.id} (role: ${currentUser.role_id}) attempted to access savings for user ${userId}`
+          `User ${currentUser.id} (role: ${currentUser.role}) attempted to access savings for user ${userId}`
         )
         throw new ForbiddenException({
           statusCode: 403,
