@@ -41,7 +41,7 @@ export const BadRequestResponseSchema = createBadRequestSchema()
 export const ConflictResponseSchema = createConflictSchema(
   'Email already exists'
 )
-export const NotFoundResponseSchema = createNotFoundSchema('User not found')
+export const NotFoundResponseSchema = createNotFoundSchema('Resource not found')
 export const InternalServerErrorResponseSchema =
   createInternalServerErrorSchema()
 
