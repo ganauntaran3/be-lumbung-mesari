@@ -21,7 +21,7 @@ export const UserProfileResponseSchema = {
       example: 'johndoe',
       description: 'Username'
     },
-    phone_number: {
+    phoneNumber: {
       type: 'string',
       example: '081234567890',
       description: 'Phone number'
@@ -37,45 +37,23 @@ export const UserProfileResponseSchema = {
       example: 'active',
       description: 'User account status'
     },
-    role_id: {
+    roleId: {
       type: 'string',
       example: 'member',
       description: 'User role ID'
     },
-    role: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          example: 'member',
-          description: 'Role ID'
-        },
-        name: {
-          type: 'string',
-          example: 'Member',
-          description: 'Role name'
-        }
-      },
-      description: 'User role details'
-    },
-    deposit_image_url: {
-      type: 'string',
-      nullable: true,
-      example: 'https://example.com/deposits/image.jpg',
-      description: 'URL of deposit proof image'
-    },
-    otp_verified: {
+    otpVerified: {
       type: 'boolean',
       example: true,
       description: 'Whether OTP has been verified'
     },
-    created_at: {
+    createdAt: {
       type: 'string',
       format: 'date-time',
       example: '2024-01-01T00:00:00.000Z',
       description: 'Account creation timestamp'
     },
-    updated_at: {
+    updatedAt: {
       type: 'string',
       format: 'date-time',
       example: '2024-01-01T00:00:00.000Z',

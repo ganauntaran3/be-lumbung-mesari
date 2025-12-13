@@ -17,14 +17,22 @@ export enum UserSortBy {
   USERNAME = 'username'
 }
 
-/**
- * DTO for users query parameters including pagination and filtering
- */
 export class UsersQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
-    description: 'Filter by user role',
+    description:
+      'Filter by user role(s). Can be a single role or multiple roles separated by commas.',
     enum: ['member', 'administrator', 'superadministrator'],
-    example: 'member'
+    example: 'member',
+    examples: {
+      single: {
+        summary: 'Single role',
+        value: 'member'
+      },
+      multiple: {
+        summary: 'Multiple roles (for admin management)',
+        value: 'administrator,superadministrator'
+      }
+    }
   })
   @IsOptional()
   @IsString({ message: 'Role must be a string' })
