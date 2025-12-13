@@ -37,7 +37,7 @@ export class IncomesService {
         {
           name: 'Simpanan Pokok',
           income_category_id: category.id,
-          amount: amount.toString(),
+          amount,
           user_id: userId,
           principal_saving_id: principalSavingsId,
           notes: notes || 'Simpanan pokok dari anggota baru'
@@ -51,6 +51,54 @@ export class IncomesService {
     } catch (error) {
       this.logger.error(
         `Failed to create principal savings income for user ${userId}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  async createMandatorySavingsIncome(
+    userId: string,
+    mandatorySavingsId: string,
+    amount: number,
+    notes?: string,
+    trx?: any
+  ): Promise<IncomeTable> {
+    try {
+      this.logger.log(
+        `Creating mandatory savings income for user ${userId} with amount ${amount}`
+      )
+
+      // Find mandatory_savings category
+      const category = await this.incomesRepository.findCategoryByCode(
+        'mandatory_savings',
+        trx
+      )
+
+      if (!category) {
+        throw new NotFoundException(
+          'Income category "mandatory_savings" not found. Please run seed.'
+        )
+      }
+
+      const income = await this.incomesRepository.createIncome(
+        {
+          name: 'Simpanan Wajib',
+          income_category_id: category.id,
+          amount,
+          user_id: userId,
+          mandatory_saving_id: mandatorySavingsId,
+          notes: notes || 'Simpanan wajib dari anggota'
+        },
+        trx
+      )
+
+      this.logger.log(`Mandatory savings income created: ${income.id}`)
+
+      return income
+    } catch (error) {
+      this.logger.error(
+        `Failed to create mandatory savings income for user ${userId}:`,
         error
       )
       throw error

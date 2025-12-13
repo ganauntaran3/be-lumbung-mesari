@@ -40,7 +40,8 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
     try {
       const results = await this.knex('cashbook_balances').select(
         'type',
-        'balance'
+        'balance',
+        'updated_at'
       )
 
       const balances = results.reduce(
