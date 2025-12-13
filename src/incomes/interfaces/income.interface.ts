@@ -11,7 +11,7 @@ export interface IncomeTable {
   id: string
   name: string
   income_category_id: string
-  amount: string
+  amount: number
   user_id?: string
   loan_id?: string
   principal_saving_id?: string

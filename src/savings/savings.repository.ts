@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
@@ -310,14 +310,16 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
 
   async updateMandatorySavings(
     id: string,
-    updateData: UpdateMandatorySavings
+    updateData: UpdateMandatorySavings,
+    trx?: any
   ): Promise<MandatorySavingsTable> {
     try {
       this.logger.debug(
         `Updating mandatory savings ${id} with data: ${JSON.stringify(updateData)}`
       )
 
-      const [result] = await this.knex(this.tableName)
+      const query = trx ? trx('mandatory_savings') : this.knex(this.tableName)
+      const [result] = await query
         .where('id', id)
         .update(updateData)
         .returning('*')
@@ -334,10 +336,35 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     }
   }
 
-  /**
-   * Create mandatory savings records for multiple users for the entire year (12 months)
-   * Uses database transactions and handles duplicates with ON CONFLICT
-   */
+  async findMandatorySavingsById(id: string) {
+    this.logger.debug(`Finding mandatory savings by ID ${id}`)
+
+    const result = await this.knex('mandatory_savings as ms')
+      .where('ms.id', id)
+      .select([
+        'ms.id',
+        'ms.period_date',
+        'ms.amount',
+        'ms.status',
+        'ms.paid_at',
+        'ms.created_at',
+        'ms.updated_at',
+        'ms.processed_by'
+      ])
+      .first()
+
+    return {
+      id: result.id,
+      period_date: result.period_date,
+      amount: result.amount,
+      status: result.status,
+      paid_at: result.paid_at,
+      created_at: result.created_at,
+      updated_at: result.updated_at,
+      processed_by: result.processed_by
+    }
+  }
+
   async createYearlyMandatorySavingsForUsers(
     userIds: string[],
     amount: number
@@ -444,35 +471,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
         error
       )
       throw error
-    }
-  }
-
-  // ==================== CASHBOOK METHODS ====================
-
-  /**
-   * Get current cashbook balance
-   * Returns 0 if no balance record exists yet
-   * @param trx - Optional transaction object
-   */
-  async getCashbookBalance(trx?: any): Promise<number> {
-    try {
-      const query = trx
-        ? trx('cashbook_balances')
-        : this.knex('cashbook_balances')
-      const result = await query.select('balance').first()
-
-      if (!result) {
-        this.logger.debug('No cashbook balance found, returning 0')
-        return 0
-      }
-
-      const balance = parseFloat(result.balance)
-      this.logger.debug(`Current cashbook balance: ${balance}`)
-
-      return balance
-    } catch (error) {
-      this.logger.error('Failed to get cashbook balance:', error)
-      return 0
     }
   }
 
