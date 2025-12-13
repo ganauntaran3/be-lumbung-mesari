@@ -12,18 +12,15 @@ import {
   TokenErrorSchemas
 } from 'src/common/schema/error-schema'
 
-import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
-import { RolesGuard } from '../auth/guards/roles.guard'
-import { UserRole } from '../common/constants'
 
 import { CashbookBalanceService } from './cashbook-balance.service'
+import { getBalanceResponseSchema } from './dto/balance.dto'
 
 @ApiTags('Cashbook')
 @Controller('cashbook')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+@UseGuards(JwtAuthGuard)
 export class CashbookController {
   private readonly logger = new Logger(CashbookController.name)
 
@@ -40,26 +37,7 @@ export class CashbookController {
   @ApiResponse({
     status: 200,
     description: 'Balances retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        total: {
-          type: 'number',
-          example: 5000000,
-          description: 'Total cashbook balance (capital + shu)'
-        },
-        capital: {
-          type: 'number',
-          example: 3000000,
-          description: 'Capital balance (simpanan pokok + simpanan wajib)'
-        },
-        shu: {
-          type: 'number',
-          example: 2000000,
-          description: 'SHU balance (profit available for distribution)'
-        }
-      }
-    }
+    schema: getBalanceResponseSchema
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or expired token',
@@ -72,19 +50,8 @@ export class CashbookController {
   })
   async getBalances() {
     try {
-      this.logger.log('Admin requested cashbook balances')
-
-      const balances = await this.cashbookBalanceService.getCurrentBalances()
-
-      const response = {
-        total: balances.total,
-        capital: balances.capital,
-        shu: balances.shu
-      }
-
-      this.logger.log('Cashbook balances retrieved successfully')
-
-      return response
+      this.logger.log('Retrieving cashbook balances...')
+      return await this.cashbookBalanceService.getCurrentBalances()
     } catch (error) {
       this.logger.error('Failed to retrieve cashbook balances:', error)
       throw error

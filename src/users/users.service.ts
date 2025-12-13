@@ -199,8 +199,7 @@ export class UsersService {
       search?: string
     } = {}
   ): Promise<UsersPaginatedResponse> {
-    const result = await this.usersRepository.findAllWithRoles(options)
-    console.log(result)
+    const result = await this.usersRepository.findAllUsers(options)
 
     return {
       ...result,
