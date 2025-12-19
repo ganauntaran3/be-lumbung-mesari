@@ -57,13 +57,12 @@ export interface CreateLoanData {
 }
 
 export interface CalculateLoanResponse {
-  loanAmount: number
+  principalAmount: number
   adminFee: number
   disbursedAmount: number
   tenor: number
-  interestRate: string
+  interestRate: number
   monthlyInterest: number
   monthlyPayment: number
   lastMonthPayment?: number
-  totalPayable: number
 }

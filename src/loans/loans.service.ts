@@ -155,18 +155,17 @@ export class LoansService {
     const disbursedAmount = loanAmount.minus(adminFee)
 
     // Calculate payment details
-    const { monthlyInterest, monthlyPayment, lastMonthPayment, totalPayable } =
+    const { monthlyInterest, monthlyPayment, lastMonthPayment } =
       this.calculateLoanPayments(amount, interestRate.toNumber(), tenor)
 
     const response: CalculateLoanResponse = {
-      loanAmount: loanAmount.toNumber(),
+      principalAmount: loanAmount.toNumber(),
       adminFee: adminFee.toNumber(),
       disbursedAmount: disbursedAmount.toNumber(),
       tenor,
-      interestRate: `${interestRate.toString()}%`,
+      interestRate: interestRate.toNumber(),
       monthlyInterest,
-      monthlyPayment,
-      totalPayable
+      monthlyPayment
     }
 
     // Only include lastMonthlyPayment if it's different from monthlyPayment
