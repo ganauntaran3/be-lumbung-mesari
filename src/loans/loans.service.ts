@@ -199,6 +199,11 @@ export class LoansService {
     return loan
   }
 
+  async findUserLoans(userId: string, options: any = {}) {
+    this.logger.log(`Fetching loans for user ${userId}`)
+    return await this.loansRepository.findUserLoans(userId, options)
+  }
+
   async approveLoan(
     loanId: string,
     approvalDto: ApproveLoanDto,
