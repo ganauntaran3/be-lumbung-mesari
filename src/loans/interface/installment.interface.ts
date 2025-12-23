@@ -7,7 +7,7 @@ export interface Installment {
   interest_amount: string
   penalty_amount: string
   total_amount: string
-  paid_date: Date | null
+  paid_at: Date | null
   paid_amount: string | null
   status: 'due' | 'paid' | 'overdue' | 'partial'
   processed_by: string

@@ -122,8 +122,12 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     }
   }
 
-  async findById(id: string): Promise<LoanWithUser | undefined> {
-    const result = await this.knex('loans')
+  async findById(
+    id: string,
+    trx?: Knex.Transaction
+  ): Promise<LoanWithUser | undefined> {
+    const query = trx ? trx('loans') : this.knex('loans')
+    const result = await query
       .join('users', 'users.id', 'loans.user_id')
       .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
       .select([
@@ -134,6 +138,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
       ])
       .where('loans.id', id)
       .first()
+      .forUpdate()
 
     return result
   }
@@ -221,7 +226,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
 
   async updateInstallmentStatus(
     installmentId: string,
-    status: 'due' | 'overdue' | 'paid' | 'partially_paid',
+    status: 'due' | 'overdue' | 'paid' | 'partial',
     trx?: Knex.Transaction
   ): Promise<Installment> {
     const query = trx ? trx('installments') : this.knex('installments')
