@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module'
 import { CashbookModule } from './cashbook/cashbook.module'
 import { ExpensesModule } from './expenses/expenses.module'
 import { IncomesModule } from './incomes/incomes.module'
+import { LoansModule } from './loans/loans.module'
 import { NotificationModule } from './notifications/notification.module'
 import { SavingsModule } from './savings/savings.module'
 import { UsersModule } from './users/users.module'
@@ -23,7 +24,8 @@ import { UsersModule } from './users/users.module'
     SavingsModule,
     IncomesModule,
     CashbookModule,
-    ExpensesModule
+    ExpensesModule,
+    LoansModule
   ],
   controllers: [AppController],
   providers: [AppService]
