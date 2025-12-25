@@ -1,13 +1,13 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import {
+  MandatorySavingsPaginatedResponse,
   MandatorySavingsTable,
   MandatorySavingsWithUser,
-  MandatorySavingsPaginatedResponse,
   UpdateMandatorySavings
 } from './interfaces/mandatory-savings.interface'
 import {

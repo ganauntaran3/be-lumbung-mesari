@@ -430,7 +430,6 @@ export class SavingsController {
         savingsId
       }
     } catch (error) {
-      // Handle specific error types
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException

@@ -120,8 +120,10 @@ export class UsersSavingsService {
   private async calculatePrincipalSavingsAmount(
     trx?: Knex.Transaction
   ): Promise<number> {
-    const totalBalance =
-      await this.cashbookBalanceService.getBalanceByType('total')
+    const totalBalance = await this.cashbookBalanceService.getBalanceByType(
+      'total',
+      trx
+    )
     const activeMemberCount =
       await this.usersRepository.getActiveMemberCount(trx)
 

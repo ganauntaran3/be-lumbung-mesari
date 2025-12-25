@@ -4,6 +4,7 @@ import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 
 import { CashbookBalanceTable } from './interfaces/cashbook.interface'
+import { Knex } from 'knex'
 
 @Injectable()
 export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTable> {
@@ -13,15 +14,20 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
     super(databaseService, 'cashbook_balances')
   }
 
-  /**
-   * Get current balance for specific type
-   */
-  async getBalance(balanceType: 'total' | 'capital' | 'shu'): Promise<number> {
+  async getBalance(
+    balanceType: 'total' | 'capital' | 'shu',
+    trx?: Knex.Transaction
+  ): Promise<number> {
     try {
-      const result = await this.knex('cashbook_balances')
+      const query = trx
+        ? trx('cashbook_balances')
+        : this.knex('cashbook_balances')
+
+      const result = await query
         .where('type', balanceType)
         .select('balance')
         .first()
+        .forUpdate()
 
       const balance = result ? parseFloat(result.balance) : 0
       this.logger.debug(`Retrieved ${balanceType} balance: ${balance}`)
@@ -33,9 +39,6 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
     }
   }
 
-  /**
-   * Get all balances as key-value object
-   */
   async getAllBalances(): Promise<Record<string, number>> {
     try {
       const results = await this.knex('cashbook_balances').select(
