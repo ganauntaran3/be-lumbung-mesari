@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
 
-import { CashbookBalanceRepository } from './cashbook-balance.repository'
 import { Knex } from 'knex'
-import { DatabaseService } from 'src/database/database.service'
+
+import { DatabaseService } from '../database/database.service'
+
+import { CashbookBalanceRepository } from './cashbook-balance.repository'
 
 export interface CashbookBalances {
   total: number
@@ -49,38 +51,25 @@ export class CashbookBalanceService {
     type: 'total' | 'capital' | 'shu',
     trx?: Knex.Transaction
   ): Promise<number> {
+    const transaction =
+      trx || (await this.databaseService.getKnex().transaction())
     try {
       this.logger.debug(`Retrieving ${type} balance`)
 
-      const transaction =
-        trx || (await this.databaseService.getKnex().transaction())
-
       const balance = await this.balanceRepository.getBalance(type, transaction)
+
+      if (!trx) {
+        await transaction.commit()
+      }
 
       this.logger.debug(`${type} balance: ${balance}`)
       return balance
     } catch (error) {
+      if (!trx) {
+        await transaction.rollback()
+      }
       this.logger.error(`Failed to get ${type} balance:`, error)
       throw error
-    }
-  }
-
-  async validateSufficientBalance(
-    type: 'capital' | 'shu',
-    amount: number
-  ): Promise<boolean> {
-    try {
-      const currentBalance = await this.getBalanceByType(type)
-      const hasSufficientBalance = currentBalance >= amount
-
-      this.logger.debug(
-        `Balance validation - ${type}: ${currentBalance}, required: ${amount}, sufficient: ${hasSufficientBalance}`
-      )
-
-      return hasSufficientBalance
-    } catch (error) {
-      this.logger.error(`Failed to validate ${type} balance:`, error)
-      return false
     }
   }
 }

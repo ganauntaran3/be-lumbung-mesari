@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common'
 
+import { Knex } from 'knex'
+
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 
 import { CashbookBalanceTable } from './interfaces/cashbook.interface'
-import { Knex } from 'knex'
 
 @Injectable()
 export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTable> {
@@ -23,12 +24,12 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
         ? trx('cashbook_balances')
         : this.knex('cashbook_balances')
 
-      const result = await query
-        .where('type', balanceType)
-        .select('balance')
-        .first()
-        .forUpdate()
+      let resultQuery = query.where('type', balanceType)
 
+      if (trx) {
+        resultQuery = query.forUpdate()
+      }
+      const result = await resultQuery.first()
       const balance = result ? parseFloat(result.balance) : 0
       this.logger.debug(`Retrieved ${balanceType} balance: ${balance}`)
 
