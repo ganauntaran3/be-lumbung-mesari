@@ -12,6 +12,7 @@ import { CashbookTransactionService } from '../cashbook/cashbook-transaction.ser
 import { IncomesService } from '../incomes/incomes.service'
 import { SavingsRepository } from '../savings/savings.repository'
 import { UsersRepository } from '../users/users.repository'
+import { CashbookBalanceService } from 'src/cashbook/cashbook-balance.service'
 
 /**
  * UsersSavingsService
@@ -28,17 +29,10 @@ export class UsersSavingsService {
     private readonly usersRepository: UsersRepository,
     private readonly incomesService: IncomesService,
     private readonly cashbookTransactionService: CashbookTransactionService,
+    private readonly cashbookBalanceService: CashbookBalanceService,
     private readonly configService: ConfigService
   ) {}
 
-  /**
-   * Approve principal savings when admin approves user
-   * Called from UsersService.approveUser()
-   *
-   * @param userId - ID of the user whose principal savings to approve
-   * @param processedBy - ID of the admin who approved
-   * @param trx - Database transaction to ensure consistency
-   */
   async settlePrincipalSavings(
     userId: string,
     adminId: string,
@@ -84,23 +78,14 @@ export class UsersSavingsService {
     // 4. Create cashbook transaction
     await this.cashbookTransactionService.createIncomeTransaction(
       income.id,
-      userId,
       amount,
       IncomeDestination.CAPITAL,
-      undefined,
       trx
     )
 
     this.logger.log(`Principal savings approved for user ${userId}`)
   }
 
-  /**
-   * Create principal savings after OTP verification
-   * Called from AuthService.verifyOtp()
-   *
-   * @param userId - ID of the user to create principal savings for
-   * @param trx - Optional transaction object. If provided, operations will use this transaction
-   */
   async createPrincipalSavings(
     userId: string,
     trx?: Knex.Transaction
@@ -135,7 +120,10 @@ export class UsersSavingsService {
   private async calculatePrincipalSavingsAmount(
     trx?: Knex.Transaction
   ): Promise<number> {
-    const totalBalance = await this.savingsRepository.getCashbookBalance(trx)
+    const totalBalance = await this.cashbookBalanceService.getBalanceByType(
+      'total',
+      trx
+    )
     const activeMemberCount =
       await this.usersRepository.getActiveMemberCount(trx)
 

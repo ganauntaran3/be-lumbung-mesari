@@ -454,7 +454,7 @@ export class LoansService {
 
       // Calculate penalty amount (1% of principal)
       const penaltyAmount = new Decimal(loan.principal_amount)
-        .mul(this.configService.get<number>('INTEREST_RATE', 1))
+        .mul(this.configService.get<number>('INTEREST_RATE', 0.01))
         .toNumber()
 
       // Get all installments for this loan sorted by installment number

@@ -1,43 +1,46 @@
 import {
+  BadRequestException,
   Controller,
+  ForbiddenException,
   Get,
+  HttpCode,
+  HttpStatus,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  Param,
   Post,
   Query,
-  UseGuards,
-  Param,
-  Logger,
-  ForbiddenException,
-  NotFoundException,
-  BadRequestException,
-  InternalServerErrorException
+  UseGuards
 } from '@nestjs/common'
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiParam,
   ApiBadRequestResponse,
-  ApiBearerAuth
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
+
 import { UserRole } from 'src/common/constants'
+import { UserJWT } from 'src/users/interface/users'
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import {
-  createUnauthorizedSchema,
   createBadRequestSchema,
   createForbiddenSchema,
-  createNotFoundSchema
+  createNotFoundSchema,
+  createUnauthorizedSchema
 } from '../common/schema/error-schema'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponseDto } from './dto/savings-response.dto'
 import { MandatorySavingsService } from './mandatory-savings.service'
-import { UserJWT } from 'src/users/interface/users'
 
 @ApiTags('Savings')
 @Controller('savings')
@@ -340,6 +343,114 @@ export class SavingsController {
         statusCode: 500,
         message:
           'An unexpected error occurred while generating mandatory savings',
+        error: 'Internal Server Error'
+      })
+    }
+  }
+
+  @Post(':savingsId/settle')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiOperation({
+    summary: 'Settle mandatory savings payment (cash)',
+    description:
+      'Mark a mandatory savings record as paid when receiving cash payment. Only accessible by administrators and superadministrators. This will create an income record and update the cashbook balance.'
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({
+    name: 'savingsId',
+    description: 'Mandatory Savings ID',
+    type: 'string',
+    format: 'uuid',
+    example: '123e4567-e89b-12d3-a456-426614174000'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Mandatory savings settled successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Mandatory savings settled successfully'
+        },
+        savingsId: {
+          type: 'string',
+          example: '123e4567-e89b-12d3-a456-426614174000'
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - Invalid savings ID or already paid',
+    schema: createBadRequestSchema(
+      'Mandatory savings already paid or invalid ID'
+    )
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing token',
+    schema: createUnauthorizedSchema('Authentication required')
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions',
+    schema: createForbiddenSchema(
+      'Insufficient permissions to access this resource'
+    )
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Mandatory savings not found',
+    schema: createNotFoundSchema('Mandatory savings not found')
+  })
+  async settleMandatorySavings(
+    @Param('savingsId') savingsId: string,
+    @CurrentUser() currentUser: UserJWT
+  ) {
+    try {
+      if (!savingsId || savingsId.trim() === '') {
+        this.logger.warn('Invalid savingsId provided: empty or null')
+        throw new BadRequestException({
+          statusCode: 400,
+          message: 'Savings ID is required',
+          error: 'Bad Request'
+        })
+      }
+
+      this.logger.log(
+        `Admin ${currentUser.id} settling mandatory savings: ${savingsId}`
+      )
+
+      await this.mandatorySavingsService.settleMandatorySavings(
+        savingsId,
+        currentUser.id
+      )
+
+      this.logger.log(
+        `Successfully settled mandatory savings ${savingsId} by admin ${currentUser.id}`
+      )
+
+      return {
+        message: 'Mandatory savings settled successfully',
+        savingsId
+      }
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error
+      }
+
+      // Handle unexpected errors
+      this.logger.error(
+        `Unexpected error settling mandatory savings ${savingsId}:`,
+        error
+      )
+
+      throw new InternalServerErrorException({
+        statusCode: 500,
+        message:
+          'An unexpected error occurred while settling mandatory savings',
         error: 'Internal Server Error'
       })
     }

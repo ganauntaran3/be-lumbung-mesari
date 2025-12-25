@@ -34,10 +34,8 @@ export class CashbookTransactionService {
    */
   async createIncomeTransaction(
     incomeId: string,
-    userId: string,
     amount: number,
     destination: 'shu' | 'capital',
-    txnDate?: Date,
     trx?: any
   ): Promise<CashbookTransactionTable> {
     try {
@@ -47,7 +45,7 @@ export class CashbookTransactionService {
 
       const transaction = await this.transactionRepository.createTransaction(
         {
-          txn_date: txnDate || new Date(),
+          txn_date: new Date(),
           direction: 'in',
           shu_amount: destination === 'shu' ? amount : 0,
           capital_amount: destination === 'capital' ? amount : 0,
@@ -146,10 +144,6 @@ export class CashbookTransactionService {
     }
   }
 
-  /**
-   * Update cashbook transaction for income
-   * Called when income is updated
-   */
   async updateIncomeTransaction(
     incomeId: string,
     amount: number,
@@ -183,10 +177,6 @@ export class CashbookTransactionService {
     }
   }
 
-  /**
-   * Delete cashbook transaction by expense ID
-   * Called when expense is deleted
-   */
   async deleteExpenseTransaction(
     expenseId: string,
     trx?: Knex.Transaction
@@ -209,10 +199,6 @@ export class CashbookTransactionService {
     }
   }
 
-  /**
-   * Delete cashbook transaction by income ID
-   * Called when income is deleted
-   */
   async deleteIncomeTransaction(
     incomeId: string,
     trx?: Knex.Transaction
@@ -235,9 +221,6 @@ export class CashbookTransactionService {
     }
   }
 
-  /**
-   * Get recent transactions
-   */
   async getRecentTransactions(
     limit: number = 10
   ): Promise<CashbookTransactionTable[]> {

@@ -1,11 +1,16 @@
 import {
-  Injectable,
-  Logger,
   BadRequestException,
-  InternalServerErrorException
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
+import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
+import { IncomeDestination } from '../cashbook/interfaces/cashbook.interface'
+import { DatabaseService } from '../database/database.service'
+import { IncomesService } from '../incomes/incomes.service'
 import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
@@ -19,7 +24,10 @@ export class MandatorySavingsService {
   constructor(
     private readonly savingsRepository: SavingsRepository,
     private readonly usersSavingsService: UsersSavingsService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly incomesService: IncomesService,
+    private readonly cashbookTransactionService: CashbookTransactionService,
+    private readonly databaseService: DatabaseService
   ) {}
 
   async findAllMandatorySavings(
@@ -306,6 +314,75 @@ export class MandatorySavingsService {
       throw new InternalServerErrorException(
         'Failed to generate mandatory savings records'
       )
+    }
+  }
+
+  async settleMandatorySavings(
+    savingsId: string,
+    adminId: string
+  ): Promise<void> {
+    const knex = this.databaseService.getKnex()
+    const trx = await knex.transaction()
+
+    try {
+      this.logger.log(`Starting settlement for mandatory savings ${savingsId}`)
+
+      const mandatorySavings =
+        await this.savingsRepository.findMandatorySavingsById(savingsId)
+
+      if (!mandatorySavings) {
+        throw new NotFoundException('Mandatory savings not found')
+      }
+
+      if (mandatorySavings.status === 'paid') {
+        throw new BadRequestException('Mandatory savings already paid')
+      }
+
+      // Mark as paid
+      await this.savingsRepository.updateMandatorySavings(
+        mandatorySavings.id,
+        {
+          status: 'paid',
+          paid_at: new Date(),
+          processed_by: adminId,
+          processed_at: new Date()
+        },
+        trx
+      )
+
+      // 3. Create income
+      const amount = parseFloat(mandatorySavings.amount)
+      const periodDate = new Date(mandatorySavings.period_date)
+      const monthName = periodDate.toLocaleString('id-ID', { month: 'long' })
+      const year = periodDate.getFullYear()
+
+      const income = await this.incomesService.createMandatorySavingsIncome(
+        adminId,
+        mandatorySavings.id,
+        amount,
+        `Simpanan wajib ${monthName} ${year}`,
+        trx
+      )
+
+      // 4. Create cashbook transaction
+      await this.cashbookTransactionService.createIncomeTransaction(
+        income.id,
+        amount,
+        IncomeDestination.CAPITAL,
+        trx
+      )
+
+      this.logger.log(
+        `Mandatory savings ${savingsId} settled successfully for user `
+      )
+      await trx.commit()
+    } catch (error) {
+      this.logger.error(
+        `Failed to settle mandatory savings ${savingsId}:`,
+        error
+      )
+      await trx.rollback()
+      throw error
     }
   }
 
