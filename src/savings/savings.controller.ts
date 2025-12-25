@@ -1,43 +1,46 @@
 import {
+  BadRequestException,
   Controller,
+  ForbiddenException,
   Get,
+  HttpCode,
+  HttpStatus,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  Param,
   Post,
   Query,
-  UseGuards,
-  Param,
-  Logger,
-  ForbiddenException,
-  NotFoundException,
-  BadRequestException,
-  InternalServerErrorException
+  UseGuards
 } from '@nestjs/common'
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiParam,
   ApiBadRequestResponse,
-  ApiBearerAuth
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
+
 import { UserRole } from 'src/common/constants'
+import { UserJWT } from 'src/users/interface/users'
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import {
-  createUnauthorizedSchema,
   createBadRequestSchema,
   createForbiddenSchema,
-  createNotFoundSchema
+  createNotFoundSchema,
+  createUnauthorizedSchema
 } from '../common/schema/error-schema'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponseDto } from './dto/savings-response.dto'
 import { MandatorySavingsService } from './mandatory-savings.service'
-import { UserJWT } from 'src/users/interface/users'
 
 @ApiTags('Savings')
 @Controller('savings')
@@ -353,6 +356,7 @@ export class SavingsController {
     description:
       'Mark a mandatory savings record as paid when receiving cash payment. Only accessible by administrators and superadministrators. This will create an income record and update the cashbook balance.'
   })
+  @HttpCode(HttpStatus.OK)
   @ApiParam({
     name: 'savingsId',
     description: 'Mandatory Savings ID',
