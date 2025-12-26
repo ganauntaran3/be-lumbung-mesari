@@ -1,4 +1,4 @@
-import { ExpenseSource } from 'src/cashbook/interfaces/cashbook.interface'
+import { ExpenseSource } from 'src/cashbook/interfaces/transaction.interface'
 
 import { PaginationResult } from '../../interface/pagination'
 

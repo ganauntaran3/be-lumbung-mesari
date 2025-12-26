@@ -1,25 +1,20 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
-  NotFoundException,
-  BadRequestException
+  NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+
 import { Knex } from 'knex'
-import { IncomeDestination } from 'src/cashbook/interfaces/cashbook.interface'
+import { CashbookBalanceService } from 'src/cashbook/cashbook-balance.service'
+import { IncomeDestination } from 'src/cashbook/interfaces/transaction.interface'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
 import { IncomesService } from '../incomes/incomes.service'
 import { SavingsRepository } from '../savings/savings.repository'
 import { UsersRepository } from '../users/users.repository'
-import { CashbookBalanceService } from 'src/cashbook/cashbook-balance.service'
 
-/**
- * UsersSavingsService
- *
- * Bridge service that handles cross-domain operations between users and savings.
- * This service eliminates circular dependencies between UsersModule and SavingsModule.
- */
 @Injectable()
 export class UsersSavingsService {
   private readonly logger = new Logger(UsersSavingsService.name)
@@ -36,7 +31,7 @@ export class UsersSavingsService {
   async settlePrincipalSavings(
     userId: string,
     adminId: string,
-    trx?: Knex.Transaction
+    trx: Knex.Transaction
   ): Promise<void> {
     this.logger.log(`Settling principal savings for user ${userId}`)
 
