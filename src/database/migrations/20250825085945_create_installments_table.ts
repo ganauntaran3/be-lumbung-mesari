@@ -21,7 +21,12 @@ export async function up(knex: Knex): Promise<void> {
       .enum('status', ['due', 'paid', 'overdue', 'partial'])
       .notNullable()
       .defaultTo('due')
-    table.string('processed_by').nullable()
+    table
+      .uuid('processed_by')
+      .references('id')
+      .inTable('users')
+      .onDelete('RESTRICT')
+      .nullable()
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
     table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
 

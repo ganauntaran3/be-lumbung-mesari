@@ -5,7 +5,7 @@ import { Knex } from 'knex'
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 
-import { CashbookBalanceTable } from './interfaces/cashbook.interface'
+import { CashbookBalanceTable } from './interfaces/balances.interface'
 
 @Injectable()
 export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTable> {

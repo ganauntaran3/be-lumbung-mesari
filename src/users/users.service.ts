@@ -1,27 +1,28 @@
 import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
   BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
   Logger,
-  InternalServerErrorException
+  NotFoundException
 } from '@nestjs/common'
+
 import { Knex } from 'knex'
 import { UserStatus } from 'src/common/constants'
 import { DatabaseService } from 'src/database/database.service'
 import { PaginationQueryDto } from 'src/database/dto/pagination.dto'
 
 import {
+  EmailData,
   EmailHelperService,
-  NotificationTemplate,
-  EmailData
+  NotificationTemplate
 } from '../notifications/email/email-helper.service'
 import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import {
-  ApproveUserDto,
   ApprovalAction,
   ApprovalResponseDto,
+  ApproveUserDto,
   RejectUserQueryDto
 } from './dto/approve-user.dto'
 import { EmailNotificationFailedException } from './exceptions/user.exceptions'
@@ -132,7 +133,7 @@ export class UsersService {
         throw new NotFoundException('User not found')
       }
 
-      const { password, deposit_image_url, ...safeUserData } = user
+      const { password, ...safeUserData } = user
 
       return safeUserData
     } catch (error: any) {
@@ -158,13 +159,7 @@ export class UsersService {
         throw new NotFoundException('User not found')
       }
 
-      const {
-        password,
-        otp_code,
-        otp_expires_at,
-        deposit_image_url,
-        ...safeUserData
-      } = user
+      const { password, otp_code, otp_expires_at, ...safeUserData } = user
 
       return this.transformUserToResponse(safeUserData)
     } catch (error: any) {

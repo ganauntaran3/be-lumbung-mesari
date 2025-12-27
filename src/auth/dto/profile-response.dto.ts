@@ -58,12 +58,6 @@ export const UserProfileResponseSchema = {
       },
       description: 'User role details'
     },
-    deposit_image_url: {
-      type: 'string',
-      nullable: true,
-      example: 'https://example.com/deposits/image.jpg',
-      description: 'URL of deposit proof image'
-    },
     otp_verified: {
       type: 'boolean',
       example: true,

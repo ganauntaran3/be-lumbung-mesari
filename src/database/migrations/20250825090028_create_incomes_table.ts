@@ -23,7 +23,6 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete('RESTRICT')
       .notNullable()
     table.decimal('amount', 12, 4).notNullable()
-    table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.uuid('loan_id').references('id').inTable('loans').onDelete('SET NULL')
     table
       .uuid('installment_id')

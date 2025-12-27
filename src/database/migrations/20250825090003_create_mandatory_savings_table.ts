@@ -18,7 +18,7 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable()
       .defaultTo('due')
 
-    table.date('paid_at').nullable()
+    table.timestamp('paid_at').nullable()
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
     table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
     table
@@ -27,8 +27,6 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('users')
       .onDelete('RESTRICT')
       .nullable()
-    table.timestamp('processed_at').nullable()
-
     table.unique(['user_id', 'period_date'])
   })
   await knex.raw(

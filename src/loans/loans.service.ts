@@ -1,27 +1,27 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
+  Injectable,
   Logger,
-  ForbiddenException
+  NotFoundException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
 import Decimal from 'decimal.js'
 
 import { DatabaseService } from '../database/database.service'
 
+import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
 import { CreateLoanDto } from './dto/create-loan.dto'
 import { ApproveLoanDto, RejectLoanDto } from './dto/loan-approval.dto'
 import { LoansQueryDto } from './dto/loans-query.dto'
+import { Installment } from './interface/installment.interface'
 import {
   CalculateLoanResponse,
   LoanPeriodTable,
   LoanWithUser
 } from './interface/loans.interface'
 import { LoansRepository } from './loans.repository'
-import { Installment } from './interface/installment.interface'
 import { roundUpToNearest500Or1000 } from './utils'
-import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
-import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class LoansService {
@@ -454,7 +454,7 @@ export class LoansService {
 
       // Calculate penalty amount (1% of principal)
       const penaltyAmount = new Decimal(loan.principal_amount)
-        .mul(this.configService.get<number>('INTEREST_RATE', 0.01))
+        .mul(loan.interest_rate)
         .toNumber()
 
       // Get all installments for this loan sorted by installment number

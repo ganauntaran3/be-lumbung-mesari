@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
-import { IncomeDestination } from '../cashbook/interfaces/cashbook.interface'
+import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { DatabaseService } from '../database/database.service'
 import { IncomesService } from '../incomes/incomes.service'
 import { UsersSavingsService } from '../users-savings/users-savings.service'

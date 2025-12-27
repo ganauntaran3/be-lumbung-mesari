@@ -1,5 +1,5 @@
-import { Knex } from 'knex'
 import { hash } from 'bcrypt'
+import { Knex } from 'knex'
 
 export async function seed(knex: Knex): Promise<void> {
   const hashedPassword = await hash('admin123', 10)
@@ -13,8 +13,7 @@ export async function seed(knex: Knex): Promise<void> {
       phone_number: '+62812345678',
       address: 'Lumbung Mesari Office',
       status: 'active',
-      role_id: 'administrator',
-      deposit_image_url: null
+      role_id: 'administrator'
     }
   ])
 
@@ -27,8 +26,7 @@ export async function seed(knex: Knex): Promise<void> {
       phone_number: '+62812345679',
       address: 'Lumbung Mesari Office',
       status: 'active',
-      role_id: 'superadministrator',
-      deposit_image_url: null
+      role_id: 'superadministrator'
     }
   ])
 }

@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { CashbookTransactionRepository } from './cashbook-transaction.repository'
-import { CashbookTransactionTable } from './interfaces/cashbook.interface'
+import { CashbookTransactionTable } from './interfaces/transaction.interface'
 
 export interface TransactionFilters {
   dateFrom?: Date
@@ -13,13 +14,6 @@ export interface TransactionFilters {
   offset?: number
 }
 
-export interface TransactionSummary {
-  totalIncome: number
-  totalExpense: number
-  netFlow: number
-  transactionCount: number
-}
-
 @Injectable()
 export class CashbookTransactionService {
   private readonly logger = new Logger(CashbookTransactionService.name)
@@ -28,33 +22,61 @@ export class CashbookTransactionService {
     private readonly transactionRepository: CashbookTransactionRepository
   ) {}
 
-  /**
-   * Create cashbook transaction for income
-   * Called when income is recorded and needs to update cashbook
-   */
   async createIncomeTransaction(
     incomeId: string,
     amount: number,
     destination: 'shu' | 'capital',
-    trx?: any
+    trx: Knex.Transaction,
+    txnDate?: Date
   ): Promise<CashbookTransactionTable> {
     try {
       this.logger.log(
         `Creating income transaction: ${incomeId}, amount: ${amount}, destination: ${destination}`
       )
 
+      // Lock and read current balances
+      const balances = await trx('cashbook_balances')
+        .select('type', 'balance')
+        .whereIn('type', ['shu', 'capital', 'total'])
+        .forUpdate()
+
+      const shuBefore = parseFloat(
+        balances.find((b: any) => b.type === 'shu')?.balance || '0'
+      )
+      const capitalBefore = parseFloat(
+        balances.find((b: any) => b.type === 'capital')?.balance || '0'
+      )
+      const totalBefore = parseFloat(
+        balances.find((b: any) => b.type === 'total')?.balance || '0'
+      )
+
+      // Calculate expected balances after transaction
+      const shuAmount = destination === 'shu' ? amount : 0
+      const capitalAmount = destination === 'capital' ? amount : 0
+      const shuAfter = shuBefore + shuAmount
+      const capitalAfter = capitalBefore + capitalAmount
+      const totalAfter = totalBefore + amount
+
       const transaction = await this.transactionRepository.createTransaction(
         {
-          txn_date: new Date(),
+          txn_date: txnDate || new Date(),
           direction: 'in',
-          shu_amount: destination === 'shu' ? amount : 0,
-          capital_amount: destination === 'capital' ? amount : 0,
+          shu_amount: shuAmount,
+          capital_amount: capitalAmount,
+          shu_balance_before: shuBefore,
+          shu_balance_after: shuAfter,
+          capital_balance_before: capitalBefore,
+          capital_balance_after: capitalAfter,
+          total_balance_before: totalBefore,
+          total_balance_after: totalAfter,
           income_id: incomeId
         },
         trx
       )
 
-      this.logger.log(`Income transaction created: ${transaction.id}`)
+      this.logger.log(
+        `Income transaction created: ${transaction.id} (Total: ${totalBefore} -> ${totalAfter})`
+      )
       return transaction
     } catch (error) {
       this.logger.error(
@@ -65,17 +87,13 @@ export class CashbookTransactionService {
     }
   }
 
-  /**
-   * Create cashbook transaction for expense
-   * Called when expense is recorded and needs to update cashbook
-   */
   async createExpenseTransaction(
     expenseId: string,
     userId: string,
     shuAmount: number,
     capitalAmount: number,
-    txnDate?: Date,
-    trx?: Knex.Transaction
+    trx: Knex.Transaction,
+    txnDate?: Date
   ): Promise<CashbookTransactionTable> {
     try {
       const totalAmount = shuAmount + capitalAmount
@@ -83,19 +101,48 @@ export class CashbookTransactionService {
         `Creating expense transaction: ${expenseId}, shu: ${shuAmount}, capital: ${capitalAmount}, total: ${totalAmount}`
       )
 
+      // Lock and read current balances
+      const balances = await trx('cashbook_balances')
+        .select('type', 'balance')
+        .whereIn('type', ['shu', 'capital', 'total'])
+        .forUpdate()
+
+      const shuBefore = parseFloat(
+        balances.find((b: any) => b.type === 'shu')?.balance || '0'
+      )
+      const capitalBefore = parseFloat(
+        balances.find((b: any) => b.type === 'capital')?.balance || '0'
+      )
+      const totalBefore = parseFloat(
+        balances.find((b: any) => b.type === 'total')?.balance || '0'
+      )
+
+      // Calculate expected balances after transaction
+      const shuAfter = shuBefore - shuAmount
+      const capitalAfter = capitalBefore - capitalAmount
+      const totalAfter = totalBefore - totalAmount
+
       const transaction = await this.transactionRepository.createTransaction(
         {
           txn_date: txnDate || new Date(),
           direction: 'out',
           shu_amount: shuAmount,
           capital_amount: capitalAmount,
+          shu_balance_before: shuBefore,
+          shu_balance_after: shuAfter,
+          capital_balance_before: capitalBefore,
+          capital_balance_after: capitalAfter,
+          total_balance_before: totalBefore,
+          total_balance_after: totalAfter,
           expense_id: expenseId,
           user_id: userId
         },
         trx
       )
 
-      this.logger.log(`Expense transaction created: ${transaction.id}`)
+      this.logger.log(
+        `Expense transaction created: ${transaction.id} (Total: ${totalBefore} -> ${totalAfter})`
+      )
       return transaction
     } catch (error) {
       this.logger.error(

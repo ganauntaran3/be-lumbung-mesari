@@ -15,19 +15,16 @@ export interface CashbookTransactionTable {
   direction: 'in' | 'out'
   shu_amount: number
   capital_amount: number
+  // Balance snapshots for audit trail
+  shu_balance_before: number
+  shu_balance_after: number
+  capital_balance_before: number
+  capital_balance_after: number
+  total_balance_before: number
+  total_balance_after: number
   income_id?: string
   expense_id?: string
   user_id?: string
   created_at: Date
   updated_at: Date
 }
-
-export interface CashbookBalanceTable {
-  id: string
-  type: string
-  balance: string
-  updated_at: Date
-}
-
-export type CashbookTransaction = CashbookTransactionTable
-export type CashbookBalance = CashbookBalanceTable

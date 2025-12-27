@@ -24,7 +24,6 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('roles')
       .onDelete('RESTRICT')
       .notNullable()
-    table.string('deposit_image_url').nullable()
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
     table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
   })

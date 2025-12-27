@@ -43,11 +43,10 @@ export async function seed(knex: Knex): Promise<void> {
       default_source: 'capital'
     },
     {
-      code: 'emergency',
-      name: 'Dana Darurat',
-      description:
-        'Pengeluaran untuk situasi darurat atau kebutuhan mendesak yang tidak terduga',
-      default_source: 'capital'
+      code: 'loan_disbursement',
+      name: 'Pemberian Pinjaman',
+      description: 'Pengeluaran untuk memberikan pinjaman kepada anggota',
+      default_source: 'auto'
     },
     {
       code: 'others',

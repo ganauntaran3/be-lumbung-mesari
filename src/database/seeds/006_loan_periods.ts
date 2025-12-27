@@ -3,7 +3,7 @@ import { Knex } from 'knex'
 export async function seed(knex: Knex): Promise<void> {
   await knex('loan_periods').del()
 
-  const DEFAULT_INTEREST_RATE = 1
+  const DEFAULT_INTEREST_RATE = 0.01
 
   const loanPeriods = [
     {

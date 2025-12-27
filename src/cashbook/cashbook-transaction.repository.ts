@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 
-import { CashbookTransactionTable } from './interfaces/cashbook.interface'
+import { CashbookTransactionTable } from './interfaces/transaction.interface'
 
 export interface TransactionFilters {
   dateFrom?: Date
