@@ -1,33 +1,34 @@
 import {
+  BadRequestException,
   Body,
   Controller,
-  Post,
-  UseGuards,
+  HttpCode,
   HttpException,
   HttpStatus,
-  HttpCode,
-  BadRequestException,
-  InternalServerErrorException
+  InternalServerErrorException,
+  Post,
+  UseGuards
 } from '@nestjs/common'
 import {
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiConflictResponse,
+  ApiGoneResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
-  ApiBody,
   ApiTags,
-  ApiBadRequestResponse,
-  ApiConflictResponse,
-  ApiInternalServerErrorResponse,
-  ApiUnauthorizedResponse,
-  ApiNotFoundResponse,
-  ApiGoneResponse
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
+
 import { UserJWT } from 'src/users/interface/users'
 
 import {
   AuthErrorSchemas,
+  InternalServerErrorResponseSchema,
   OtpBadRequestSchemas,
-  TokenErrorSchemas,
-  InternalServerErrorResponseSchema
+  TokenErrorSchemas
 } from '../common/schema/error-schema'
 
 import { AuthService } from './auth.service'
@@ -143,7 +144,7 @@ export class AuthController {
           passwordConfirmation: 'SecurePass123',
           fullname: 'John Doe',
           username: 'johndoe',
-          phone_number: '081234567890',
+          phoneNumber: '081234567890',
           address: 'Jl. Merdeka No. 123, Jakarta Pusat, DKI Jakarta'
         }
       },
@@ -155,7 +156,7 @@ export class AuthController {
           passwordConfirmation: 'MyPassword123',
           fullname: 'Jane Smith',
           username: 'janesmith',
-          phone_number: '+6281234567890',
+          phoneNumber: '+6281234567890',
           address: 'Jl. Sudirman No. 456, Bandung, Jawa Barat'
         }
       }

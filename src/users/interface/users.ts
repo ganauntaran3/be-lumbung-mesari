@@ -8,7 +8,6 @@ export type User = {
   address: string
   status: string
   role_id: string
-  deposit_image_url: string | null
   otp_code?: string | null
   otp_expires_at?: Date | null
   otp_verified?: boolean

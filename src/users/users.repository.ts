@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -36,7 +37,6 @@ export class UsersRepository extends BaseRepository<User> {
         'users.address',
         'users.status',
         'users.role_id',
-        'users.deposit_image_url',
         'users.otp_code',
         'users.otp_expires_at',
         'users.otp_verified',
@@ -65,7 +65,6 @@ export class UsersRepository extends BaseRepository<User> {
         'users.address',
         'users.status',
         'users.role_id',
-        'users.deposit_image_url',
         'users.otp_code',
         'users.otp_expires_at',
         'users.otp_verified',

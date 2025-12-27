@@ -127,9 +127,8 @@ export class UsersSavingsService {
     }
 
     const amount = Math.floor(totalBalance / activeMemberCount)
-    const minAmount = this.getMinimumAmount()
 
-    return Math.max(amount, minAmount)
+    return amount
   }
 
   private getMinimumAmount(): number {

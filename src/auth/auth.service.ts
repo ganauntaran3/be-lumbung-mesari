@@ -6,6 +6,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+
 import { compare, hash } from 'bcrypt'
 
 import { UserRole, UserStatus } from '../common/constants'
@@ -16,9 +17,9 @@ import {
   EmailHelperService,
   NotificationTemplate
 } from '../notifications/email/email-helper.service'
+import { UsersSavingsService } from '../users-savings/users-savings.service'
 import { UserDataToken } from '../users/interface/users'
 import { UsersService } from '../users/users.service'
-import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import { LoginRequestDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
@@ -200,6 +201,7 @@ export class AuthService {
 
       await this.usersSavingsService.createPrincipalSavings(userId, trx)
       this.logger.log(`Principal savings created for user ${userId}`)
+
       await trx.commit()
 
       const userData = {
@@ -223,13 +225,16 @@ export class AuthService {
         message: 'OTP verified successfully!'
       }
     } catch (error) {
-      // Rollback transaction on any error
-      await trx.rollback()
+      if (!trx.isCompleted) {
+        await trx.rollback()
+      }
+
       this.logger.error(
         `Transaction failed during OTP verification for user ${userId}:`,
         error
       )
-      throw new BadRequestException('Failed to verify OTP. Please try again.')
+
+      throw error
     }
   }
 

@@ -24,11 +24,21 @@ export async function up(knex: Knex): Promise<void> {
     table.string('name', 255).notNullable()
     table.decimal('shu_amount', 12, 4).notNullable().defaultTo(0)
     table.decimal('capital_amount', 12, 4).notNullable().defaultTo(0)
-    table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
-    table.uuid('loan_id').references('id').inTable('loans').onDelete('SET NULL')
+    table
+      .uuid('loan_id')
+      .references('id')
+      .inTable('loans')
+      .onDelete('RESTRICT')
+      .nullable()
     table.text('notes').nullable()
     table.enum('source', defaultSource).nullable()
     table.date('txn_date').notNullable().defaultTo(knex.fn.now())
+    table
+      .uuid('created_by')
+      .references('id')
+      .inTable('users')
+      .onDelete('RESTRICT')
+      .notNullable()
     table.timestamp('created_at').defaultTo(knex.fn.now())
     table.timestamp('updated_at').defaultTo(knex.fn.now())
 
