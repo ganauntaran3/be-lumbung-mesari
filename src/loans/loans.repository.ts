@@ -89,8 +89,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
 
       const dataQuery = query.select([
         'loans.*',
-        'users.fullname as user_fullname',
-        'users.email as user_email',
+        'users.fullname as fullname',
         'loan_periods.tenor',
         'loan_periods.interest_rate'
       ])

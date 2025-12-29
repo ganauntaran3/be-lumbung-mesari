@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 
 import Decimal from 'decimal.js'
+import { DatabaseError } from 'pg'
 
 import { DatabaseService } from '../database/database.service'
 
@@ -49,65 +50,78 @@ export class LoansService {
   async createLoan(userId: string, createLoanDto: CreateLoanDto) {
     const { loanPeriodId, amount, notes } = createLoanDto
 
-    const loanPeriod =
-      await this.loansRepository.findLoanPeriodById(loanPeriodId)
+    try {
+      const loanPeriod =
+        await this.loansRepository.findLoanPeriodById(loanPeriodId)
 
-    if (!loanPeriod) {
-      throw new NotFoundException('Loan period not found')
+      if (!loanPeriod) {
+        throw new NotFoundException('Loan period not found')
+      }
+
+      // Calculate loan details
+      const principal = new Decimal(amount)
+      const interestRate = new Decimal(loanPeriod.interest_rate)
+      const tenor = loanPeriod.tenor
+
+      // Admin fee: 2% of principal
+      const adminFeeRate = new Decimal(
+        this.configService.get<number>('ADMIN_FEE_RATE', 0.02)
+      )
+      const adminFee = principal.mul(adminFeeRate)
+      const disbursedAmount = principal.minus(adminFee)
+
+      // Calculate payment details using shared method
+      const paymentDetails = this.calculateLoanPayments(
+        amount,
+        interestRate.toNumber(),
+        tenor
+      )
+
+      // Calculate dates
+      const startDate = new Date()
+      const endDate = new Date()
+      endDate.setMonth(endDate.getMonth() + tenor)
+
+      const loanData = {
+        user_id: userId,
+        loan_period_id: loanPeriodId,
+        principal_amount: principal.toNumber(),
+        admin_fee_amount: adminFee.toNumber(),
+        disbursed_amount: disbursedAmount.toNumber(),
+        interest_amount: paymentDetails.monthlyInterest,
+        monthly_payment: paymentDetails.monthlyPayment,
+        last_month_payment: paymentDetails.lastMonthPayment,
+        total_payable_amount: paymentDetails.totalPayable,
+        start_date: startDate,
+        end_date: endDate,
+        status: 'pending' as const,
+        notes: notes || null
+      }
+
+      const loan = await this.loansRepository.createLoan(loanData)
+
+      this.logger.log(`Loan created for user ${userId}: ${loan.id}`)
+
+      return this.transformLoanRecord(loan)
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create loan for user ${userId}: ${error?.message}`
+      )
+
+      if (error instanceof DatabaseError) {
+        if (error.message.includes('more than 3 loans')) {
+          throw new BadRequestException('User cannot have more than 3 loans')
+        }
+        throw new BadRequestException(error.message)
+      }
+
+      throw error
     }
-
-    // Calculate loan details
-    const principal = new Decimal(amount)
-    const interestRate = new Decimal(loanPeriod.interest_rate)
-    const tenor = loanPeriod.tenor
-
-    // Admin fee: 2% of principal
-    const adminFeeRate = new Decimal(
-      this.configService.get<number>('ADMIN_FEE_RATE', 0.02)
-    )
-    const adminFee = principal.mul(adminFeeRate)
-    const disbursedAmount = principal.minus(adminFee)
-
-    // Calculate payment details using shared method
-    const paymentDetails = this.calculateLoanPayments(
-      amount,
-      interestRate.toNumber(),
-      tenor
-    )
-
-    // Calculate dates
-    const startDate = new Date()
-    const endDate = new Date()
-    endDate.setMonth(endDate.getMonth() + tenor)
-
-    const loanData = {
-      user_id: userId,
-      loan_period_id: loanPeriodId,
-      principal_amount: principal.toNumber(),
-      admin_fee_amount: adminFee.toNumber(),
-      disbursed_amount: disbursedAmount.toNumber(),
-      interest_amount: paymentDetails.monthlyInterest,
-      monthly_payment: paymentDetails.monthlyPayment,
-      last_month_payment: paymentDetails.lastMonthPayment,
-      total_payable_amount: paymentDetails.totalPayable,
-      start_date: startDate,
-      end_date: endDate,
-      status: 'pending' as const,
-      notes: notes || null
-    }
-
-    const loan = await this.loansRepository.createLoan(loanData)
-
-    this.logger.log(`Loan created for user ${userId}: ${loan.id}`)
-
-    return this.transformLoanRecord(loan)
   }
 
   private transformLoanRecord(loan: any) {
     return {
       id: loan.id,
-      userId: loan.user_id,
-      loanPeriodId: loan.loan_period_id,
       principalAmount: parseFloat(loan.principal_amount),
       adminFeeAmount: parseFloat(loan.admin_fee_amount),
       disbursedAmount: parseFloat(loan.disbursed_amount),
@@ -126,7 +140,16 @@ export class LoansService {
       disbursedAt: loan.disbursed_at,
       notes: loan.notes,
       createdAt: loan.created_at,
-      updatedAt: loan.updated_at
+      updatedAt: loan.updated_at,
+      tenor: loan.tenor,
+      interestRate: parseFloat(loan.interest_rate),
+      // Add user object if fullname exists (from findAll)
+      ...(loan.fullname && {
+        user: {
+          id: loan.user_id,
+          fullname: loan.fullname
+        }
+      })
     }
   }
 
@@ -185,6 +208,7 @@ export class LoansService {
     }
 
     const result = await this.loansRepository.findAllWithPagination(options)
+    console.log(result)
 
     return {
       ...result,
