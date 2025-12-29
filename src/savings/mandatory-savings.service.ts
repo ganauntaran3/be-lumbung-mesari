@@ -1,12 +1,13 @@
 import {
-  Injectable,
-  Logger,
   BadRequestException,
+  Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { Knex } from 'knex'
+
+import { DatabaseService } from 'src/database/database.service'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
 import { IncomeDestination } from '../cashbook/interfaces/cashbook.interface'
@@ -16,7 +17,6 @@ import { UsersSavingsService } from '../users-savings/users-savings.service'
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponse } from './interfaces/mandatory-savings.interface'
 import { SavingsRepository } from './savings.repository'
-import { DatabaseService } from 'src/database/database.service'
 
 @Injectable()
 export class MandatorySavingsService {
@@ -328,15 +328,18 @@ export class MandatorySavingsService {
     try {
       this.logger.log(`Starting settlement for mandatory savings ${savingsId}`)
 
-      // 1. Find mandatory savings
       const mandatorySavings =
         await this.savingsRepository.findMandatorySavingsById(savingsId)
+
+      if (!mandatorySavings) {
+        throw new NotFoundException('Mandatory savings not found')
+      }
 
       if (mandatorySavings.status === 'paid') {
         throw new BadRequestException('Mandatory savings already paid')
       }
 
-      // 2. Mark as paid
+      // Mark as paid
       await this.savingsRepository.updateMandatorySavings(
         mandatorySavings.id,
         {
@@ -380,9 +383,7 @@ export class MandatorySavingsService {
         error
       )
       await trx.rollback()
-      throw new InternalServerErrorException(
-        `Failed to settle mandatory savings ${savingsId}`
-      )
+      throw error
     }
   }
 

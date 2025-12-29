@@ -5,9 +5,9 @@ import { DatabaseService } from '../database/database.service'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import {
+  MandatorySavingsPaginatedResponse,
   MandatorySavingsTable,
   MandatorySavingsWithUser,
-  MandatorySavingsPaginatedResponse,
   UpdateMandatorySavings
 } from './interfaces/mandatory-savings.interface'
 import {
