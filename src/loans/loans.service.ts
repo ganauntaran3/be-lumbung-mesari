@@ -1,27 +1,27 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
+  Injectable,
   Logger,
-  ForbiddenException
+  NotFoundException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
 import Decimal from 'decimal.js'
 
 import { DatabaseService } from '../database/database.service'
 
+import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
 import { CreateLoanDto } from './dto/create-loan.dto'
 import { ApproveLoanDto, RejectLoanDto } from './dto/loan-approval.dto'
 import { LoansQueryDto } from './dto/loans-query.dto'
+import { Installment } from './interface/installment.interface'
 import {
   CalculateLoanResponse,
   LoanPeriodTable,
   LoanWithUser
 } from './interface/loans.interface'
 import { LoansRepository } from './loans.repository'
-import { Installment } from './interface/installment.interface'
 import { roundUpToNearest500Or1000 } from './utils'
-import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
-import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class LoansService {
@@ -184,7 +184,12 @@ export class LoansService {
       userId
     }
 
-    return await this.loansRepository.findAllWithPagination(options)
+    const result = await this.loansRepository.findAllWithPagination(options)
+
+    return {
+      ...result,
+      data: result.data.map((loan) => this.transformLoanRecord(loan))
+    }
   }
 
   async findById(loanId: string): Promise<LoanWithUser> {
