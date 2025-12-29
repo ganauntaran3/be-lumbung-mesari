@@ -47,6 +47,7 @@
     "class-validator": "^0.14.2",
     "compression": "^1.8.0",
     "decimal.js": "^10.6.0",
+    "exceljs": "^4.4.0",
     "handlebars": "^4.7.8",
     "helmet": "^8.0.0",
     "knex": "^3.1.0",
@@ -55,7 +56,8 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

@@ -73,6 +73,26 @@ export class UsersController {
     return fullUser
   }
 
+  @Get('me/loans')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get current user loans',
+    description:
+      'Retrieve all loans for the authenticated user with pagination support. Users can only see their own loans.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Loans retrieved successfully'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: TokenErrorSchemas.invalidToken
+  })
+  async getMyLoans(@CurrentUser() user: UserJWT, @Query() queryParams: any) {
+    const result = await this.usersService.findUserLoans(user.id, queryParams)
+    return result
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)

@@ -29,6 +29,6 @@ import { SavingsScheduler } from './savings.scheduler'
     SavingsRepository,
     SavingsScheduler
   ],
-  exports: [MandatorySavingsService, PrincipalSavingsService]
+  exports: [MandatorySavingsService, PrincipalSavingsService, SavingsRepository]
 })
 export class SavingsModule {}

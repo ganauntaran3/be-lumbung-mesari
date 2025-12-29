@@ -1,27 +1,27 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
+  Injectable,
   Logger,
-  ForbiddenException
+  NotFoundException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
 import Decimal from 'decimal.js'
 
 import { DatabaseService } from '../database/database.service'
 
+import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
 import { CreateLoanDto } from './dto/create-loan.dto'
 import { ApproveLoanDto, RejectLoanDto } from './dto/loan-approval.dto'
 import { LoansQueryDto } from './dto/loans-query.dto'
+import { Installment } from './interface/installment.interface'
 import {
   CalculateLoanResponse,
   LoanPeriodTable,
   LoanWithUser
 } from './interface/loans.interface'
 import { LoansRepository } from './loans.repository'
-import { Installment } from './interface/installment.interface'
 import { roundUpToNearest500Or1000 } from './utils'
-import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
-import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class LoansService {
@@ -38,6 +38,14 @@ export class LoansService {
       id: loanPeriod.id,
       tenor: loanPeriod.tenor,
       interestRate: loanPeriod.interest_rate
+    }))
+  }
+
+  private transformLoans(loans: LoanWithUser[]) {
+    return loans.map((loan) => ({
+      id: loan.id,
+      tenor: loan.tenor,
+      interestRate: loan.interest_rate
     }))
   }
 
@@ -195,6 +203,11 @@ export class LoansService {
     }
 
     return loan
+  }
+
+  async findUserLoans(userId: string, options: any = {}) {
+    this.logger.log(`Fetching loans for user ${userId}`)
+    return await this.loansRepository.findUserLoans(userId, options)
   }
 
   async approveLoan(
