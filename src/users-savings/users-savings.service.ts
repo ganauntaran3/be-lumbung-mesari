@@ -7,10 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config'
 
 import { Knex } from 'knex'
-import { CashbookBalanceService } from 'src/cashbook/cashbook-balance.service'
-import { IncomeDestination } from 'src/cashbook/interfaces/transaction.interface'
 
+import { CashbookBalanceService } from '../cashbook/cashbook-balance.service'
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
+import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { IncomesService } from '../incomes/incomes.service'
 import { SavingsRepository } from '../savings/savings.repository'
 import { UsersRepository } from '../users/users.repository'
@@ -55,7 +55,7 @@ export class UsersSavingsService {
       {
         status: 'paid',
         processed_by: adminId,
-        processed_at: new Date()
+        paid_at: new Date()
       },
       trx
     )

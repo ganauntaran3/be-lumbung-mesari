@@ -1,9 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { CronExpression, SchedulerRegistry } from '@nestjs/schedule'
+
 import { CronJob } from 'cron'
 
-import { MandatorySavingsService } from './mandatory-savings.service'
+import { MandatorySavingsService } from './savings.service'
 
 @Injectable()
 export class SavingsScheduler implements OnModuleInit {

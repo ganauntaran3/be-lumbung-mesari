@@ -10,7 +10,6 @@ export interface MandatorySavingsTable {
   created_at: Date
   updated_at: Date
   processed_by?: string
-  processed_at?: Date
 }
 
 export interface UserInfo {
@@ -41,10 +40,7 @@ export interface MandatorySavingsWithUser {
 // Export types
 export type MandatorySavings = MandatorySavingsTable
 export type UpdateMandatorySavings = Partial<
-  Pick<
-    MandatorySavingsTable,
-    'status' | 'paid_at' | 'processed_by' | 'processed_at'
-  >
+  Pick<MandatorySavingsTable, 'status' | 'paid_at' | 'processed_by'>
 >
 
 export type MandatorySavingsPaginatedResponse =

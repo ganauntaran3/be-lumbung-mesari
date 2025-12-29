@@ -344,8 +344,7 @@ export class MandatorySavingsService {
         {
           status: 'paid',
           paid_at: new Date(),
-          processed_by: adminId,
-          processed_at: new Date()
+          processed_by: adminId
         },
         trx
       )

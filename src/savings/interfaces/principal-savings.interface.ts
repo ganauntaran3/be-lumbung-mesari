@@ -6,7 +6,7 @@ export interface PrincipalSavingsTable {
   amount: string
   status: 'paid' | 'pending' | 'cancelled'
   processed_by?: string
-  processed_at?: Date
+  paid_at?: Date
   created_at: Date
   updated_at: Date
 }
@@ -28,7 +28,7 @@ export interface PrincipalSavingsWithUser {
   amount: string
   status: 'paid' | 'pending' | 'cancelled'
   processed_by?: string
-  processed_at?: Date
+  paid_at?: Date
   created_at: Date
   updated_at: Date
   user: UserInfo
@@ -38,7 +38,7 @@ export interface PrincipalSavingsWithUser {
 // Export types
 export type PrincipalSavings = PrincipalSavingsTable
 export type UpdatePrincipalSavings = Partial<
-  Pick<PrincipalSavingsTable, 'status' | 'processed_by' | 'processed_at'>
+  Pick<PrincipalSavingsTable, 'status' | 'processed_by' | 'paid_at'>
 >
 
 export type PrincipalSavingsPaginatedResponse =

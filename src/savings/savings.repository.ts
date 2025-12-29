@@ -530,7 +530,7 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
           'ps.amount',
           'ps.status',
           'ps.processed_by',
-          'ps.processed_at',
+          'ps.paid_at',
           'ps.created_at',
           'ps.updated_at',
           'u.id as user_id',
@@ -552,7 +552,7 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
         amount: result.amount,
         status: result.status,
         processed_by: result.processed_by,
-        processed_at: result.processed_at,
+        paid_at: result.paid_at,
         created_at: result.created_at,
         updated_at: result.updated_at,
         user: {
@@ -577,70 +577,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     }
   }
 
-  /**
-   * Find principal savings by ID with user information
-   */
-  async findPrincipalSavingsByIdWithUser(
-    id: string
-  ): Promise<PrincipalSavingsWithUser> {
-    try {
-      this.logger.debug(`Finding principal savings by ID ${id}`)
-
-      const result = await this.knex('principal_savings as ps')
-        .join('users as u', 'ps.user_id', 'u.id')
-        .leftJoin('users as pb', 'ps.processed_by', 'pb.id')
-        .where('ps.id', id)
-        .select([
-          'ps.id',
-          'ps.amount',
-          'ps.status',
-          'ps.processed_by',
-          'ps.processed_at',
-          'ps.created_at',
-          'ps.updated_at',
-          'u.id as user_id',
-          'u.fullname as user_fullname',
-          'u.email as user_email',
-          'u.username as user_username',
-          'pb.id as processed_by_user_id',
-          'pb.fullname as processed_by_user_fullname'
-        ])
-        .first()
-
-      if (!result) {
-        throw new Error(`Principal savings with id ${id} not found`)
-      }
-
-      return {
-        id: result.id,
-        amount: result.amount,
-        status: result.status,
-        processed_by: result.processed_by,
-        processed_at: result.processed_at,
-        created_at: result.created_at,
-        updated_at: result.updated_at,
-        user: {
-          id: result.user_id,
-          fullname: result.user_fullname,
-          email: result.user_email,
-          username: result.user_username
-        },
-        processed_by_user: result.processed_by_user_id
-          ? {
-              id: result.processed_by_user_id,
-              fullname: result.processed_by_user_fullname
-            }
-          : undefined
-      }
-    } catch (error) {
-      this.logger.error(`Failed to find principal savings by ID ${id}:`, error)
-      throw error
-    }
-  }
-
-  /**
-   * Update principal savings record
-   */
   async updatePrincipalSavings(
     id: string,
     updateData: UpdatePrincipalSavings,
