@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import * as ExcelJS from 'exceljs'
 
 import { SavingsRepository } from '../savings/savings.repository'
@@ -23,64 +24,75 @@ export class ReportsService {
   async generateMandatorySavingsReport(year: number): Promise<Buffer> {
     this.logger.log(`Generating mandatory savings report for year ${year}`)
 
-    // 1. Fetch all active members
-    const activeMembers = await this.usersRepository.findAllWithRoles({
-      role: 'member',
-      status: 'active',
-      limit: 1000, // Get all members
-      page: 1,
-      sortBy: 'username',
-      sortOrder: 'asc'
-    })
-
-    // 2. Fetch all paid mandatory savings for the year
-    const startDate = new Date(year, 0, 1) // January 1st
-    const endDate = new Date(year, 11, 31, 23, 59, 59) // December 31st
-
-    const allSavings = await this.savingsRepository.findAllWithUsers({
-      page: 1,
-      limit: 10000, // Get all records
-      sortBy: 'period_date',
-      sortOrder: 'asc'
-    })
-
-    // Filter by year and paid status
-    const yearSavings = allSavings.data.filter((saving) => {
-      const periodDate = new Date(saving.period_date)
-      return (
-        periodDate >= startDate &&
-        periodDate <= endDate &&
-        saving.status === 'paid'
-      )
-    })
-
-    // 3. Organize data by user and month
     const memberDataMap = new Map<string, MemberSavingsData>()
+    const BATCH_SIZE = 100 // Process in batches of 100
 
-    // Initialize all active members
-    activeMembers.data.forEach((member) => {
-      memberDataMap.set(member.id, {
-        userId: member.id,
-        fullname: member.fullname,
-        monthlyPayments: Array(12).fill(null),
-        total: 0
+    // 1. Fetch all active members using pagination
+    this.logger.log('Fetching active members...')
+    let memberPage = 1
+    let hasNextMembers = true
+
+    while (hasNextMembers) {
+      const membersResult = await this.savingsRepository.getActiveMembers(
+        memberPage,
+        BATCH_SIZE
+      )
+
+      // Initialize member data
+      membersResult.data.forEach((member) => {
+        memberDataMap.set(member.id, {
+          userId: member.id,
+          fullname: member.fullname,
+          monthlyPayments: Array(12).fill(null),
+          total: 0
+        })
       })
-    })
 
-    // Fill in payment data
-    yearSavings.forEach((saving) => {
-      const memberData = memberDataMap.get(saving.user.id)
-      if (memberData) {
-        const periodDate = new Date(saving.period_date)
-        const month = periodDate.getMonth() // 0-11
-        const amount = parseFloat(saving.amount)
+      hasNextMembers = membersResult.next
+      memberPage++
+    }
 
-        memberData.monthlyPayments[month] = amount
-        memberData.total += amount
-      }
-    })
+    this.logger.log(
+      `Initialized ${memberDataMap.size} active members in the report`
+    )
 
-    // 4. Generate Excel
+    // 2. Fetch all paid mandatory savings for the year using pagination
+    this.logger.log(`Fetching paid savings for year ${year}...`)
+    let savingsPage = 1
+    let hasNextSavings = true
+    let totalSavingsProcessed = 0
+
+    while (hasNextSavings) {
+      const savingsResult =
+        await this.savingsRepository.findPaidMandatorySavingsByYear(
+          year,
+          savingsPage,
+          BATCH_SIZE
+        )
+
+      // Process savings data
+      savingsResult.data.forEach((saving) => {
+        const memberData = memberDataMap.get(saving.user_id)
+        if (memberData) {
+          const periodDate = new Date(saving.period_date)
+          const month = periodDate.getMonth() // 0-11
+          const amount = parseFloat(saving.amount)
+
+          memberData.monthlyPayments[month] = amount
+          memberData.total += amount
+          totalSavingsProcessed++
+        }
+      })
+
+      hasNextSavings = savingsResult.next
+      savingsPage++
+    }
+
+    this.logger.log(
+      `Processed ${totalSavingsProcessed} paid savings records for year ${year}`
+    )
+
+    // 3. Generate Excel
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Simpanan Wajib')
 
@@ -239,7 +251,7 @@ export class ReportsService {
     const buffer = await workbook.xlsx.writeBuffer()
 
     this.logger.log(
-      `Successfully generated report for ${memberDataArray.length} members`
+      `Successfully generated report for ${memberDataArray.length} members with ${totalSavingsProcessed} savings records`
     )
 
     return Buffer.from(buffer)

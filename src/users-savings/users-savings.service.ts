@@ -7,10 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config'
 
 import { Knex } from 'knex'
-import { CashbookBalanceService } from 'src/cashbook/cashbook-balance.service'
-import { IncomeDestination } from 'src/cashbook/interfaces/cashbook.interface'
 
+import { CashbookBalanceService } from '../cashbook/cashbook-balance.service'
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
+import { IncomeDestination } from '../cashbook/interfaces/cashbook.interface'
 import { IncomesService } from '../incomes/incomes.service'
 import { SavingsRepository } from '../savings/savings.repository'
 import { UsersRepository } from '../users/users.repository'

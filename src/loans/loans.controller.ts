@@ -22,17 +22,16 @@ import {
   ApiUnauthorizedResponse
 } from '@nestjs/swagger'
 
-import {
-  AuthErrorSchemas,
-  BadRequestResponseSchema,
-  NotFoundResponseSchema
-} from 'src/common/schema/error-schema'
-
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserRole } from '../common/constants'
+import {
+  AuthErrorSchemas,
+  BadRequestResponseSchema,
+  NotFoundResponseSchema
+} from '../common/schema/error-schema'
 import { UserJWT } from '../users/interface/users'
 
 import {
