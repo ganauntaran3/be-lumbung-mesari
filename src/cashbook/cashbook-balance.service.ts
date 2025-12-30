@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common'
 
+import { Knex } from 'knex'
+
+import { DatabaseService } from '../database/database.service'
+
 import { CashbookBalanceRepository } from './cashbook-balance.repository'
 
 export interface CashbookBalances {
@@ -20,7 +24,10 @@ export interface BalanceHistory {
 export class CashbookBalanceService {
   private readonly logger = new Logger(CashbookBalanceService.name)
 
-  constructor(private readonly balanceRepository: CashbookBalanceRepository) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly balanceRepository: CashbookBalanceRepository
+  ) {}
 
   async getCurrentBalances(): Promise<CashbookBalances> {
     try {
@@ -40,36 +47,29 @@ export class CashbookBalanceService {
     }
   }
 
-  async getBalanceByType(type: 'total' | 'capital' | 'shu'): Promise<number> {
+  async getBalanceByType(
+    type: 'total' | 'capital' | 'shu',
+    trx?: Knex.Transaction
+  ): Promise<number> {
+    const transaction =
+      trx || (await this.databaseService.getKnex().transaction())
     try {
       this.logger.debug(`Retrieving ${type} balance`)
 
-      const balance = await this.balanceRepository.getBalance(type)
+      const balance = await this.balanceRepository.getBalance(type, transaction)
+
+      if (!trx) {
+        await transaction.commit()
+      }
 
       this.logger.debug(`${type} balance: ${balance}`)
       return balance
     } catch (error) {
+      if (!trx) {
+        await transaction.rollback()
+      }
       this.logger.error(`Failed to get ${type} balance:`, error)
       throw error
-    }
-  }
-
-  async validateSufficientBalance(
-    type: 'capital' | 'shu',
-    amount: number
-  ): Promise<boolean> {
-    try {
-      const currentBalance = await this.getBalanceByType(type)
-      const hasSufficientBalance = currentBalance >= amount
-
-      this.logger.debug(
-        `Balance validation - ${type}: ${currentBalance}, required: ${amount}, sufficient: ${hasSufficientBalance}`
-      )
-
-      return hasSufficientBalance
-    } catch (error) {
-      this.logger.error(`Failed to validate ${type} balance:`, error)
-      return false
     }
   }
 }

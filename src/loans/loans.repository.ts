@@ -1,17 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 import { PaginationOptions, PaginationResult } from '../interface/pagination'
 
+import { Installment } from './interface/installment.interface'
 import {
   CreateLoanData,
-  LoanTable,
   LoanPeriodTable,
+  LoanTable,
   LoanWithUser
 } from './interface/loans.interface'
-import { Installment } from './interface/installment.interface'
 
 @Injectable()
 export class LoansRepository extends BaseRepository<LoanTable> {
@@ -122,8 +123,12 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     }
   }
 
-  async findById(id: string): Promise<LoanWithUser | undefined> {
-    const result = await this.knex('loans')
+  async findById(
+    id: string,
+    trx?: Knex.Transaction
+  ): Promise<LoanWithUser | undefined> {
+    const query = trx ? trx('loans') : this.knex('loans')
+    let resultQuery = await query
       .join('users', 'users.id', 'loans.user_id')
       .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
       .select([
@@ -135,7 +140,11 @@ export class LoansRepository extends BaseRepository<LoanTable> {
       .where('loans.id', id)
       .first()
 
-    return result
+    if (trx) {
+      resultQuery = query.forUpdate()
+    }
+
+    return await resultQuery
   }
 
   async updateLoanStatus(
@@ -221,7 +230,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
 
   async updateInstallmentStatus(
     installmentId: string,
-    status: 'due' | 'overdue' | 'paid' | 'partially_paid',
+    status: 'due' | 'overdue' | 'paid' | 'partial',
     trx?: Knex.Transaction
   ): Promise<Installment> {
     const query = trx ? trx('installments') : this.knex('installments')
