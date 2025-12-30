@@ -34,7 +34,7 @@ export interface LoanPeriodResponse {
 }
 
 export interface LoanWithUser extends LoanTable {
-  user_fullname: string
+  fullname: string
   user_email: string
   tenor: number
   interest_rate: string

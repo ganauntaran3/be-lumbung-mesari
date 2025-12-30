@@ -1,27 +1,30 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
+  ForbiddenException,
+  Injectable,
   Logger,
-  ForbiddenException
+  NotFoundException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
 import Decimal from 'decimal.js'
+import { DatabaseError } from 'pg'
 
 import { DatabaseService } from '../database/database.service'
+import { UserJWT } from '../users/interface/users'
 
+import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
 import { CreateLoanDto } from './dto/create-loan.dto'
 import { ApproveLoanDto, RejectLoanDto } from './dto/loan-approval.dto'
 import { LoansQueryDto } from './dto/loans-query.dto'
+import { Installment } from './interface/installment.interface'
 import {
   CalculateLoanResponse,
   LoanPeriodTable,
   LoanWithUser
 } from './interface/loans.interface'
 import { LoansRepository } from './loans.repository'
-import { Installment } from './interface/installment.interface'
 import { roundUpToNearest500Or1000 } from './utils'
-import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
-import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class LoansService {
@@ -41,73 +44,9 @@ export class LoansService {
     }))
   }
 
-  async findAllPeriods() {
-    const loanPeriods = await this.loansRepository.findAllLoanPeriods()
-    return this.transformLoanPeriods(loanPeriods)
-  }
-
-  async createLoan(userId: string, createLoanDto: CreateLoanDto) {
-    const { loanPeriodId, amount, notes } = createLoanDto
-
-    const loanPeriod =
-      await this.loansRepository.findLoanPeriodById(loanPeriodId)
-
-    if (!loanPeriod) {
-      throw new NotFoundException('Loan period not found')
-    }
-
-    // Calculate loan details
-    const principal = new Decimal(amount)
-    const interestRate = new Decimal(loanPeriod.interest_rate)
-    const tenor = loanPeriod.tenor
-
-    // Admin fee: 2% of principal
-    const adminFeeRate = new Decimal(
-      this.configService.get<number>('ADMIN_FEE_RATE', 0.02)
-    )
-    const adminFee = principal.mul(adminFeeRate)
-    const disbursedAmount = principal.minus(adminFee)
-
-    // Calculate payment details using shared method
-    const paymentDetails = this.calculateLoanPayments(
-      amount,
-      interestRate.toNumber(),
-      tenor
-    )
-
-    // Calculate dates
-    const startDate = new Date()
-    const endDate = new Date()
-    endDate.setMonth(endDate.getMonth() + tenor)
-
-    const loanData = {
-      user_id: userId,
-      loan_period_id: loanPeriodId,
-      principal_amount: principal.toNumber(),
-      admin_fee_amount: adminFee.toNumber(),
-      disbursed_amount: disbursedAmount.toNumber(),
-      interest_amount: paymentDetails.monthlyInterest,
-      monthly_payment: paymentDetails.monthlyPayment,
-      last_month_payment: paymentDetails.lastMonthPayment,
-      total_payable_amount: paymentDetails.totalPayable,
-      start_date: startDate,
-      end_date: endDate,
-      status: 'pending' as const,
-      notes: notes || null
-    }
-
-    const loan = await this.loansRepository.createLoan(loanData)
-
-    this.logger.log(`Loan created for user ${userId}: ${loan.id}`)
-
-    return this.transformLoanRecord(loan)
-  }
-
   private transformLoanRecord(loan: any) {
     return {
       id: loan.id,
-      userId: loan.user_id,
-      loanPeriodId: loan.loan_period_id,
       principalAmount: parseFloat(loan.principal_amount),
       adminFeeAmount: parseFloat(loan.admin_fee_amount),
       disbursedAmount: parseFloat(loan.disbursed_amount),
@@ -126,7 +65,225 @@ export class LoansService {
       disbursedAt: loan.disbursed_at,
       notes: loan.notes,
       createdAt: loan.created_at,
-      updatedAt: loan.updated_at
+      updatedAt: loan.updated_at,
+      tenor: loan.tenor,
+      interestRate: parseFloat(loan.interest_rate),
+      // Add user object if fullname exists (from findAll)
+      ...(loan.fullname && {
+        user: {
+          id: loan.user_id,
+          fullname: loan.fullname
+        }
+      })
+    }
+  }
+
+  private async processLoanOverdueInstallments(
+    loanId: string,
+    overdueInstallments: any[]
+  ): Promise<void> {
+    const knex = this.databaseService.getKnex()
+    const trx = await knex.transaction()
+
+    try {
+      const loan = await this.loansRepository.findById(loanId)
+      if (!loan) {
+        this.logger.warn(`Loan ${loanId} not found, skipping`)
+        await trx.rollback()
+        throw new NotFoundException(
+          `Loan ${loanId} not found while processing overdue installments`
+        )
+      }
+
+      // Calculate penalty amount (1% of principal)
+      const penaltyAmount = new Decimal(loan.principal_amount)
+        .mul(this.configService.get<number>('INTEREST_RATE', 0.01))
+        .toNumber()
+
+      // Get all installments for this loan sorted by installment number
+      const allInstallments =
+        await this.loansRepository.findInstallmentsByLoanId(loanId)
+
+      allInstallments.sort(
+        (a, b) => a.installment_number - b.installment_number
+      )
+
+      // Count consecutive overdue installments
+      let consecutiveOverdueCount = 0
+      for (const installment of allInstallments) {
+        if (installment.status === 'due' || installment.status === 'overdue') {
+          consecutiveOverdueCount++
+        } else if (installment.status === 'paid') {
+          consecutiveOverdueCount = 0 // Reset counter when paid installment found
+        }
+      }
+
+      this.logger.log(
+        `Loan ${loanId}: ${consecutiveOverdueCount} consecutive overdue installments, processing ${overdueInstallments.length} newly overdue`
+      )
+
+      // Mark all installments as overdue
+      for (const installment of overdueInstallments) {
+        await this.loansRepository.updateInstallmentStatus(
+          installment.id,
+          'overdue',
+          trx
+        )
+        this.logger.log(
+          `Marked installment ${installment.installment_number} of loan ${loanId} as overdue`
+        )
+      }
+
+      // Apply ONE penalty per loan if there are 2+ consecutive overdue installments
+      if (consecutiveOverdueCount >= 2) {
+        // Apply penalty to the earliest overdue installment
+        const earliestOverdue = overdueInstallments.sort(
+          (a, b) => a.installment_number - b.installment_number
+        )[0]
+
+        await this.loansRepository.addPenaltyToInstallment(
+          earliestOverdue.id,
+          penaltyAmount,
+          trx
+        )
+        this.logger.log(
+          `Applied ONE penalty of ${penaltyAmount} to loan ${loanId} (${consecutiveOverdueCount} consecutive overdue installments)`
+        )
+      } else {
+        this.logger.log(
+          `No penalty for loan ${loanId} (only ${consecutiveOverdueCount} consecutive overdue)`
+        )
+      }
+
+      await trx.commit()
+      this.logger.log(`Processed overdue installments for loan ${loanId}`)
+    } catch (error) {
+      if (!trx.isCompleted()) {
+        await trx.rollback()
+      }
+      this.logger.error(
+        `Error processing overdue installments for loan ${loanId}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  private calculateLoanPayments(
+    principalAmount: number,
+    interestRate: number,
+    tenor: number
+  ) {
+    const principal = new Decimal(principalAmount)
+    const monthlyInterest = new Decimal(principalAmount)
+      .mul(interestRate)
+      .div(100)
+
+    // Monthly payment = principal/tenor + monthly interest (before rounding)
+    const monthlyPrincipal = principal.div(tenor)
+    // const monthlyPayment = monthlyPrincipal.plus(monthlyInterest)
+
+    const roundedMonthlyPrincipal = roundUpToNearest500Or1000(
+      monthlyPrincipal.toNumber()
+    )
+    const monthlyPayment = new Decimal(roundedMonthlyPrincipal).plus(
+      monthlyInterest
+    )
+
+    // Calculate last month's principal as remainder
+    // This ensures total principal paid = original principal exactly
+    const principalPaidInFirstMonths = roundedMonthlyPrincipal * (tenor - 1)
+    const lastMonthPrincipal = principal.minus(principalPaidInFirstMonths)
+
+    const lastMonthPayment = lastMonthPrincipal.plus(monthlyInterest)
+
+    // Total payable = principal + (interest × tenor)
+    // This ensures member pays exactly what they should
+    const totalPayable =
+      principal.toNumber() + monthlyInterest.toNumber() * tenor
+
+    return {
+      monthlyInterest: monthlyInterest.toNumber(),
+      monthlyPayment: monthlyPayment.toNumber(),
+      lastMonthPayment: lastMonthPayment.toNumber(),
+      totalPayable
+    }
+  }
+
+  async findAllPeriods() {
+    const loanPeriods = await this.loansRepository.findAllLoanPeriods()
+    return this.transformLoanPeriods(loanPeriods)
+  }
+
+  async createLoan(userId: string, createLoanDto: CreateLoanDto) {
+    const { loanPeriodId, amount, notes } = createLoanDto
+
+    try {
+      const loanPeriod =
+        await this.loansRepository.findLoanPeriodById(loanPeriodId)
+
+      if (!loanPeriod) {
+        throw new NotFoundException('Loan period not found')
+      }
+
+      // Calculate loan details
+      const principal = new Decimal(amount)
+      const interestRate = new Decimal(loanPeriod.interest_rate)
+      const tenor = loanPeriod.tenor
+
+      // Admin fee: 2% of principal
+      const adminFeeRate = new Decimal(
+        this.configService.get<number>('ADMIN_FEE_RATE', 0.02)
+      )
+      const adminFee = principal.mul(adminFeeRate)
+      const disbursedAmount = principal.minus(adminFee)
+
+      // Calculate payment details using shared method
+      const paymentDetails = this.calculateLoanPayments(
+        amount,
+        interestRate.toNumber(),
+        tenor
+      )
+
+      // Calculate dates
+      const startDate = new Date()
+      const endDate = new Date()
+      endDate.setMonth(endDate.getMonth() + tenor)
+
+      const loanData = {
+        user_id: userId,
+        loan_period_id: loanPeriodId,
+        principal_amount: principal.toNumber(),
+        admin_fee_amount: adminFee.toNumber(),
+        disbursed_amount: disbursedAmount.toNumber(),
+        interest_amount: paymentDetails.monthlyInterest,
+        monthly_payment: paymentDetails.monthlyPayment,
+        last_month_payment: paymentDetails.lastMonthPayment,
+        total_payable_amount: paymentDetails.totalPayable,
+        start_date: startDate,
+        end_date: endDate,
+        status: 'pending' as const,
+        notes: notes || null
+      }
+
+      const loan = await this.loansRepository.createLoan(loanData)
+
+      this.logger.log(`Loan created for user ${userId}: ${loan.id}`)
+
+      return this.transformLoanRecord(loan)
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create loan for user ${userId}: ${error?.message}`
+      )
+
+      if (error instanceof DatabaseError) {
+        if (error.message.includes('more than 3 loans')) {
+          throw new BadRequestException('User cannot have more than 3 loans')
+        }
+        throw new BadRequestException(error.message)
+      }
+
+      throw error
     }
   }
 
@@ -184,17 +341,33 @@ export class LoansService {
       userId
     }
 
-    return await this.loansRepository.findAllWithPagination(options)
+    const result = await this.loansRepository.findAllWithPagination(options)
+
+    return {
+      ...result,
+      data: result.data.map((loan) => this.transformLoanRecord(loan))
+    }
   }
 
-  async findById(loanId: string): Promise<LoanWithUser> {
+  async findById(loanId: string, user?: UserJWT): Promise<LoanWithUser> {
     const loan = await this.loansRepository.findById(loanId)
 
     if (!loan) {
       throw new NotFoundException('Loan not found')
     }
 
-    return loan
+    if (user) {
+      const isAdmin = user.role === 'admin' || user.role === 'superadmin'
+      const isOwner = loan.user_id === user.id
+
+      if (!isAdmin && !isOwner) {
+        throw new ForbiddenException(
+          'You do not have permission to view this loan'
+        )
+      }
+    }
+
+    return this.transformLoanRecord(loan)
   }
 
   async approveLoan(
@@ -396,9 +569,6 @@ export class LoansService {
     return installments
   }
 
-  /**
-   * Process overdue installments - Called by scheduler on 21st of each month
-   */
   async processOverdueInstallments(): Promise<void> {
     this.logger.log('Processing overdue installments...')
 
@@ -433,137 +603,5 @@ export class LoansService {
     }
 
     this.logger.log('Overdue installments processing completed')
-  }
-
-  private async processLoanOverdueInstallments(
-    loanId: string,
-    overdueInstallments: any[]
-  ): Promise<void> {
-    const knex = this.databaseService.getKnex()
-    const trx = await knex.transaction()
-
-    try {
-      const loan = await this.loansRepository.findById(loanId)
-      if (!loan) {
-        this.logger.warn(`Loan ${loanId} not found, skipping`)
-        await trx.rollback()
-        throw new NotFoundException(
-          `Loan ${loanId} not found while processing overdue installments`
-        )
-      }
-
-      // Calculate penalty amount (1% of principal)
-      const penaltyAmount = new Decimal(loan.principal_amount)
-        .mul(this.configService.get<number>('INTEREST_RATE', 0.01))
-        .toNumber()
-
-      // Get all installments for this loan sorted by installment number
-      const allInstallments =
-        await this.loansRepository.findInstallmentsByLoanId(loanId)
-
-      allInstallments.sort(
-        (a, b) => a.installment_number - b.installment_number
-      )
-
-      // Count consecutive overdue installments
-      let consecutiveOverdueCount = 0
-      for (const installment of allInstallments) {
-        if (installment.status === 'due' || installment.status === 'overdue') {
-          consecutiveOverdueCount++
-        } else if (installment.status === 'paid') {
-          consecutiveOverdueCount = 0 // Reset counter when paid installment found
-        }
-      }
-
-      this.logger.log(
-        `Loan ${loanId}: ${consecutiveOverdueCount} consecutive overdue installments, processing ${overdueInstallments.length} newly overdue`
-      )
-
-      // Mark all installments as overdue
-      for (const installment of overdueInstallments) {
-        await this.loansRepository.updateInstallmentStatus(
-          installment.id,
-          'overdue',
-          trx
-        )
-        this.logger.log(
-          `Marked installment ${installment.installment_number} of loan ${loanId} as overdue`
-        )
-      }
-
-      // Apply ONE penalty per loan if there are 2+ consecutive overdue installments
-      if (consecutiveOverdueCount >= 2) {
-        // Apply penalty to the earliest overdue installment
-        const earliestOverdue = overdueInstallments.sort(
-          (a, b) => a.installment_number - b.installment_number
-        )[0]
-
-        await this.loansRepository.addPenaltyToInstallment(
-          earliestOverdue.id,
-          penaltyAmount,
-          trx
-        )
-        this.logger.log(
-          `Applied ONE penalty of ${penaltyAmount} to loan ${loanId} (${consecutiveOverdueCount} consecutive overdue installments)`
-        )
-      } else {
-        this.logger.log(
-          `No penalty for loan ${loanId} (only ${consecutiveOverdueCount} consecutive overdue)`
-        )
-      }
-
-      await trx.commit()
-      this.logger.log(`Processed overdue installments for loan ${loanId}`)
-    } catch (error) {
-      if (!trx.isCompleted()) {
-        await trx.rollback()
-      }
-      this.logger.error(
-        `Error processing overdue installments for loan ${loanId}:`,
-        error
-      )
-      throw error
-    }
-  }
-
-  private calculateLoanPayments(
-    principalAmount: number,
-    interestRate: number,
-    tenor: number
-  ) {
-    const principal = new Decimal(principalAmount)
-    const monthlyInterest = new Decimal(principalAmount)
-      .mul(interestRate)
-      .div(100)
-
-    // Monthly payment = principal/tenor + monthly interest (before rounding)
-    const monthlyPrincipal = principal.div(tenor)
-    // const monthlyPayment = monthlyPrincipal.plus(monthlyInterest)
-
-    const roundedMonthlyPrincipal = roundUpToNearest500Or1000(
-      monthlyPrincipal.toNumber()
-    )
-    const monthlyPayment = new Decimal(roundedMonthlyPrincipal).plus(
-      monthlyInterest
-    )
-
-    // Calculate last month's principal as remainder
-    // This ensures total principal paid = original principal exactly
-    const principalPaidInFirstMonths = roundedMonthlyPrincipal * (tenor - 1)
-    const lastMonthPrincipal = principal.minus(principalPaidInFirstMonths)
-
-    const lastMonthPayment = lastMonthPrincipal.plus(monthlyInterest)
-
-    // Total payable = principal + (interest × tenor)
-    // This ensures member pays exactly what they should
-    const totalPayable =
-      principal.toNumber() + monthlyInterest.toNumber() * tenor
-
-    return {
-      monthlyInterest: monthlyInterest.toNumber(),
-      monthlyPayment: monthlyPayment.toNumber(),
-      lastMonthPayment: lastMonthPayment.toNumber(),
-      totalPayable
-    }
   }
 }
