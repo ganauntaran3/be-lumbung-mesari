@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { ExpenseSource } from 'src/cashbook/interfaces/cashbook.interface'
 
+import { ExpenseSource } from '../../cashbook/interfaces/cashbook.interface'
 import { PaginationResult } from '../../interface/pagination'
 
 export class ExpenseCategoryResponseDto {

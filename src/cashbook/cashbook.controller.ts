@@ -1,21 +1,21 @@
-import { Controller, Get, UseGuards, Logger } from '@nestjs/common'
+import { Controller, Get, Logger, UseGuards } from '@nestjs/common'
 import {
-  ApiTags,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiOperation,
   ApiResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiBearerAuth
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
-import {
-  AuthErrorSchemas,
-  TokenErrorSchemas
-} from 'src/common/schema/error-schema'
 
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserRole } from '../common/constants'
+import {
+  AuthErrorSchemas,
+  TokenErrorSchemas
+} from '../common/schema/error-schema'
 
 import { CashbookBalanceService } from './cashbook-balance.service'
 

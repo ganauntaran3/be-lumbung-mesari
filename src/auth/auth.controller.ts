@@ -1,34 +1,34 @@
 import {
+  BadRequestException,
   Body,
   Controller,
-  Post,
-  UseGuards,
+  HttpCode,
   HttpException,
   HttpStatus,
-  HttpCode,
-  BadRequestException,
-  InternalServerErrorException
+  InternalServerErrorException,
+  Post,
+  UseGuards
 } from '@nestjs/common'
 import {
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiConflictResponse,
+  ApiGoneResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
-  ApiBody,
   ApiTags,
-  ApiBadRequestResponse,
-  ApiConflictResponse,
-  ApiInternalServerErrorResponse,
-  ApiUnauthorizedResponse,
-  ApiNotFoundResponse,
-  ApiGoneResponse
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
-import { UserJWT } from 'src/users/interface/users'
 
 import {
   AuthErrorSchemas,
+  InternalServerErrorResponseSchema,
   OtpBadRequestSchemas,
-  TokenErrorSchemas,
-  InternalServerErrorResponseSchema
+  TokenErrorSchemas
 } from '../common/schema/error-schema'
+import { UserJWT } from '../users/interface/users'
 
 import { AuthService } from './auth.service'
 import { CurrentUser } from './decorators/current-user.decorator'

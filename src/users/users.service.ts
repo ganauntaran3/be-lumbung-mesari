@@ -8,10 +8,10 @@ import {
 } from '@nestjs/common'
 
 import { Knex } from 'knex'
-import { UserStatus } from 'src/common/constants'
-import { DatabaseService } from 'src/database/database.service'
-import { PaginationQueryDto } from 'src/database/dto/pagination.dto'
 
+import { UserStatus } from '../common/constants'
+import { DatabaseService } from '../database/database.service'
+import { PaginationQueryDto } from '../database/dto/pagination.dto'
 import {
   EmailData,
   EmailHelperService,

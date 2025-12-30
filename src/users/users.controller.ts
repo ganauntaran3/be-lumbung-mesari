@@ -1,41 +1,41 @@
 import {
+  Body,
   Controller,
   Get,
-  Query,
-  UseGuards,
-  Post,
-  Param,
-  Body,
-  Logger,
+  HttpCode,
   HttpStatus,
-  HttpCode
+  Logger,
+  Param,
+  Post,
+  Query,
+  UseGuards
 } from '@nestjs/common'
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
-  ApiBadRequestResponse,
-  ApiNotFoundResponse
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
-import { UserProfileResponseSchema } from 'src/auth/dto/profile-response.dto'
-import { UserRole } from 'src/common/constants'
-import {
-  AuthErrorSchemas,
-  TokenErrorSchemas
-} from 'src/common/schema/error-schema'
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
+import { UserProfileResponseSchema } from '../auth/dto/profile-response.dto'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserRole } from '../common/constants'
+import {
+  AuthErrorSchemas,
+  TokenErrorSchemas
+} from '../common/schema/error-schema'
 
 import {
-  ApproveUserDto,
   ApprovalResponseDto,
+  ApproveUserDto,
   RejectUserQueryDto
 } from './dto/approve-user.dto'
 import { UsersQueryDto } from './dto/users-query.dto'
