@@ -132,7 +132,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
       .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
       .select([
         'loans.*',
-        'users.fullname as user_fullname',
+        'users.fullname as fullname',
         'users.email as user_email',
         'loan_periods.tenor'
       ])

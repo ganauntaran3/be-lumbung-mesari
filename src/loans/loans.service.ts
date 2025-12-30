@@ -342,7 +342,6 @@ export class LoansService {
     }
 
     const result = await this.loansRepository.findAllWithPagination(options)
-    console.log(result)
 
     return {
       ...result,
