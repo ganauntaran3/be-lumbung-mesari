@@ -1,18 +1,19 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
-  NotFoundException,
-  BadRequestException
+  NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { Knex } from 'knex'
-import { IncomeDestination } from 'src/cashbook/interfaces/cashbook.interface'
 
+import { Knex } from 'knex'
+
+import { CashbookBalanceService } from '../cashbook/cashbook-balance.service'
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
+import { IncomeDestination } from '../cashbook/interfaces/cashbook.interface'
 import { IncomesService } from '../incomes/incomes.service'
 import { SavingsRepository } from '../savings/savings.repository'
 import { UsersRepository } from '../users/users.repository'
-import { CashbookBalanceService } from 'src/cashbook/cashbook-balance.service'
 
 /**
  * UsersSavingsService
