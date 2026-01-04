@@ -33,7 +33,7 @@ export class ReportsService {
     let hasNextMembers = true
 
     while (hasNextMembers) {
-      const membersResult = await this.savingsRepository.getActiveMembers(
+      const membersResult = await this.usersRepository.getActiveMembersFullname(
         memberPage,
         BATCH_SIZE
       )
@@ -51,6 +51,8 @@ export class ReportsService {
       hasNextMembers = membersResult.next
       memberPage++
     }
+
+    console.log(memberDataMap)
 
     this.logger.log(
       `Initialized ${memberDataMap.size} active members in the report`

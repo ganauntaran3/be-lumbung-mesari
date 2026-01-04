@@ -12,12 +12,12 @@ import { Knex } from 'knex'
 import { UserStatus } from '../common/constants'
 import { DatabaseService } from '../database/database.service'
 import { PaginationQueryDto } from '../database/dto/pagination.dto'
+import { LoansService } from '../loans/loans.service'
 import {
   EmailData,
   EmailHelperService,
   NotificationTemplate
 } from '../notifications/email/email-helper.service'
-import { LoansService } from '../loans/loans.service'
 import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import {
@@ -210,35 +210,6 @@ export class UsersService {
         (user) => this.transformUserToResponse(user) as UserResponse
       )
     }
-  }
-
-  async findUserLoans(userId: string, queryParams: any = {}) {
-    this.logger.log(`Fetching loans for user ${userId}`)
-
-    const options = {
-      status: queryParams.status,
-      sortBy: queryParams.sortBy,
-      sortOrder: queryParams.sortOrder
-    }
-
-    const loans = await this.loansService.findUserLoans(userId, options)
-
-    // Transform to camelCase
-    return loans.map((loan: any) => ({
-      id: loan.id,
-      userId: loan.user_id,
-      loanPeriodId: loan.loan_period_id,
-      principalAmount: loan.principal_amount,
-      totalPayable: loan.total_payable_amount,
-      monthlyPayment: loan.monthly_payment,
-      status: loan.status,
-      notes: loan.notes,
-      approvedBy: loan.approved_by,
-      approvedAt: loan.approved_at,
-      disbursedAt: loan.disbursed_at,
-      createdAt: loan.created_at,
-      updatedAt: loan.updated_at
-    }))
   }
 
   async update(id: string, userData: UpdateUserDto, trx?: Knex.Transaction) {

@@ -32,6 +32,7 @@ import {
   AuthErrorSchemas,
   TokenErrorSchemas
 } from '../common/schema/error-schema'
+import { LoansService } from '../loans/loans.service'
 
 import {
   ApprovalResponseDto,
@@ -51,7 +52,10 @@ import { UsersService } from './users.service'
 export class UsersController {
   private readonly logger = new Logger(UsersController.name)
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly loansService: LoansService
+  ) {}
 
   @Get('me')
   @ApiOperation({
@@ -88,9 +92,25 @@ export class UsersController {
     description: 'Unauthorized - Invalid or expired token',
     schema: TokenErrorSchemas.invalidToken
   })
-  async getMyLoans(@CurrentUser() user: UserJWT, @Query() queryParams: any) {
-    const result = await this.usersService.findUserLoans(user.id, queryParams)
-    return result
+  async getMyLoans(@CurrentUser() user: UserJWT) {
+    const loans = await this.loansService.findUserLoans(user.id)
+
+    // Transform to camelCase
+    return loans.map((loan: any) => ({
+      id: loan.id,
+      userId: loan.user_id,
+      loanPeriodId: loan.loan_period_id,
+      principalAmount: loan.principal_amount,
+      totalPayable: loan.total_payable_amount,
+      monthlyPayment: loan.monthly_payment,
+      status: loan.status,
+      notes: loan.notes,
+      approvedBy: loan.approved_by,
+      approvedAt: loan.approved_at,
+      disbursedAt: loan.disbursed_at,
+      createdAt: loan.created_at,
+      updatedAt: loan.updated_at
+    }))
   }
 
   @Get()

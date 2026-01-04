@@ -122,39 +122,14 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     }
   }
 
-  async findUserLoans(
-    userId: string,
-    options: {
-      status?: string
-      sortBy?: string
-      sortOrder?: 'asc' | 'desc'
-    } = {}
-  ): Promise<LoanTable[]> {
-    const { status, sortBy = 'createdAt', sortOrder = 'desc' } = options
-
+  async findUserLoans(userId: string): Promise<LoanTable[]> {
     try {
       let query = this.knex('loans').where('loans.user_id', userId)
 
-      if (status) {
-        query = query.where('loans.status', status)
-      }
-
-      // Map camelCase to snake_case for database columns
-      const sortByMap: Record<string, string> = {
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
-        id: 'id',
-        status: 'status',
-        principalAmount: 'principal_amount'
-      }
-
-      const dbSortBy = sortByMap[sortBy] || sortBy
-      const sortColumn = dbSortBy.includes('.') ? dbSortBy : `loans.${dbSortBy}`
-
       const data = await query
         .select('loans.*')
-        .orderBy(sortColumn, sortOrder)
-        .limit(3) // Max 3 loans per user
+        .orderBy('loans.created_at', 'desc')
+        .limit(3)
 
       return data as LoanTable[]
     } catch (error) {
