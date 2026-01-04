@@ -85,7 +85,7 @@ export class UsersRepository extends BaseRepository<User> {
     return result
   }
 
-  async findAllWithRoles(
+  async findAllUsers(
     options: PaginationOptions & {
       role?: string
       status?: string
@@ -107,7 +107,12 @@ export class UsersRepository extends BaseRepository<User> {
       let query = this.knex('users')
 
       if (role) {
-        query = query.where('users.role_id', role)
+        const roles = role.split(',').map((r) => r.trim())
+        if (roles.length === 1) {
+          query = query.where('users.role_id', roles[0])
+        } else {
+          query = query.whereIn('users.role_id', roles)
+        }
       }
 
       if (status) {
@@ -134,6 +139,7 @@ export class UsersRepository extends BaseRepository<User> {
         'users.phone_number',
         'users.address',
         'users.status',
+        'users.role_id',
         'users.created_at',
         'users.updated_at'
       ])

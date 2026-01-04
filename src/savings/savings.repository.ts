@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
