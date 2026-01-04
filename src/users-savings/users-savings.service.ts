@@ -12,7 +12,7 @@ import { CashbookBalanceService } from '../cashbook/cashbook-balance.service'
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
 import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { IncomesService } from '../incomes/incomes.service'
-import { SavingsRepository } from '../savings/savings.repository'
+import { PrincipalSavingsRepository } from '../savings/principal-savings.repository'
 import { UsersRepository } from '../users/users.repository'
 
 @Injectable()
@@ -20,7 +20,7 @@ export class UsersSavingsService {
   private readonly logger = new Logger(UsersSavingsService.name)
 
   constructor(
-    private readonly savingsRepository: SavingsRepository,
+    private readonly principalSavingsRepository: PrincipalSavingsRepository,
     private readonly usersRepository: UsersRepository,
     private readonly incomesService: IncomesService,
     private readonly cashbookTransactionService: CashbookTransactionService,
@@ -37,7 +37,7 @@ export class UsersSavingsService {
 
     // 1. Find principal savings
     const principalSavings =
-      await this.savingsRepository.findPrincipalSavingsByUserId(userId)
+      await this.principalSavingsRepository.findPrincipalSavingsByUserId(userId)
 
     if (!principalSavings) {
       throw new NotFoundException(
@@ -50,7 +50,7 @@ export class UsersSavingsService {
     }
 
     // 2. Mark as paid
-    await this.savingsRepository.updatePrincipalSavings(
+    await this.principalSavingsRepository.updatePrincipalSavings(
       principalSavings.id,
       {
         status: 'paid',
@@ -91,7 +91,7 @@ export class UsersSavingsService {
     const amount = await this.calculatePrincipalSavingsAmount(trx)
 
     // 2. Create principal savings
-    await this.savingsRepository.createPrincipalSavings(
+    await this.principalSavingsRepository.createPrincipalSavings(
       {
         user_id: userId,
         amount: amount.toString(),

@@ -7,8 +7,9 @@ import { DatabaseModule } from '../database/database.module'
 import { IncomesModule } from '../incomes/incomes.module'
 import { UsersSavingsModule } from '../users-savings/users-savings.module'
 
+import { MandatorySavingsRepository } from './mandatory-savings.repository'
+import { PrincipalSavingsRepository } from './principal-savings.repository'
 import { SavingsController } from './savings.controller'
-import { SavingsRepository } from './savings.repository'
 import { SavingsScheduler } from './savings.scheduler'
 import { MandatorySavingsService } from './savings.service'
 
@@ -22,7 +23,16 @@ import { MandatorySavingsService } from './savings.service'
     ScheduleModule.forRoot()
   ],
   controllers: [SavingsController],
-  providers: [MandatorySavingsService, SavingsRepository, SavingsScheduler],
-  exports: [MandatorySavingsService]
+  providers: [
+    MandatorySavingsService,
+    MandatorySavingsRepository,
+    PrincipalSavingsRepository,
+    SavingsScheduler
+  ],
+  exports: [
+    MandatorySavingsService,
+    MandatorySavingsRepository,
+    PrincipalSavingsRepository
+  ]
 })
 export class SavingsModule {}

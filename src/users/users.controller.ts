@@ -1,41 +1,42 @@
 import {
+  Body,
   Controller,
   Get,
-  Query,
-  UseGuards,
-  Post,
-  Param,
-  Body,
-  Logger,
+  HttpCode,
   HttpStatus,
-  HttpCode
+  Logger,
+  Param,
+  Post,
+  Query,
+  UseGuards
 } from '@nestjs/common'
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
-  ApiBadRequestResponse,
-  ApiNotFoundResponse
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
-import { UserProfileResponseSchema } from 'src/auth/dto/profile-response.dto'
-import { UserRole } from 'src/common/constants'
-import {
-  AuthErrorSchemas,
-  TokenErrorSchemas
-} from 'src/common/schema/error-schema'
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
+import { UserProfileResponseSchema } from '../auth/dto/profile-response.dto'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserRole } from '../common/constants'
+import {
+  AuthErrorSchemas,
+  TokenErrorSchemas
+} from '../common/schema/error-schema'
+import { LoansService } from '../loans/loans.service'
 
 import {
-  ApproveUserDto,
   ApprovalResponseDto,
+  ApproveUserDto,
   RejectUserQueryDto
 } from './dto/approve-user.dto'
 import { UsersQueryDto } from './dto/users-query.dto'
@@ -46,14 +47,17 @@ import { UsersService } from './users.service'
 
 @ApiTags('Users')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   private readonly logger = new Logger(UsersController.name)
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly loansService: LoansService
+  ) {}
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get current user profile',
     description:
@@ -73,13 +77,49 @@ export class UsersController {
     return fullUser
   }
 
+  @Get('me/loans')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get current user loans',
+    description:
+      'Retrieve all loans for the authenticated user with pagination support. Users can only see their own loans.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Loans retrieved successfully'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: TokenErrorSchemas.invalidToken
+  })
+  async getMyLoans(@CurrentUser() user: UserJWT) {
+    const loans = await this.loansService.findUserLoans(user.id)
+
+    // Transform to camelCase
+    return loans.map((loan: any) => ({
+      id: loan.id,
+      userId: loan.user_id,
+      loanPeriodId: loan.loan_period_id,
+      principalAmount: loan.principal_amount,
+      totalPayable: loan.total_payable_amount,
+      monthlyPayment: loan.monthly_payment,
+      status: loan.status,
+      notes: loan.notes,
+      approvedBy: loan.approved_by,
+      approvedAt: loan.approved_at,
+      disbursedAt: loan.disbursed_at,
+      createdAt: loan.created_at,
+      updatedAt: loan.updated_at
+    }))
+  }
+
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Get users with filtering and pagination',
     description:
-      'Retrieve all users with optional filtering by status, role, and search. Use status=pending to get pending users.'
+      'Retrieve all users with optional filtering by status, role(s), and search. Supports multiple role filtering using comma-separated values (e.g., role=administrator,superadministrator for admin management). Use status=pending to get pending users.'
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -101,7 +141,7 @@ export class UsersController {
 
   @Post(':id/approve')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Approve a user registration',
@@ -150,7 +190,7 @@ export class UsersController {
         this.logger.warn(
           `User ${userId} approved but email notification failed: ${error.message}`
         )
-        // Return success response with warning
+
         return {
           message: 'User approved successfully, but email notification failed',
           status: 'active',
@@ -158,14 +198,13 @@ export class UsersController {
           warning: 'Email notification could not be sent'
         }
       }
-      // Re-throw other errors
       throw error
     }
   }
 
   @Post(':id/reject')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Reject a user registration',

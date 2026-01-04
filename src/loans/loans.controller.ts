@@ -1,44 +1,44 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  HttpStatus,
   HttpCode,
-  Logger
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  UseGuards
 } from '@nestjs/common'
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiBearerAuth,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
   ApiBadRequestResponse,
-  ApiNotFoundResponse
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
-import {
-  AuthErrorSchemas,
-  BadRequestResponseSchema,
-  NotFoundResponseSchema
-} from 'src/common/schema/error-schema'
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserRole } from '../common/constants'
+import {
+  AuthErrorSchemas,
+  BadRequestResponseSchema,
+  NotFoundResponseSchema
+} from '../common/schema/error-schema'
 import { UserJWT } from '../users/interface/users'
 
-import { CreateLoanDto } from './dto/create-loan.dto'
 import {
   CalculateLoanRequestDto,
   CalculateLoanResponseDto
 } from './dto/calculate-loan.dto'
+import { CreateLoanDto } from './dto/create-loan.dto'
 import {
   ApproveLoanDto,
   LoanApprovalResponseDto,
@@ -154,11 +154,11 @@ export class LoansController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get loan details by ID',
-    description: 'Retrieve detailed information about a specific loan'
+    description:
+      'Retrieve detailed information about a specific loan. Admins can view any loan, users can only view their own loans.'
   })
   @ApiParam({
     name: 'id',
@@ -182,8 +182,8 @@ export class LoansController {
     description: 'Forbidden - Insufficient permissions',
     schema: AuthErrorSchemas.insufficientPermissions
   })
-  async findOne(@Param('id') id: string) {
-    return await this.loansService.findById(id)
+  async findOne(@Param('id') id: string, @CurrentUser() user: UserJWT) {
+    return await this.loansService.findById(id, user)
   }
 
   @Post(':id/approve')

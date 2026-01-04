@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
+import { PaginationResult } from '../interface/pagination'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import {
@@ -10,15 +11,10 @@ import {
   MandatorySavingsWithUser,
   UpdateMandatorySavings
 } from './interfaces/mandatory-savings.interface'
-import {
-  PrincipalSavingsTable,
-  PrincipalSavingsWithUser,
-  UpdatePrincipalSavings
-} from './interfaces/principal-savings.interface'
 
 @Injectable()
-export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
-  private readonly logger = new Logger(SavingsRepository.name)
+export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsTable> {
+  private readonly logger = new Logger(MandatorySavingsRepository.name)
 
   constructor(protected readonly databaseService: DatabaseService) {
     super(databaseService, 'mandatory_savings')
@@ -474,135 +470,66 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
     }
   }
 
-  // ==================== PRINCIPAL SAVINGS METHODS ====================
-
   /**
-   * Create a principal savings record for a user
-   * @param data - Principal savings data
-   * @param trx - Optional transaction object
+   * Find all paid mandatory savings for a specific year with pagination
+   * Used for report generation - filters at database level
    */
-  async createPrincipalSavings(
-    data: Omit<PrincipalSavingsTable, 'id' | 'created_at' | 'updated_at'>,
-    trx?: any
-  ): Promise<PrincipalSavingsTable> {
+  async findPaidMandatorySavingsByYear(
+    year: number,
+    page: number = 1,
+    limit: number = 100
+  ): Promise<
+    PaginationResult<{
+      user_id: string
+      fullname: string
+      period_date: Date
+      amount: string
+    }>
+  > {
     try {
-      this.logger.debug(`Creating principal savings for user ${data.user_id}`)
+      const startDate = new Date(year, 0, 1) // January 1st
+      const endDate = new Date(year, 11, 31, 23, 59, 59) // December 31st
+      const offset = (page - 1) * limit
 
-      const query = trx
-        ? trx('principal_savings')
-        : this.knex('principal_savings')
-      const [result] = await query
-        .insert({
-          ...data,
-          created_at: new Date(),
-          updated_at: new Date()
-        })
-        .returning('*')
-
-      this.logger.log(
-        `Principal savings created successfully for user ${data.user_id}`
+      this.logger.debug(
+        `Fetching paid mandatory savings for year ${year}, page ${page}, limit ${limit}`
       )
-      return result as PrincipalSavingsTable
-    } catch (error) {
-      this.logger.error(
-        `Failed to create principal savings for user ${data.user_id}:`,
-        error
+
+      // Get total count
+      const [{ count }] = await this.knex('mandatory_savings as ms')
+        .join('users as u', 'ms.user_id', 'u.id')
+        .where('ms.status', 'paid')
+        .whereBetween('ms.period_date', [startDate, endDate])
+        .count('ms.id as count')
+
+      const totalData = parseInt(count as string, 10)
+
+      // Get paginated data
+      const data = await this.knex('mandatory_savings as ms')
+        .join('users as u', 'ms.user_id', 'u.id')
+        .where('ms.status', 'paid')
+        .whereBetween('ms.period_date', [startDate, endDate])
+        .select(['ms.user_id', 'u.fullname', 'ms.period_date', 'ms.amount'])
+        .orderBy('u.fullname', 'asc')
+        .orderBy('ms.period_date', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      this.logger.debug(
+        `Found ${data.length} paid savings records for year ${year} (page ${page}/${pagination.totalPage})`
       )
-      throw error
-    }
-  }
-
-  /**
-   * Find principal savings by user ID with user information
-   */
-  async findPrincipalSavingsByUserId(
-    userId: string
-  ): Promise<PrincipalSavingsWithUser | null> {
-    try {
-      this.logger.debug(`Finding principal savings for user ${userId}`)
-
-      const result = await this.knex('principal_savings as ps')
-        .join('users as u', 'ps.user_id', 'u.id')
-        .leftJoin('users as pb', 'ps.processed_by', 'pb.id')
-        .where('ps.user_id', userId)
-        .select([
-          'ps.id',
-          'ps.amount',
-          'ps.status',
-          'ps.processed_by',
-          'ps.paid_at',
-          'ps.created_at',
-          'ps.updated_at',
-          'u.id as user_id',
-          'u.fullname as user_fullname',
-          'u.email as user_email',
-          'u.username as user_username',
-          'pb.id as processed_by_user_id',
-          'pb.fullname as processed_by_user_fullname'
-        ])
-        .first()
-
-      if (!result) {
-        this.logger.debug(`No principal savings found for user ${userId}`)
-        return null
-      }
 
       return {
-        id: result.id,
-        amount: result.amount,
-        status: result.status,
-        processed_by: result.processed_by,
-        paid_at: result.paid_at,
-        created_at: result.created_at,
-        updated_at: result.updated_at,
-        user: {
-          id: result.user_id,
-          fullname: result.user_fullname,
-          email: result.user_email,
-          username: result.user_username
-        },
-        processed_by_user: result.processed_by_user_id
-          ? {
-              id: result.processed_by_user_id,
-              fullname: result.processed_by_user_fullname
-            }
-          : undefined
+        data,
+        ...pagination
       }
     } catch (error) {
       this.logger.error(
-        `Failed to find principal savings for user ${userId}:`,
+        `Failed to find paid mandatory savings for year ${year}:`,
         error
       )
-      throw error
-    }
-  }
-
-  async updatePrincipalSavings(
-    id: string,
-    updateData: UpdatePrincipalSavings,
-    trx?: any
-  ): Promise<PrincipalSavingsTable> {
-    try {
-      this.logger.debug(
-        `Updating principal savings ${id} with data: ${JSON.stringify(updateData)}`
-      )
-
-      const query = trx
-        ? trx('principal_savings')
-        : this.knex('principal_savings')
-      const [result] = await query
-        .where('id', id)
-        .update(updateData)
-        .returning('*')
-
-      if (!result) {
-        throw new Error(`Principal savings record with id ${id} not found`)
-      }
-
-      this.logger.debug(`Successfully updated principal savings ${id}`)
-      return result as PrincipalSavingsTable
-    } catch (error) {
-      this.logger.error(`Failed to update principal savings ${id}:`, error)
       throw error
     }
   }

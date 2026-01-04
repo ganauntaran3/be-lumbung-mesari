@@ -8,10 +8,11 @@ import {
 } from '@nestjs/common'
 
 import { Knex } from 'knex'
-import { UserStatus } from 'src/common/constants'
-import { DatabaseService } from 'src/database/database.service'
-import { PaginationQueryDto } from 'src/database/dto/pagination.dto'
 
+import { UserStatus } from '../common/constants'
+import { DatabaseService } from '../database/database.service'
+import { PaginationQueryDto } from '../database/dto/pagination.dto'
+import { LoansService } from '../loans/loans.service'
 import {
   EmailData,
   EmailHelperService,
@@ -45,6 +46,7 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     private readonly emailHelperService: EmailHelperService,
     private readonly usersSavingsService: UsersSavingsService,
+    private readonly loansService: LoansService,
     private readonly databaseService: DatabaseService
   ) {}
 
@@ -194,8 +196,7 @@ export class UsersService {
       search?: string
     } = {}
   ): Promise<UsersPaginatedResponse> {
-    const result = await this.usersRepository.findAllWithRoles(options)
-    console.log(result)
+    const result = await this.usersRepository.findAllUsers(options)
 
     return {
       ...result,

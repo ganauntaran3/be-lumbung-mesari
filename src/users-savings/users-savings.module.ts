@@ -4,7 +4,8 @@ import { ConfigModule } from '@nestjs/config'
 import { CashbookModule } from '../cashbook/cashbook.module'
 import { DatabaseModule } from '../database/database.module'
 import { IncomesModule } from '../incomes/incomes.module'
-import { SavingsRepository } from '../savings/savings.repository'
+import { MandatorySavingsRepository } from '../savings/mandatory-savings.repository'
+import { PrincipalSavingsRepository } from '../savings/principal-savings.repository'
 import { UsersRepository } from '../users/users.repository'
 
 import { UsersSavingsService } from './users-savings.service'
@@ -23,7 +24,12 @@ import { UsersSavingsService } from './users-savings.service'
  */
 @Module({
   imports: [DatabaseModule, IncomesModule, CashbookModule, ConfigModule],
-  providers: [UsersSavingsService, SavingsRepository, UsersRepository],
+  providers: [
+    UsersSavingsService,
+    MandatorySavingsRepository,
+    PrincipalSavingsRepository,
+    UsersRepository
+  ],
   exports: [UsersSavingsService]
 })
 export class UsersSavingsModule {}

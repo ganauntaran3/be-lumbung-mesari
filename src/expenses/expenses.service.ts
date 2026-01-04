@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common'
 
 import { Knex } from 'knex'
-import { ExpenseSource } from 'src/cashbook/interfaces/transaction.interface'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
+import { ExpenseSource } from '../cashbook/interfaces/transaction.interface'
 import { DatabaseService } from '../database/database.service'
 
 import { CreateExpenseDto } from './dto/create-expense.dto'

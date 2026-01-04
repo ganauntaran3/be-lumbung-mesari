@@ -78,8 +78,8 @@ export class LoansRepository extends BaseRepository<LoanTable> {
       if (search) {
         query = query.where(function () {
           this.where('users.fullname', 'ilike', `%${search}%`)
+            .orWhere('users.username', 'ilike', `%${search}%`)
             .orWhere('users.email', 'ilike', `%${search}%`)
-            .orWhere('loans.id', 'ilike', `%${search}%`)
         })
       }
 
@@ -89,8 +89,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
 
       const dataQuery = query.select([
         'loans.*',
-        'users.fullname as user_fullname',
-        'users.email as user_email',
+        'users.fullname as fullname',
         'loan_periods.tenor',
         'loan_periods.interest_rate'
       ])
@@ -123,6 +122,22 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     }
   }
 
+  async findUserLoans(userId: string): Promise<LoanTable[]> {
+    try {
+      let query = this.knex('loans').where('loans.user_id', userId)
+
+      const data = await query
+        .select('loans.*')
+        .orderBy('loans.created_at', 'desc')
+        .limit(3)
+
+      return data as LoanTable[]
+    } catch (error) {
+      this.logger.error('Error fetching user loans:', error)
+      throw error
+    }
+  }
+
   async findById(
     id: string,
     trx?: Knex.Transaction
@@ -133,7 +148,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
       .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
       .select([
         'loans.*',
-        'users.fullname as user_fullname',
+        'users.fullname as fullname',
         'users.email as user_email',
         'loan_periods.tenor'
       ])

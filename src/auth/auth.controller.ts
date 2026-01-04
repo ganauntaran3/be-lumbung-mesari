@@ -22,14 +22,13 @@ import {
   ApiUnauthorizedResponse
 } from '@nestjs/swagger'
 
-import { UserJWT } from 'src/users/interface/users'
-
 import {
   AuthErrorSchemas,
   InternalServerErrorResponseSchema,
   OtpBadRequestSchemas,
   TokenErrorSchemas
 } from '../common/schema/error-schema'
+import { UserJWT } from '../users/interface/users'
 
 import { AuthService } from './auth.service'
 import { CurrentUser } from './decorators/current-user.decorator'

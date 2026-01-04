@@ -15,14 +15,14 @@ import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponse } from './interfaces/mandatory-savings.interface'
-import { SavingsRepository } from './savings.repository'
+import { MandatorySavingsRepository } from './mandatory-savings.repository'
 
 @Injectable()
 export class MandatorySavingsService {
   private readonly logger = new Logger(MandatorySavingsService.name)
 
   constructor(
-    private readonly savingsRepository: SavingsRepository,
+    private readonly savingsRepository: MandatorySavingsRepository,
     private readonly usersSavingsService: UsersSavingsService,
     private readonly configService: ConfigService,
     private readonly incomesService: IncomesService,

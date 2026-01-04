@@ -24,19 +24,18 @@ import {
   ApiUnauthorizedResponse
 } from '@nestjs/swagger'
 
-import { UserRole } from 'src/common/constants'
-import { UserJWT } from 'src/users/interface/users'
-
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserRole } from '../common/constants'
 import {
   createBadRequestSchema,
   createForbiddenSchema,
   createNotFoundSchema,
   createUnauthorizedSchema
 } from '../common/schema/error-schema'
+import { UserJWT } from '../users/interface/users'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponseDto } from './dto/savings-response.dto'
