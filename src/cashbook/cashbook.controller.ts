@@ -1,18 +1,14 @@
-import { Controller, Get, UseGuards, Logger } from '@nestjs/common'
+import { Controller, Get, Logger, UseGuards } from '@nestjs/common'
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiBearerAuth
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger'
-import {
-  AuthErrorSchemas,
-  TokenErrorSchemas
-} from 'src/common/schema/error-schema'
 
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
+import { TokenErrorSchemas } from '../common/schema/error-schema'
 
 import { CashbookBalanceService } from './cashbook-balance.service'
 import { getBalanceResponseSchema } from './dto/balance.dto'
@@ -31,8 +27,7 @@ export class CashbookController {
   @Get('balances')
   @ApiOperation({
     summary: 'Get current cashbook balances',
-    description:
-      'Retrieve current balances for total, capital, and SHU. Only accessible by administrators and superadministrators.'
+    description: 'Retrieve current balances for total, capital, and SHU.'
   })
   @ApiResponse({
     status: 200,
@@ -42,11 +37,6 @@ export class CashbookController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - Invalid or expired token',
     schema: TokenErrorSchemas.invalidToken
-  })
-  @ApiForbiddenResponse({
-    description:
-      'Forbidden - Insufficient permissions (Admin/SuperAdmin required)',
-    schema: AuthErrorSchemas.insufficientPermissions
   })
   async getBalances() {
     try {

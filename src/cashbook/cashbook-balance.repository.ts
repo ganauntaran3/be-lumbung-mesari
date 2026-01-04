@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 
+import { Knex } from 'knex'
+
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 
@@ -13,16 +15,21 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
     super(databaseService, 'cashbook_balances')
   }
 
-  /**
-   * Get current balance for specific type
-   */
-  async getBalance(balanceType: 'total' | 'capital' | 'shu'): Promise<number> {
+  async getBalance(
+    balanceType: 'total' | 'capital' | 'shu',
+    trx?: Knex.Transaction
+  ): Promise<number> {
     try {
-      const result = await this.knex('cashbook_balances')
-        .where('type', balanceType)
-        .select('balance')
-        .first()
+      const query = trx
+        ? trx('cashbook_balances')
+        : this.knex('cashbook_balances')
 
+      let resultQuery = query.where('type', balanceType)
+
+      if (trx) {
+        resultQuery = query.forUpdate()
+      }
+      const result = await resultQuery.first()
       const balance = result ? parseFloat(result.balance) : 0
       this.logger.debug(`Retrieved ${balanceType} balance: ${balance}`)
 
@@ -33,9 +40,6 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
     }
   }
 
-  /**
-   * Get all balances as key-value object
-   */
   async getAllBalances(): Promise<Record<string, number>> {
     try {
       const results = await this.knex('cashbook_balances').select(

@@ -2,12 +2,13 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
+import { PaginationResult } from '../interface/pagination'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import {
+  MandatorySavingsPaginatedResponse,
   MandatorySavingsTable,
   MandatorySavingsWithUser,
-  MandatorySavingsPaginatedResponse,
   UpdateMandatorySavings
 } from './interfaces/mandatory-savings.interface'
 import {
@@ -667,6 +668,116 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
       return result as PrincipalSavingsTable
     } catch (error) {
       this.logger.error(`Failed to update principal savings ${id}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Find all paid mandatory savings for a specific year with pagination
+   * Used for report generation - filters at database level
+   */
+  async findPaidMandatorySavingsByYear(
+    year: number,
+    page: number = 1,
+    limit: number = 100
+  ): Promise<
+    PaginationResult<{
+      user_id: string
+      fullname: string
+      period_date: Date
+      amount: string
+    }>
+  > {
+    try {
+      const startDate = new Date(year, 0, 1) // January 1st
+      const endDate = new Date(year, 11, 31, 23, 59, 59) // December 31st
+      const offset = (page - 1) * limit
+
+      this.logger.debug(
+        `Fetching paid mandatory savings for year ${year}, page ${page}, limit ${limit}`
+      )
+
+      // Get total count
+      const [{ count }] = await this.knex('mandatory_savings as ms')
+        .join('users as u', 'ms.user_id', 'u.id')
+        .where('ms.status', 'paid')
+        .whereBetween('ms.period_date', [startDate, endDate])
+        .count('ms.id as count')
+
+      const totalData = parseInt(count as string, 10)
+
+      // Get paginated data
+      const data = await this.knex('mandatory_savings as ms')
+        .join('users as u', 'ms.user_id', 'u.id')
+        .where('ms.status', 'paid')
+        .whereBetween('ms.period_date', [startDate, endDate])
+        .select(['ms.user_id', 'u.fullname', 'ms.period_date', 'ms.amount'])
+        .orderBy('u.fullname', 'asc')
+        .orderBy('ms.period_date', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      this.logger.debug(
+        `Found ${data.length} paid savings records for year ${year} (page ${page}/${pagination.totalPage})`
+      )
+
+      return {
+        data,
+        ...pagination
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to find paid mandatory savings for year ${year}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Get all active members with pagination
+   * Used for report generation
+   */
+  async getActiveMembers(
+    page: number = 1,
+    limit: number = 100
+  ): Promise<PaginationResult<{ id: string; fullname: string }>> {
+    try {
+      const offset = (page - 1) * limit
+
+      this.logger.debug(`Fetching active members, page ${page}, limit ${limit}`)
+
+      // Get total count
+      const [{ count }] = await this.knex('users')
+        .where('role_id', 'member')
+        .where('status', 'active')
+        .count('id as count')
+
+      const totalData = parseInt(count as string, 10)
+
+      // Get paginated data
+      const data = await this.knex('users')
+        .where('role_id', 'member')
+        .where('status', 'active')
+        .select(['id', 'fullname'])
+        .orderBy('fullname', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      this.logger.debug(
+        `Found ${data.length} active members (page ${page}/${pagination.totalPage})`
+      )
+
+      return {
+        data,
+        ...pagination
+      }
+    } catch (error) {
+      this.logger.error('Failed to find active members:', error)
       throw error
     }
   }

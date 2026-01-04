@@ -34,7 +34,7 @@ export interface LoanPeriodResponse {
 }
 
 export interface LoanWithUser extends LoanTable {
-  user_fullname: string
+  fullname: string
   user_email: string
   tenor: number
   interest_rate: string
@@ -57,13 +57,12 @@ export interface CreateLoanData {
 }
 
 export interface CalculateLoanResponse {
-  loanAmount: number
+  principalAmount: number
   adminFee: number
   disbursedAmount: number
   tenor: number
-  interestRate: string
+  interestRate: number
   monthlyInterest: number
   monthlyPayment: number
   lastMonthPayment?: number
-  totalPayable: number
 }

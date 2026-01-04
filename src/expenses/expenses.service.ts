@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
-import { ExpenseSource } from 'src/cashbook/interfaces/cashbook.interface'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
+import { ExpenseSource } from '../cashbook/interfaces/cashbook.interface'
 import { DatabaseService } from '../database/database.service'
 
 import { CreateExpenseDto } from './dto/create-expense.dto'
@@ -10,21 +11,21 @@ import { ExpenseCategoryResponseDto } from './dto/expense-response.dto'
 import { ExpensesQueryDto } from './dto/expenses-query.dto'
 import { UpdateExpenseDto } from './dto/update-expense.dto'
 import {
-  ExpenseNotFoundError,
   ExpenseCategoryNotFoundError,
-  InvalidExpenseAmountError,
+  ExpenseNotFoundError,
   ExpenseValidationError,
-  InsufficientFundsError
+  InsufficientFundsError,
+  InvalidExpenseAmountError
 } from './exceptions/expense.exceptions'
 import { ExpenseCategoriesRepository } from './expense-categories.repository'
 import { ExpensesRepository } from './expenses.repository'
 import { ExpensesPaginatedResponse } from './interfaces'
 import {
+  ExpenseCategoryTable,
   ExpenseResponse,
   ExpenseWithCategoryTable,
-  UpdateExpense,
   NewExpense,
-  ExpenseCategoryTable
+  UpdateExpense
 } from './interfaces/expense'
 
 @Injectable()

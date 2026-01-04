@@ -1,27 +1,28 @@
 import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
   BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
   Logger,
-  InternalServerErrorException
+  NotFoundException
 } from '@nestjs/common'
-import { Knex } from 'knex'
-import { UserStatus } from 'src/common/constants'
-import { DatabaseService } from 'src/database/database.service'
-import { PaginationQueryDto } from 'src/database/dto/pagination.dto'
 
+import { Knex } from 'knex'
+
+import { UserStatus } from '../common/constants'
+import { DatabaseService } from '../database/database.service'
+import { PaginationQueryDto } from '../database/dto/pagination.dto'
 import {
+  EmailData,
   EmailHelperService,
-  NotificationTemplate,
-  EmailData
+  NotificationTemplate
 } from '../notifications/email/email-helper.service'
 import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import {
-  ApproveUserDto,
   ApprovalAction,
   ApprovalResponseDto,
+  ApproveUserDto,
   RejectUserQueryDto
 } from './dto/approve-user.dto'
 import { EmailNotificationFailedException } from './exceptions/user.exceptions'
