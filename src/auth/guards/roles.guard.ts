@@ -1,13 +1,15 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException
+  ForbiddenException,
+  Injectable
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { UserRole } from 'src/common/constants'
-import { generateInsufficientPermissionsMessage } from 'src/common/constants'
 
+import {
+  UserRole,
+  generateInsufficientPermissionsMessage
+} from '../../common/constants'
 import { ROLES_KEY } from '../decorators/roles.decorator'
 
 @Injectable()

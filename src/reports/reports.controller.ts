@@ -1,23 +1,27 @@
 import {
   Controller,
   Get,
-  Query,
-  UseGuards,
+  HttpStatus,
   Logger,
+  Query,
   Res,
-  HttpStatus
+  UseGuards
 } from '@nestjs/common'
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
   ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
   ApiUnauthorizedResponse
 } from '@nestjs/swagger'
+
 import { Response } from 'express'
 
+import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { UserRole } from '../common/constants'
 import { createUnauthorizedSchema } from '../common/schema/error-schema'
 
 import { ReportsService } from './reports.service'
@@ -31,6 +35,8 @@ export class ReportsController {
 
   constructor(private readonly reportsService: ReportsService) {}
 
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
   @Get('mandatory-savings')
   @ApiOperation({
     summary: 'Generate mandatory savings Excel report',
