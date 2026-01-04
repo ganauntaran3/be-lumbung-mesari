@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
@@ -732,52 +732,6 @@ export class SavingsRepository extends BaseRepository<MandatorySavingsTable> {
         `Failed to find paid mandatory savings for year ${year}:`,
         error
       )
-      throw error
-    }
-  }
-
-  /**
-   * Get all active members with pagination
-   * Used for report generation
-   */
-  async getActiveMembers(
-    page: number = 1,
-    limit: number = 100
-  ): Promise<PaginationResult<{ id: string; fullname: string }>> {
-    try {
-      const offset = (page - 1) * limit
-
-      this.logger.debug(`Fetching active members, page ${page}, limit ${limit}`)
-
-      // Get total count
-      const [{ count }] = await this.knex('users')
-        .where('role_id', 'member')
-        .where('status', 'active')
-        .count('id as count')
-
-      const totalData = parseInt(count as string, 10)
-
-      // Get paginated data
-      const data = await this.knex('users')
-        .where('role_id', 'member')
-        .where('status', 'active')
-        .select(['id', 'fullname'])
-        .orderBy('fullname', 'asc')
-        .limit(limit)
-        .offset(offset)
-
-      const pagination = this.createPaginationMetadata(page, limit, totalData)
-
-      this.logger.debug(
-        `Found ${data.length} active members (page ${page}/${pagination.totalPage})`
-      )
-
-      return {
-        data,
-        ...pagination
-      }
-    } catch (error) {
-      this.logger.error('Failed to find active members:', error)
       throw error
     }
   }

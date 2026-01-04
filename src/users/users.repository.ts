@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -259,6 +260,48 @@ export class UsersRepository extends BaseRepository<User> {
       .first()
 
     return Number.parseInt(result?.count as string, 10) || 0
+  }
+
+  async getActiveMembersFullname(
+    page: number = 1,
+    limit: number = 100
+  ): Promise<PaginationResult<{ id: string; fullname: string }>> {
+    try {
+      const offset = (page - 1) * limit
+
+      this.logger.debug(`Fetching active members, page ${page}, limit ${limit}`)
+
+      // Get total count
+      const [{ count }] = await this.knex('users')
+        .where('role_id', 'member')
+        .where('status', 'active')
+        .count('id as count')
+
+      const totalData = parseInt(count as string, 10)
+
+      // Get paginated data
+      const data = await this.knex('users')
+        .where('role_id', 'member')
+        .where('status', 'active')
+        .select('users.id', 'users.fullname')
+        .orderBy('fullname', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      this.logger.debug(
+        `Found ${data.length} active members (page ${page}/${pagination.totalPage})`
+      )
+
+      return {
+        data,
+        ...pagination
+      }
+    } catch (error) {
+      this.logger.error('Failed to find active members:', error)
+      throw error
+    }
   }
 
   async getActiveMemberIds(): Promise<string[]> {

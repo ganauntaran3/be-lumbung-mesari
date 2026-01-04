@@ -122,6 +122,22 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     }
   }
 
+  async findUserLoans(userId: string): Promise<LoanTable[]> {
+    try {
+      let query = this.knex('loans').where('loans.user_id', userId)
+
+      const data = await query
+        .select('loans.*')
+        .orderBy('loans.created_at', 'desc')
+        .limit(3)
+
+      return data as LoanTable[]
+    } catch (error) {
+      this.logger.error('Error fetching user loans:', error)
+      throw error
+    }
+  }
+
   async findById(
     id: string,
     trx?: Knex.Transaction

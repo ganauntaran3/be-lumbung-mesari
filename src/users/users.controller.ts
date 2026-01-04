@@ -32,6 +32,7 @@ import {
   AuthErrorSchemas,
   TokenErrorSchemas
 } from '../common/schema/error-schema'
+import { LoansService } from '../loans/loans.service'
 
 import {
   ApprovalResponseDto,
@@ -51,7 +52,10 @@ import { UsersService } from './users.service'
 export class UsersController {
   private readonly logger = new Logger(UsersController.name)
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly loansService: LoansService
+  ) {}
 
   @Get('me')
   @ApiOperation({
@@ -71,6 +75,42 @@ export class UsersController {
   async getProfile(@CurrentUser() user: UserJWT) {
     const fullUser = await this.usersService.findById(user.id)
     return fullUser
+  }
+
+  @Get('me/loans')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get current user loans',
+    description:
+      'Retrieve all loans for the authenticated user with pagination support. Users can only see their own loans.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Loans retrieved successfully'
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: TokenErrorSchemas.invalidToken
+  })
+  async getMyLoans(@CurrentUser() user: UserJWT) {
+    const loans = await this.loansService.findUserLoans(user.id)
+
+    // Transform to camelCase
+    return loans.map((loan: any) => ({
+      id: loan.id,
+      userId: loan.user_id,
+      loanPeriodId: loan.loan_period_id,
+      principalAmount: loan.principal_amount,
+      totalPayable: loan.total_payable_amount,
+      monthlyPayment: loan.monthly_payment,
+      status: loan.status,
+      notes: loan.notes,
+      approvedBy: loan.approved_by,
+      approvedAt: loan.approved_at,
+      disbursedAt: loan.disbursed_at,
+      createdAt: loan.created_at,
+      updatedAt: loan.updated_at
+    }))
   }
 
   @Get()

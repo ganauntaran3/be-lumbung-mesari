@@ -370,6 +370,21 @@ export class LoansService {
     return this.transformLoanRecord(loan)
   }
 
+  async findUserLoans(userId: string) {
+    this.logger.log(`Fetching loans for user ${userId}`)
+    try {
+      const loans = await this.loansRepository.findUserLoans(userId)
+
+      if (!loans) {
+        throw new NotFoundException('Loans not found')
+      }
+
+      return loans
+    } catch (error) {
+      throw error
+    }
+  }
+
   async approveLoan(
     loanId: string,
     approvalDto: ApproveLoanDto,

@@ -12,6 +12,7 @@ import { Knex } from 'knex'
 import { UserStatus } from '../common/constants'
 import { DatabaseService } from '../database/database.service'
 import { PaginationQueryDto } from '../database/dto/pagination.dto'
+import { LoansService } from '../loans/loans.service'
 import {
   EmailData,
   EmailHelperService,
@@ -45,6 +46,7 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     private readonly emailHelperService: EmailHelperService,
     private readonly usersSavingsService: UsersSavingsService,
+    private readonly loansService: LoansService,
     private readonly databaseService: DatabaseService
   ) {}
 
