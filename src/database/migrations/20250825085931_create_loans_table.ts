@@ -45,13 +45,13 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable()
     // Approved -> pinjaman disetujui
     // Active -> uang sudah diberikan dan cicilan berlangsung
+    table.text('notes').nullable()
     table
       .uuid('approved_by')
       .references('id')
       .inTable('users')
       .onDelete('RESTRICT')
       .nullable()
-    table.text('notes').nullable()
     table.timestamp('approved_at').nullable()
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
     table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())

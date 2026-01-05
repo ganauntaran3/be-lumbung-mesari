@@ -141,25 +141,82 @@ export class LoansRepository extends BaseRepository<LoanTable> {
   async findById(
     id: string,
     trx?: Knex.Transaction
+  ): Promise<LoanTable | undefined> {
+    const query = trx ? trx('loans') : this.knex('loans')
+    let resultQuery = query
+      .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
+      .select([
+        'loans.id',
+        'loans.user_id',
+        'loans.loan_period_id',
+        'loans.principal_amount',
+        'loans.disbursed_amount',
+        'loans.interest_amount',
+        'loans.monthly_payment',
+        'loans.last_month_payment',
+        'loans.total_payable_amount',
+        'loans.installment_late_amount',
+        'loans.disbursed_at',
+        'loans.start_date',
+        'loans.end_date',
+        'loans.status',
+        'loans.notes',
+        'loans.approved_by',
+        'loans.approved_at',
+        'loans.created_at',
+        'loans.updated_at',
+        'loan_periods.tenor',
+        'loan_periods.interest_rate'
+      ])
+      .where('loans.id', id)
+
+    if (trx) {
+      resultQuery.forUpdate()
+    }
+
+    return await resultQuery.first()
+  }
+
+  async findByIdWithUser(
+    id: string,
+    trx?: Knex.Transaction
   ): Promise<LoanWithUser | undefined> {
     const query = trx ? trx('loans') : this.knex('loans')
-    let resultQuery = await query
+    let resultQuery = query
       .join('users', 'users.id', 'loans.user_id')
       .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
       .select([
-        'loans.*',
+        'loans.id',
+        'loans.user_id',
+        'loans.loan_period_id',
+        'loans.principal_amount',
+        'loans.disbursed_amount',
+        'loans.interest_amount',
+        'loans.monthly_payment',
+        'loans.last_month_payment',
+        'loans.total_payable_amount',
+        'loans.installment_late_amount',
+        'loans.disbursed_at',
+        'loans.start_date',
+        'loans.end_date',
+        'loans.status',
+        'loans.notes',
+        'loans.approved_by',
+        'loans.approved_at',
+        'loans.created_at',
+        'loans.updated_at',
+        'loan_periods.tenor',
+        'loan_periods.interest_rate',
         'users.fullname as fullname',
-        'users.email as user_email',
-        'loan_periods.tenor'
+        'users.email as user_email'
       ])
       .where('loans.id', id)
-      .first()
 
     if (trx) {
-      resultQuery = query.forUpdate()
+      resultQuery.forUpdate()
     }
 
-    return await resultQuery
+    return await resultQuery.first()
   }
 
   async updateLoanStatus(

@@ -21,6 +21,7 @@ import { Installment } from './interface/installment.interface'
 import {
   CalculateLoanResponse,
   LoanPeriodTable,
+  LoanTable,
   LoanWithUser
 } from './interface/loans.interface'
 import { LoansRepository } from './loans.repository'
@@ -97,7 +98,7 @@ export class LoansService {
 
       // Calculate penalty amount (1% of principal)
       const penaltyAmount = new Decimal(loan.principal_amount)
-        .mul(this.configService.get<number>('INTEREST_RATE', 0.01))
+        .mul(loan.interest_rate)
         .toNumber()
 
       // Get all installments for this loan sorted by installment number
@@ -350,7 +351,7 @@ export class LoansService {
   }
 
   async findById(loanId: string, user?: UserJWT): Promise<LoanWithUser> {
-    const loan = await this.loansRepository.findById(loanId)
+    const loan = await this.loansRepository.findByIdWithUser(loanId)
 
     if (!loan) {
       throw new NotFoundException('Loan not found')
@@ -379,7 +380,7 @@ export class LoansService {
         throw new NotFoundException('Loans not found')
       }
 
-      return loans
+      return loans.map((loan) => this.transformLoanRecord(loan))
     } catch (error) {
       throw error
     }
@@ -531,7 +532,7 @@ export class LoansService {
   }
 
   private async generateInstallments(
-    loan: LoanWithUser,
+    loan: LoanTable,
     processedBy: string
   ): Promise<Partial<Installment>[]> {
     const installments: Partial<Installment>[] = []
