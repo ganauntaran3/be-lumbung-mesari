@@ -356,7 +356,6 @@ export class MandatorySavingsService {
       const year = periodDate.getFullYear()
 
       const income = await this.incomesService.createMandatorySavingsIncome(
-        adminId,
         mandatorySavings.id,
         amount,
         `Simpanan wajib ${monthName} ${year}`,

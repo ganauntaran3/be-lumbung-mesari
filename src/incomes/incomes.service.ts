@@ -10,16 +10,13 @@ export class IncomesService {
   constructor(private readonly incomesRepository: IncomesRepository) {}
 
   async createPrincipalSavingsIncome(
-    userId: string,
     principalSavingsId: string,
     amount: number,
     notes?: string,
     trx?: any
   ): Promise<IncomeTable> {
     try {
-      this.logger.log(
-        `Creating principal savings income for user ${userId} with amount ${amount}`
-      )
+      this.logger.log(`Creating principal savings income with amount ${amount}`)
 
       // Find principal_savings category
       const category = await this.incomesRepository.findCategoryByCode(
@@ -38,7 +35,6 @@ export class IncomesService {
           name: 'Simpanan Pokok',
           income_category_id: category.id,
           amount,
-          user_id: userId,
           principal_saving_id: principalSavingsId,
           notes: notes || 'Simpanan pokok dari anggota baru'
         },
@@ -49,25 +45,19 @@ export class IncomesService {
 
       return income
     } catch (error) {
-      this.logger.error(
-        `Failed to create principal savings income for user ${userId}:`,
-        error
-      )
+      this.logger.error(`Failed to create principal savings income:`, error)
       throw error
     }
   }
 
   async createMandatorySavingsIncome(
-    userId: string,
     mandatorySavingsId: string,
     amount: number,
     notes?: string,
     trx?: any
   ): Promise<IncomeTable> {
     try {
-      this.logger.log(
-        `Creating mandatory savings income for user ${userId} with amount ${amount}`
-      )
+      this.logger.log(`Creating mandatory savings income with amount ${amount}`)
 
       // Find mandatory_savings category
       const category = await this.incomesRepository.findCategoryByCode(
@@ -86,7 +76,6 @@ export class IncomesService {
           name: 'Simpanan Wajib',
           income_category_id: category.id,
           amount,
-          user_id: userId,
           mandatory_saving_id: mandatorySavingsId,
           notes: notes || 'Simpanan wajib dari anggota'
         },
@@ -97,10 +86,7 @@ export class IncomesService {
 
       return income
     } catch (error) {
-      this.logger.error(
-        `Failed to create mandatory savings income for user ${userId}:`,
-        error
-      )
+      this.logger.error(`Failed to create mandatory savings income:`, error)
       throw error
     }
   }

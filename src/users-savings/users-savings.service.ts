@@ -63,7 +63,6 @@ export class UsersSavingsService {
     // 3. Create income
     const amount = parseFloat(principalSavings.amount)
     const income = await this.incomesService.createPrincipalSavingsIncome(
-      userId,
       principalSavings.id,
       amount,
       `Simpanan pokok dari ${principalSavings.user.fullname}`,

@@ -176,9 +176,7 @@ export class LoansService {
     tenor: number
   ) {
     const principal = new Decimal(principalAmount)
-    const monthlyInterest = new Decimal(principalAmount)
-      .mul(interestRate)
-      .div(100)
+    const monthlyInterest = new Decimal(principalAmount).mul(interestRate)
 
     // Monthly payment = principal/tenor + monthly interest (before rounding)
     const monthlyPrincipal = principal.div(tenor)
