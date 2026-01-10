@@ -8,6 +8,14 @@ export async function up(knex: Knex): Promise<void> {
     table.decimal('shu_amount', 12, 4).notNullable().defaultTo(0)
     table.decimal('capital_amount', 12, 4).notNullable().defaultTo(0)
 
+    // Balance snapshots for audit trail
+    table.decimal('shu_balance_before', 12, 4).notNullable()
+    table.decimal('shu_balance_after', 12, 4).notNullable()
+    table.decimal('capital_balance_before', 12, 4).notNullable()
+    table.decimal('capital_balance_after', 12, 4).notNullable()
+    table.decimal('total_balance_before', 12, 4).notNullable()
+    table.decimal('total_balance_after', 12, 4).notNullable()
+
     table
       .uuid('income_id')
       .references('id')

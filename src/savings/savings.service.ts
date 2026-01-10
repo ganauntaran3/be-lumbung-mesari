@@ -8,21 +8,21 @@ import {
 import { ConfigService } from '@nestjs/config'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
-import { IncomeDestination } from '../cashbook/interfaces/cashbook.interface'
+import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { DatabaseService } from '../database/database.service'
 import { IncomesService } from '../incomes/incomes.service'
 import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponse } from './interfaces/mandatory-savings.interface'
-import { SavingsRepository } from './savings.repository'
+import { MandatorySavingsRepository } from './mandatory-savings.repository'
 
 @Injectable()
 export class MandatorySavingsService {
   private readonly logger = new Logger(MandatorySavingsService.name)
 
   constructor(
-    private readonly savingsRepository: SavingsRepository,
+    private readonly savingsRepository: MandatorySavingsRepository,
     private readonly usersSavingsService: UsersSavingsService,
     private readonly configService: ConfigService,
     private readonly incomesService: IncomesService,
@@ -344,8 +344,7 @@ export class MandatorySavingsService {
         {
           status: 'paid',
           paid_at: new Date(),
-          processed_by: adminId,
-          processed_at: new Date()
+          processed_by: adminId
         },
         trx
       )
@@ -357,7 +356,6 @@ export class MandatorySavingsService {
       const year = periodDate.getFullYear()
 
       const income = await this.incomesService.createMandatorySavingsIncome(
-        adminId,
         mandatorySavings.id,
         amount,
         `Simpanan wajib ${monthName} ${year}`,

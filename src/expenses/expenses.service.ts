@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { Knex } from 'knex'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
-import { ExpenseSource } from '../cashbook/interfaces/cashbook.interface'
+import { ExpenseSource } from '../cashbook/interfaces/transaction.interface'
 import { DatabaseService } from '../database/database.service'
 
 import { CreateExpenseDto } from './dto/create-expense.dto'
@@ -107,7 +107,7 @@ export class ExpensesService {
       shuAmount,
       capitalAmount,
       totalAmount: shuAmount + capitalAmount,
-      userId: expense.user_id,
+      createdBy: expense.created_by,
       loanId: expense.loan_id,
       notes: expense.notes,
       source: expense.source,
@@ -169,7 +169,7 @@ export class ExpensesService {
           shu_amount: shuAmount.toString(),
           capital_amount: capitalAmount.toString(),
           txn_date: createExpenseDto.transactionDate || new Date(),
-          user_id: createExpenseDto.userId || currentUserId,
+          created_by: currentUserId,
           loan_id: createExpenseDto.loanId,
           notes: createExpenseDto.notes,
           source: effectiveSource
@@ -183,11 +183,11 @@ export class ExpensesService {
         // Create cashbook transaction (application-level sync)
         await this.cashbookTransactionService.createExpenseTransaction(
           expense.id,
-          expenseData.user_id || currentUserId,
+          currentUserId,
           shuAmount,
           capitalAmount,
-          expense.txn_date,
-          trx
+          trx,
+          expense.txn_date
         )
 
         return expense
@@ -316,9 +316,6 @@ export class ExpensesService {
       }
       if (updateExpenseDto.name !== undefined) {
         updateData.name = updateExpenseDto.name
-      }
-      if (updateExpenseDto.userId !== undefined) {
-        updateData.user_id = updateExpenseDto.userId
       }
       if (updateExpenseDto.loanId !== undefined) {
         updateData.loan_id = updateExpenseDto.loanId

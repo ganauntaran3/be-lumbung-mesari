@@ -1,4 +1,4 @@
-import { ExpenseSource } from '../../cashbook/interfaces/cashbook.interface'
+import { ExpenseSource } from '../../cashbook/interfaces/transaction.interface'
 import { PaginationResult } from '../../interface/pagination'
 
 export interface ExpenseCategoryTable {
@@ -17,7 +17,7 @@ export interface ExpenseTable {
   name: string
   shu_amount: string
   capital_amount: string
-  user_id?: string
+  created_by: string
   loan_id?: string
   notes?: string
   source?: ExpenseSource
@@ -53,7 +53,7 @@ export interface ExpenseTransformResponse {
   expenseCategoryId: string
   shuAmount: number
   capitalAmount: number
-  userId?: string
+  createdBy: string
   loanId?: string
   notes?: string
   source?: ExpenseSource
@@ -92,7 +92,7 @@ export interface ExpenseResponse {
   shuAmount: number
   capitalAmount: number
   totalAmount: number
-  userId?: string
+  createdBy: string
   loanId?: string
   notes?: string
   source?: 'auto' | 'total' | 'capital' | 'shu'

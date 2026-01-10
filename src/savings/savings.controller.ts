@@ -39,7 +39,7 @@ import { UserJWT } from '../users/interface/users'
 
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import { MandatorySavingsPaginatedResponseDto } from './dto/savings-response.dto'
-import { MandatorySavingsService } from './mandatory-savings.service'
+import { MandatorySavingsService } from './savings.service'
 
 @ApiTags('Savings')
 @Controller('savings')

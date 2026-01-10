@@ -143,7 +143,7 @@ export class AuthController {
           passwordConfirmation: 'SecurePass123',
           fullname: 'John Doe',
           username: 'johndoe',
-          phone_number: '081234567890',
+          phoneNumber: '081234567890',
           address: 'Jl. Merdeka No. 123, Jakarta Pusat, DKI Jakarta'
         }
       },
@@ -155,7 +155,7 @@ export class AuthController {
           passwordConfirmation: 'MyPassword123',
           fullname: 'Jane Smith',
           username: 'janesmith',
-          phone_number: '+6281234567890',
+          phoneNumber: '+6281234567890',
           address: 'Jl. Sudirman No. 456, Bandung, Jawa Barat'
         }
       }

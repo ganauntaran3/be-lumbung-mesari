@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -8,8 +9,8 @@ import { PaginationResult } from '../interface/pagination'
 import { ExpensesQueryDto } from './dto/expenses-query.dto'
 import {
   ExpenseTable,
-  NewExpense,
-  ExpenseWithCategoryTable
+  ExpenseWithCategoryTable,
+  NewExpense
 } from './interfaces/expense'
 
 @Injectable()
@@ -58,7 +59,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
     }
 
     if (userId) {
-      query.where('expenses.user_id', userId)
+      query.where('expenses.created_by', userId)
     }
 
     if (startDate) {
@@ -152,7 +153,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.expense_category_id',
         'expense_categories.id'
       )
-      .leftJoin('users', 'expenses.user_id', 'users.id')
+      .leftJoin('users', 'expenses.created_by', 'users.id')
 
     // Apply filters
     this.applyFilters(baseQuery, {
@@ -177,7 +178,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.name',
         'expenses.shu_amount',
         'expenses.capital_amount',
-        'expenses.user_id',
+        'expenses.created_by',
         'expenses.loan_id',
         'expenses.notes',
         'expenses.source',
@@ -201,7 +202,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
       name: row.name,
       shu_amount: row.shu_amount,
       capital_amount: row.capital_amount,
-      user_id: row.user_id,
+      created_by: row.created_by,
       loan_id: row.loan_id,
       notes: row.notes,
       source: row.source,
@@ -233,7 +234,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.name',
         'expenses.shu_amount',
         'expenses.capital_amount',
-        'expenses.user_id',
+        'expenses.created_by',
         'expenses.loan_id',
         'expenses.notes',
         'expenses.source',
@@ -261,7 +262,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
       name: result.name,
       shu_amount: result.shu_amount,
       capital_amount: result.capital_amount,
-      user_id: result.user_id,
+      created_by: result.created_by,
       loan_id: result.loan_id,
       notes: result.notes,
       source: result.source,

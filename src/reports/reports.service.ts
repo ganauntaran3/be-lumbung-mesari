@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 
 import * as ExcelJS from 'exceljs'
 
-import { SavingsRepository } from '../savings/savings.repository'
+import { MandatorySavingsRepository } from '../savings/mandatory-savings.repository'
 import { UsersRepository } from '../users/users.repository'
 
 interface MemberSavingsData {
@@ -17,7 +17,7 @@ export class ReportsService {
   private readonly logger = new Logger(ReportsService.name)
 
   constructor(
-    private readonly savingsRepository: SavingsRepository,
+    private readonly savingsRepository: MandatorySavingsRepository,
     private readonly usersRepository: UsersRepository
   ) {}
 

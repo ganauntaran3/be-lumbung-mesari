@@ -10,23 +10,17 @@ import { Knex } from 'knex'
 
 import { CashbookBalanceService } from '../cashbook/cashbook-balance.service'
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
-import { IncomeDestination } from '../cashbook/interfaces/cashbook.interface'
+import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { IncomesService } from '../incomes/incomes.service'
-import { SavingsRepository } from '../savings/savings.repository'
+import { PrincipalSavingsRepository } from '../savings/principal-savings.repository'
 import { UsersRepository } from '../users/users.repository'
 
-/**
- * UsersSavingsService
- *
- * Bridge service that handles cross-domain operations between users and savings.
- * This service eliminates circular dependencies between UsersModule and SavingsModule.
- */
 @Injectable()
 export class UsersSavingsService {
   private readonly logger = new Logger(UsersSavingsService.name)
 
   constructor(
-    private readonly savingsRepository: SavingsRepository,
+    private readonly principalSavingsRepository: PrincipalSavingsRepository,
     private readonly usersRepository: UsersRepository,
     private readonly incomesService: IncomesService,
     private readonly cashbookTransactionService: CashbookTransactionService,
@@ -37,13 +31,13 @@ export class UsersSavingsService {
   async settlePrincipalSavings(
     userId: string,
     adminId: string,
-    trx?: Knex.Transaction
+    trx: Knex.Transaction
   ): Promise<void> {
     this.logger.log(`Settling principal savings for user ${userId}`)
 
     // 1. Find principal savings
     const principalSavings =
-      await this.savingsRepository.findPrincipalSavingsByUserId(userId)
+      await this.principalSavingsRepository.findPrincipalSavingsByUserId(userId)
 
     if (!principalSavings) {
       throw new NotFoundException(
@@ -56,12 +50,12 @@ export class UsersSavingsService {
     }
 
     // 2. Mark as paid
-    await this.savingsRepository.updatePrincipalSavings(
+    await this.principalSavingsRepository.updatePrincipalSavings(
       principalSavings.id,
       {
         status: 'paid',
         processed_by: adminId,
-        processed_at: new Date()
+        paid_at: new Date()
       },
       trx
     )
@@ -69,7 +63,6 @@ export class UsersSavingsService {
     // 3. Create income
     const amount = parseFloat(principalSavings.amount)
     const income = await this.incomesService.createPrincipalSavingsIncome(
-      userId,
       principalSavings.id,
       amount,
       `Simpanan pokok dari ${principalSavings.user.fullname}`,
@@ -97,7 +90,7 @@ export class UsersSavingsService {
     const amount = await this.calculatePrincipalSavingsAmount(trx)
 
     // 2. Create principal savings
-    await this.savingsRepository.createPrincipalSavings(
+    await this.principalSavingsRepository.createPrincipalSavings(
       {
         user_id: userId,
         amount: amount.toString(),
@@ -133,9 +126,8 @@ export class UsersSavingsService {
     }
 
     const amount = Math.floor(totalBalance / activeMemberCount)
-    const minAmount = this.getMinimumAmount()
 
-    return Math.max(amount, minAmount)
+    return amount
   }
 
   private getMinimumAmount(): number {
