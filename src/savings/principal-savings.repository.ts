@@ -14,7 +14,7 @@ export class PrincipalSavingsRepository extends BaseRepository<PrincipalSavingsT
   private readonly logger = new Logger(PrincipalSavingsRepository.name)
 
   constructor(protected readonly databaseService: DatabaseService) {
-    super(databaseService, 'mandatory_savings')
+    super(databaseService, 'principal_savings')
   }
 
   /**
