@@ -10,7 +10,10 @@ import { ConfigService } from '@nestjs/config'
 import Decimal from 'decimal.js'
 import { DatabaseError } from 'pg'
 
+import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
+import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { DatabaseService } from '../database/database.service'
+import { IncomesService } from '../incomes/incomes.service'
 import { UserJWT } from '../users/interface/users'
 
 import { CalculateLoanRequestDto } from './dto/calculate-loan.dto'
@@ -34,7 +37,9 @@ export class LoansService {
   constructor(
     private readonly loansRepository: LoansRepository,
     private readonly configService: ConfigService,
-    private readonly databaseService: DatabaseService
+    private readonly databaseService: DatabaseService,
+    private readonly incomesService: IncomesService,
+    private readonly cashbookTransactionService: CashbookTransactionService
   ) {}
 
   private transformLoanPeriods(loanPeriods: LoanPeriodTable[]) {
@@ -617,5 +622,107 @@ export class LoansService {
     }
 
     this.logger.log('Overdue installments processing completed')
+  }
+
+  async settleInstallment(
+    installmentId: string,
+    adminId: string
+  ): Promise<{ message: string }> {
+    const knex = this.databaseService.getKnex()
+    const trx = await knex.transaction()
+
+    try {
+      this.logger.log(`Starting settlement for installment ${installmentId}`)
+
+      // 1. Find installment
+      const installment =
+        await this.loansRepository.findInstallmentById(installmentId)
+
+      if (!installment) {
+        throw new NotFoundException('Installment not found')
+      }
+
+      // 2. Validate status
+      if (installment.status === 'paid') {
+        throw new BadRequestException('Installment already paid')
+      }
+
+      // 3. Calculate amounts
+      const principalAmount = parseFloat(installment.principal_amount)
+      const interestAmount = parseFloat(installment.interest_amount)
+      const penaltyAmount = parseFloat(installment.penalty_amount || '0')
+
+      this.logger.log(
+        `Installment #${installment.installment_number}: principal=${principalAmount}, interest=${interestAmount}, penalty=${penaltyAmount}`
+      )
+
+      // 4. Settle installment
+      await this.loansRepository.settleInstallment(installmentId, adminId, trx)
+
+      // 5. Create income for principal → CAPITAL
+      const principalIncome =
+        await this.incomesService.createInstallmentPrincipalIncome(
+          installmentId,
+          principalAmount,
+          `Pembayaran pokok angsuran #${installment.installment_number}`,
+          trx
+        )
+
+      await this.cashbookTransactionService.createIncomeTransaction(
+        principalIncome.id,
+        principalAmount,
+        IncomeDestination.CAPITAL,
+        trx
+      )
+
+      // 6. Create income for interest → SHU
+      const interestIncome =
+        await this.incomesService.createInstallmentInterestIncome(
+          installmentId,
+          interestAmount,
+          `Bunga angsuran #${installment.installment_number}`,
+          trx
+        )
+
+      await this.cashbookTransactionService.createIncomeTransaction(
+        interestIncome.id,
+        interestAmount,
+        IncomeDestination.SHU,
+        trx
+      )
+
+      // 7. Create income for penalty (if any) → SHU
+      if (penaltyAmount > 0) {
+        const penaltyIncome =
+          await this.incomesService.createInstallmentPenaltyIncome(
+            installmentId,
+            penaltyAmount,
+            `Denda angsuran #${installment.installment_number}`,
+            trx
+          )
+
+        await this.cashbookTransactionService.createIncomeTransaction(
+          penaltyIncome.id,
+          penaltyAmount,
+          IncomeDestination.SHU,
+          trx
+        )
+
+        this.logger.log(
+          `Installment ${installmentId} settled with penalty: ${penaltyAmount}`
+        )
+      }
+
+      await trx.commit()
+      this.logger.log(`Installment ${installmentId} settled successfully`)
+
+      return { message: 'Installment settled successfully' }
+    } catch (error) {
+      if (!trx.isCompleted()) {
+        await trx.rollback()
+      }
+      this.logger.error(`Failed to settle installment ${installmentId}:`, error)
+      throw error
+    }
   }
 }

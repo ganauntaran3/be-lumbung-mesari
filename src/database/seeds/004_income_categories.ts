@@ -25,7 +25,7 @@ export async function seed(knex: Knex): Promise<void> {
     },
     {
       code: 'loan_interest',
-      name: 'Bunga Pinjaman',
+      name: 'Bunga Angsuran',
       description:
         'Pendapatan dari bunga pinjaman yang dibayarkan oleh peminjam',
       default_destination: 'shu'
@@ -42,6 +42,12 @@ export async function seed(knex: Knex): Promise<void> {
       description:
         'Pendapatan dari denda keterlambatan pembayaran pinjaman atau simpanan',
       default_destination: 'shu'
+    },
+    {
+      code: 'installment_principal',
+      name: 'Pembayaran Pokok Angsuran',
+      description: 'Pendapatan dari pembayaran pokok angsuran pinjaman',
+      default_destination: 'capital'
     },
     {
       code: 'donation',

@@ -14,6 +14,7 @@ export interface IncomeTable {
   amount: number
   user_id?: string
   loan_id?: string
+  installment_id?: string
   principal_saving_id?: string
   mandatory_saving_id?: string
   txn_date?: Date

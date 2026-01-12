@@ -282,6 +282,16 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     return results as Installment[]
   }
 
+  async findInstallmentById(
+    installmentId: string
+  ): Promise<Installment | null> {
+    const result = await this.knex('installments')
+      .where('id', installmentId)
+      .first()
+
+    return result || null
+  }
+
   async findInstallmentsByLoanId(loanId: string): Promise<Installment[]> {
     const results = await this.knex('installments')
       .where('loan_id', loanId)
@@ -298,6 +308,30 @@ export class LoansRepository extends BaseRepository<LoanTable> {
       .orderBy('installment_number', 'asc')
 
     return results as Installment[]
+  }
+
+  async settleInstallment(
+    installmentId: string,
+    adminId: string,
+    trx?: Knex.Transaction
+  ): Promise<Installment> {
+    const query = trx ? trx('installments') : this.knex('installments')
+
+    const [result] = await query
+      .where('id', installmentId)
+      .update({
+        status: 'paid',
+        processed_by: adminId,
+        paid_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*')
+
+    if (!result) {
+      throw new Error(`Installment with id ${installmentId} not found`)
+    }
+
+    return result as Installment
   }
 
   async updateInstallmentStatus(
