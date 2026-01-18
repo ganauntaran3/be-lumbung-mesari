@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { CashbookTransactionRepository } from './cashbook-transaction.repository'
@@ -135,7 +134,6 @@ export class CashbookTransactionService {
           total_balance_before: totalBefore,
           total_balance_after: totalAfter,
           expense_id: expenseId,
-          user_id: userId
         },
         trx
       )

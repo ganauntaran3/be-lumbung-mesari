@@ -1,15 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import {
+  IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
-  IsPositive,
   IsOptional,
+  IsPositive,
   IsString,
-  MaxLength,
-  IsEnum,
   Max,
-  IsDateString
+  MaxLength
 } from 'class-validator'
 
 export class CreateExpenseDto {
@@ -52,17 +52,11 @@ export class CreateExpenseDto {
   })
   amount!: number
 
-  @ApiProperty({
-    description: 'User ID associated with the expense',
-    example: '01234567-89ab-cdef-0123-456789abcdef'
-  })
-  @IsString()
-  userId?: string
-
   @ApiPropertyOptional({
     description: 'Loan ID associated with the expense',
     example: '01234567-89ab-cdef-0123-456789abcdef'
   })
+  @IsOptional()
   @IsString({ message: 'Loan ID must be a valid ID' })
   loanId?: string
 
@@ -71,6 +65,7 @@ export class CreateExpenseDto {
     example: 'Office supplies purchase for monthly operations',
     maxLength: 1000
   })
+  @IsOptional()
   @IsString({ message: 'Notes must be a string' })
   @MaxLength(1000, { message: 'Notes cannot exceed 1000 characters' })
   notes?: string
@@ -80,6 +75,7 @@ export class CreateExpenseDto {
     enum: ['auto', 'total', 'capital', 'shu'],
     example: 'auto'
   })
+  @IsOptional()
   @IsEnum(['auto', 'total', 'capital', 'shu'], {
     message: 'Source must be one of: auto, total, capital, shu'
   })
@@ -89,6 +85,7 @@ export class CreateExpenseDto {
     description: 'Expense date',
     example: '2023-11-01T00:00:00.000Z'
   })
+  @IsOptional()
   @IsDateString()
   @Type(() => Date)
   transactionDate?: Date
