@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import {
-  IsDateString,
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -86,7 +86,7 @@ export class CreateExpenseDto {
     example: '2023-11-01T00:00:00.000Z'
   })
   @IsOptional()
-  @IsDateString()
   @Type(() => Date)
+  @IsDate({ message: 'transactionDate must be a valid ISO 8601 date string' })
   transactionDate?: Date
 }
