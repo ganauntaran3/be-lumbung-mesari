@@ -320,7 +320,7 @@ export class LoansController {
   @ApiOperation({
     summary: 'Settle an installment payment',
     description:
-      'Mark an installment as paid and create income records (principal→CAPITAL, interest→SHU, penalty→SHU). Admin and SuperAdmin only.'
+      'Mark an installment as paid and create income records. Admin and SuperAdmin only.'
   })
   @ApiParam({
     name: 'id',

@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -283,10 +282,13 @@ export class LoansRepository extends BaseRepository<LoanTable> {
   }
 
   async findInstallmentById(
-    installmentId: string
+    installmentId: string,
+    trx?: Knex.Transaction
   ): Promise<Installment | null> {
-    const result = await this.knex('installments')
+    const query = trx ? trx('installments') : this.knex('installments')
+    const result = await query
       .where('id', installmentId)
+      .forUpdate() // Lock the row to prevent concurrent modifications
       .first()
 
     return result || null

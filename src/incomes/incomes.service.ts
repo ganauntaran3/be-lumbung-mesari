@@ -1,5 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 
+import { IncomeCategoryCode } from '../common/constants'
+
 import { IncomesRepository } from './incomes.repository'
 import { IncomeTable } from './interfaces/income.interface'
 
@@ -93,6 +95,7 @@ export class IncomesService {
 
   async createInstallmentPrincipalIncome(
     installmentId: string,
+    name: string,
     amount: number,
     notes: string,
     trx?: any
@@ -103,7 +106,7 @@ export class IncomesService {
       )
 
       const category = await this.incomesRepository.findCategoryByCode(
-        'installment_principal',
+        IncomeCategoryCode.INSTALLMENT_PRINCIPAL,
         trx
       )
 
@@ -115,7 +118,7 @@ export class IncomesService {
 
       const income = await this.incomesRepository.createIncome(
         {
-          name: notes,
+          name,
           income_category_id: category.id,
           amount,
           installment_id: installmentId,
@@ -135,6 +138,7 @@ export class IncomesService {
 
   async createInstallmentInterestIncome(
     installmentId: string,
+    name: string,
     amount: number,
     notes: string,
     trx?: any
@@ -157,7 +161,7 @@ export class IncomesService {
 
       const income = await this.incomesRepository.createIncome(
         {
-          name: notes,
+          name,
           income_category_id: category.id,
           amount,
           installment_id: installmentId,
@@ -177,6 +181,7 @@ export class IncomesService {
 
   async createInstallmentPenaltyIncome(
     installmentId: string,
+    name: string,
     amount: number,
     notes: string,
     trx?: any
@@ -199,7 +204,7 @@ export class IncomesService {
 
       const income = await this.incomesRepository.createIncome(
         {
-          name: notes,
+          name,
           income_category_id: category.id,
           amount,
           installment_id: installmentId,

@@ -6,7 +6,6 @@ import {
   NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-
 import Decimal from 'decimal.js'
 import { DatabaseError } from 'pg'
 
@@ -634,15 +633,15 @@ export class LoansService {
     try {
       this.logger.log(`Starting settlement for installment ${installmentId}`)
 
-      // 1. Find installment
+      // 1. Find installment with row locking (inside transaction)
       const installment =
-        await this.loansRepository.findInstallmentById(installmentId)
+        await this.loansRepository.findInstallmentById(installmentId, trx)
 
       if (!installment) {
         throw new NotFoundException('Installment not found')
       }
 
-      // 2. Validate status
+      // 2. Validate status (now safely inside transaction with row lock)
       if (installment.status === 'paid') {
         throw new BadRequestException('Installment already paid')
       }
@@ -663,8 +662,9 @@ export class LoansService {
       const principalIncome =
         await this.incomesService.createInstallmentPrincipalIncome(
           installmentId,
+          'Pembayaran pokok angsuran',
           principalAmount,
-          `Pembayaran pokok angsuran #${installment.installment_number}`,
+          `Cicilan ke-${installment.installment_number}`,
           trx
         )
 
@@ -679,8 +679,9 @@ export class LoansService {
       const interestIncome =
         await this.incomesService.createInstallmentInterestIncome(
           installmentId,
+          'Bunga angsuran',
           interestAmount,
-          `Bunga angsuran #${installment.installment_number}`,
+          `Bunga angsuran dari cicilan ke-${installment.installment_number}`,
           trx
         )
 
@@ -696,8 +697,9 @@ export class LoansService {
         const penaltyIncome =
           await this.incomesService.createInstallmentPenaltyIncome(
             installmentId,
+            'Denda angsuran',
             penaltyAmount,
-            `Denda angsuran #${installment.installment_number}`,
+            `Denda angsuran dari cicilan ke-${installment.installment_number}`,
             trx
           )
 
