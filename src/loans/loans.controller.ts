@@ -312,4 +312,52 @@ export class LoansController {
   ): Promise<LoanApprovalResponseDto> {
     return await this.loansService.disburseLoan(loanId, admin.id)
   }
+
+  @Post('installments/:id/settle')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiOperation({
+    summary: 'Settle an installment payment',
+    description:
+      'Mark an installment as paid and create income records. Admin and SuperAdmin only.'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Installment ID',
+    type: 'string',
+    format: 'uuid'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Installment settled successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Installment settled successfully' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - Installment already paid',
+    schema: BadRequestResponseSchema
+  })
+  @ApiNotFoundResponse({
+    description: 'Installment not found',
+    schema: NotFoundResponseSchema
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: AuthErrorSchemas.invalidCredentials
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions',
+    schema: AuthErrorSchemas.insufficientPermissions
+  })
+  async settleInstallment(
+    @Param('id') installmentId: string,
+    @CurrentUser() admin: UserJWT
+  ) {
+    return await this.loansService.settleInstallment(installmentId, admin.id)
+  }
 }
