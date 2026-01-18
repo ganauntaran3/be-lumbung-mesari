@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
