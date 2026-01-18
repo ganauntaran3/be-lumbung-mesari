@@ -11,10 +11,7 @@ export const getDatabaseConfig = (
     user: configService.get<string>('DB_USER'),
     password: configService.get<string>('DB_PASSWORD'),
     database: configService.get<string>('DB_NAME'),
-    ssl:
-      configService.get<string>('NODE_ENV') === 'production'
-        ? { rejectUnauthorized: false }
-        : false
+    ssl: false
   },
   pool: {
     min: parseInt(configService.get<string>('DB_POOL_MIN', '2'), 10),
