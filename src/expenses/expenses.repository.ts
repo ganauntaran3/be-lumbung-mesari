@@ -187,7 +187,8 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.updated_at',
         'expense_categories.id as category_id',
         'expense_categories.code as category_code',
-        'expense_categories.name as category_name'
+        'expense_categories.name as category_name',
+        'users.fullname as created_by_fullname'
       )
 
     // Apply sorting
@@ -203,6 +204,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
       shu_amount: row.shu_amount,
       capital_amount: row.capital_amount,
       created_by: row.created_by,
+      created_by_fullname: row.created_by_fullname,
       loan_id: row.loan_id,
       notes: row.notes,
       source: row.source,
@@ -228,6 +230,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.expense_category_id',
         'expense_categories.id'
       )
+      .leftJoin('users', 'expenses.created_by', 'users.id')
       .select(
         'expenses.id',
         'expenses.expense_category_id',
@@ -247,7 +250,8 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expense_categories.description as category_description',
         'expense_categories.default_source as category_default_source',
         'expense_categories.created_at as category_created_at',
-        'expense_categories.updated_at as category_updated_at'
+        'expense_categories.updated_at as category_updated_at',
+        'users.fullname as created_by_fullname'
       )
       .where('expenses.id', id)
       .first()
@@ -263,6 +267,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
       shu_amount: result.shu_amount,
       capital_amount: result.capital_amount,
       created_by: result.created_by,
+      created_by_fullname: result.created_by_fullname,
       loan_id: result.loan_id,
       notes: result.notes,
       source: result.source,

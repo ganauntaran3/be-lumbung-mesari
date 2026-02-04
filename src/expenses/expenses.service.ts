@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
@@ -106,7 +107,10 @@ export class ExpensesService {
       shuAmount,
       capitalAmount,
       totalAmount: shuAmount + capitalAmount,
-      createdBy: expense.created_by,
+      createdBy: {
+        id: expense.created_by,
+        fullname: expense.created_by_fullname
+      },
       loanId: expense.loan_id,
       notes: expense.notes,
       source: expense.source,
@@ -194,10 +198,11 @@ export class ExpensesService {
 
       this.logger.log(`Expense created successfully with ID: ${result.id}`)
 
-      return this.formatExpenseResponse({
-        ...result,
-        category
-      })
+      // Fetch the created expense with category and fullname
+      const createdExpense = await this.expensesRepository.findByIdWithCategory(
+        result.id
+      )
+      return this.formatExpenseResponse(createdExpense!)
     } catch (error: any) {
       this.logger.error(`Error creating expense: ${error.message}`)
       throw error

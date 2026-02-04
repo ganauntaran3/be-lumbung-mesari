@@ -44,6 +44,7 @@ export type UpdateExpense = Partial<
 
 // Extended interfaces for API responses
 export interface ExpenseWithCategoryTable extends ExpenseTable {
+  created_by_fullname: string
   category: ExpenseCategory
 }
 
@@ -92,7 +93,10 @@ export interface ExpenseResponse {
   shuAmount: number
   capitalAmount: number
   totalAmount: number
-  createdBy: string
+  createdBy: {
+    id: string
+    fullname: string
+  }
   loanId?: string
   notes?: string
   source?: 'auto' | 'total' | 'capital' | 'shu'
