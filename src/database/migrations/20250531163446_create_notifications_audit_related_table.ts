@@ -21,8 +21,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('name').notNullable().unique()
     table.text('description')
     table.text('template').notNullable()
-    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamps(true, true)
   })
 
   // Create notifications table
@@ -45,8 +44,7 @@ export async function up(knex: Knex): Promise<void> {
     table.jsonb('data')
     table.boolean('is_read').notNullable().defaultTo(false)
     table.timestamp('read_at')
-    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamps(true, true)
   })
 
   // Create email_logs table for tracking all sent emails
@@ -58,7 +56,7 @@ export async function up(knex: Knex): Promise<void> {
     table.text('body').notNullable()
     table.string('status').notNullable()
     table.text('error')
-    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamps(true, true)
   })
 
   // Insert default notification types

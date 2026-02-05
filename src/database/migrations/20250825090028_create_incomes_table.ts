@@ -9,8 +9,6 @@ export async function up(knex: Knex): Promise<void> {
     table.string('name', 128).notNullable() // misal: 'Bunga Pinjaman'
     table.text('description').nullable()
     table.enum('default_destination', defaultDestination).notNullable()
-    // table.timestamp('created_at').defaultTo(knex.fn.now())
-    // table.timestamp('updated_at').defaultTo(knex.fn.now())
     table.timestamps(true, true)
   })
 
@@ -42,8 +40,6 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete('SET NULL')
     table.text('notes').nullable()
     table.timestamp('txn_date').defaultTo(knex.fn.now())
-    // table.timestamp('created_at').defaultTo(knex.fn.now())
-    // table.timestamp('updated_at').defaultTo(knex.fn.now())
     table.timestamps(true, true)
   })
 }

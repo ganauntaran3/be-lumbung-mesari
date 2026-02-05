@@ -19,8 +19,6 @@ export async function up(knex: Knex): Promise<void> {
       .defaultTo('due')
 
     table.timestamp('paid_at').nullable()
-    // table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    // table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
     table.timestamps(true, true)
     table
       .uuid('processed_by')

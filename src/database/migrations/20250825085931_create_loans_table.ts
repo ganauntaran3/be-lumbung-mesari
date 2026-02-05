@@ -5,8 +5,6 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.integer('tenor').notNullable()
     table.decimal('interest_rate', 10, 4).notNullable()
-    // table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    // table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
     table.timestamps(true, true)
   })
 
@@ -54,8 +52,7 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete('RESTRICT')
       .nullable()
     table.timestamp('approved_at').nullable()
-    // table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    // table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+
     table.timestamps(true, true)
   })
 }

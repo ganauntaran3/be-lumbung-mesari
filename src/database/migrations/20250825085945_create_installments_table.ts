@@ -27,8 +27,6 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('users')
       .onDelete('RESTRICT')
       .nullable()
-    // table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    // table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
     table.timestamps(true, true)
 
     table.unique(['loan_id', 'installment_number'])
