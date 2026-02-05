@@ -98,6 +98,7 @@ export interface ExpenseResponse {
   loanId?: string
   notes?: string
   source?: 'auto' | 'total' | 'capital' | 'shu'
+  txnDate: Date
   createdAt: Date
   updatedAt: Date
   category: {

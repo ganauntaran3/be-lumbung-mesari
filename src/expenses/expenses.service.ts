@@ -114,6 +114,7 @@ export class ExpensesService {
       loanId: expense.loan_id,
       notes: expense.notes,
       source: expense.source,
+      txnDate: expense.txn_date,
       createdAt: expense.created_at,
       updatedAt: expense.updated_at,
       category: {

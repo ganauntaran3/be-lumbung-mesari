@@ -283,7 +283,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         created_at: result.category_created_at,
         updated_at: result.category_updated_at
       }
-    } as ExpenseWithCategoryTable
+    }
   }
 
   async updateExpenseById(

@@ -117,6 +117,12 @@ export class ExpenseResponseDto {
   source?: ExpenseSource
 
   @ApiProperty({
+    description: 'Expense transaction date',
+    example: '2024-01-15T10:30:00Z'
+  })
+  txnDate!: Date
+
+  @ApiProperty({
     description: 'Expense creation timestamp',
     example: '2024-01-15T10:30:00Z'
   })
