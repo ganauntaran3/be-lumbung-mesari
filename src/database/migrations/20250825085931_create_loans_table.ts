@@ -2,15 +2,16 @@ import type { Knex } from 'knex'
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('loan_periods', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.integer('tenor').notNullable()
     table.decimal('interest_rate', 10, 4).notNullable()
-    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    // table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+    // table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamps(true, true)
   })
 
   await knex.schema.createTable('loans', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table
       .uuid('user_id')
       .references('id')
@@ -53,8 +54,9 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete('RESTRICT')
       .nullable()
     table.timestamp('approved_at').nullable()
-    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    // table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+    // table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamps(true, true)
   })
 }
 

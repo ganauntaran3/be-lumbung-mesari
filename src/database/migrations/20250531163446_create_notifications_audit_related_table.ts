@@ -3,7 +3,7 @@ import { Knex } from 'knex'
 export async function up(knex: Knex): Promise<void> {
   // Create audit_logs table for tracking all administrative actions
   await knex.schema.createTable('audit_logs', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.string('action').notNullable()
     table.string('entity_type').notNullable()
@@ -17,7 +17,7 @@ export async function up(knex: Knex): Promise<void> {
 
   // Create notification_types table
   await knex.schema.createTable('notification_types', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.string('name').notNullable().unique()
     table.text('description')
     table.text('template').notNullable()
@@ -27,7 +27,7 @@ export async function up(knex: Knex): Promise<void> {
 
   // Create notifications table
   await knex.schema.createTable('notifications', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table
       .uuid('user_id')
       .references('id')
@@ -51,7 +51,7 @@ export async function up(knex: Knex): Promise<void> {
 
   // Create email_logs table for tracking all sent emails
   await knex.schema.createTable('email_logs', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.uuid('user_id').references('id').inTable('users').onDelete('SET NULL')
     table.string('email').notNullable()
     table.string('subject').notNullable()

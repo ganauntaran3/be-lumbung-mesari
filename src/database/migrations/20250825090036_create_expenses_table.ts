@@ -4,17 +4,18 @@ export async function up(knex: Knex): Promise<void> {
   const defaultSource = ['auto', 'total', 'capital', 'shu']
 
   await knex.schema.createTable('expense_categories', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.string('code', 64).notNullable().unique() // misal: 'operational'
     table.string('name', 128).notNullable() // misal: 'Biaya Operasional'
     table.text('description').nullable()
     table.enum('default_source', defaultSource).notNullable()
-    table.timestamp('created_at').defaultTo(knex.fn.now())
-    table.timestamp('updated_at').defaultTo(knex.fn.now())
+    // table.timestamp('created_at').defaultTo(knex.fn.now())
+    // table.timestamp('updated_at').defaultTo(knex.fn.now())
+    table.timestamps(true, true)
   })
 
   await knex.schema.createTable('expenses', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table
       .uuid('expense_category_id')
       .references('id')
@@ -39,8 +40,9 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('users')
       .onDelete('RESTRICT')
       .notNullable()
-    table.timestamp('created_at').defaultTo(knex.fn.now())
-    table.timestamp('updated_at').defaultTo(knex.fn.now())
+    // table.timestamp('created_at').defaultTo(knex.fn.now())
+    // table.timestamp('updated_at').defaultTo(knex.fn.now())
+    table.timestamps(true, true)
 
     table.check(
       'shu_amount + capital_amount > 0',

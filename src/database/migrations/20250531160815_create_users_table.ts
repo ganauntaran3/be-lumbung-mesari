@@ -10,7 +10,7 @@ const userStatus = [
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('users', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.string('email').notNullable().unique()
     table.string('fullname').notNullable()
     table.string('username').notNullable().unique()
@@ -24,8 +24,9 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('roles')
       .onDelete('RESTRICT')
       .notNullable()
-    table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
-    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    // table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+    // table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
+    table.timestamps(true, true)
   })
 }
 
