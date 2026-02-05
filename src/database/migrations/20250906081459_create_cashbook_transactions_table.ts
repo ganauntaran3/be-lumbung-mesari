@@ -2,7 +2,7 @@ import type { Knex } from 'knex'
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('cashbook_transactions', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.date('txn_date').notNullable().defaultTo(knex.fn.now())
     table.enum('direction', ['in', 'out']).notNullable()
     table.decimal('shu_amount', 12, 4).notNullable().defaultTo(0)
@@ -26,8 +26,7 @@ export async function up(knex: Knex): Promise<void> {
       .references('id')
       .inTable('expenses')
       .onDelete('CASCADE')
-    table.timestamp('created_at').defaultTo(knex.fn.now())
-    table.timestamp('updated_at').defaultTo(knex.fn.now())
+    table.timestamps(true, true)
 
     table.check(
       'shu_amount + capital_amount > 0',

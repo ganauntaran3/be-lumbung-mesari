@@ -2,7 +2,7 @@ import type { Knex } from 'knex'
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('cashbook_balances', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.uuid('id').primary().defaultTo(knex.raw('uuidv7()'))
     table.string('type', 16).notNullable().unique() // // Type identifier: 'total', 'capital', or 'shu'
     table.decimal('balance', 12, 4).notNullable().defaultTo(0)
     table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now())
