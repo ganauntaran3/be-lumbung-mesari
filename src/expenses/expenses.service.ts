@@ -238,12 +238,6 @@ export class ExpensesService {
     return this.formatExpenseResponse(expense)
   }
 
-  /**
-   * Update an existing expense with validation and cashbook integration
-   * @param id - The expense ID to update
-   * @param updateExpenseDto - The update data
-   * @returns Promise<ExpenseResponseDto>
-   */
   async updateExpense(
     id: string,
     updateExpenseDto: UpdateExpenseDto
@@ -327,17 +321,29 @@ export class ExpensesService {
       if (updateExpenseDto.notes !== undefined) {
         updateData.notes = updateExpenseDto.notes
       }
+      if (updateExpenseDto.transactionDate) {
+        updateData.txn_date = updateExpenseDto.transactionDate
+      }
 
       // 5. Update expense in transaction
       await this.expensesRepository.updateExpenseById(id, updateData, trx)
 
-      // Update cashbook transaction if amounts changed (application-level sync)
+      // Update cashbook transaction if amounts OR date changed
       if (
-        updateData.shu_amount !== undefined &&
-        updateData.capital_amount !== undefined
+        (updateData.shu_amount !== undefined &&
+          updateData.capital_amount !== undefined) ||
+        updateData.txn_date !== undefined
       ) {
-        const shuAmount = parseFloat(updateData.shu_amount)
-        const capitalAmount = parseFloat(updateData.capital_amount)
+        // If amounts are not updated, use the existing ones
+        const shuAmount =
+          updateData.shu_amount !== undefined
+            ? parseFloat(updateData.shu_amount)
+            : parseFloat(existingExpense.shu_amount)
+
+        const capitalAmount =
+          updateData.capital_amount !== undefined
+            ? parseFloat(updateData.capital_amount)
+            : parseFloat(existingExpense.capital_amount)
 
         await this.cashbookTransactionService.updateExpenseTransaction(
           id,

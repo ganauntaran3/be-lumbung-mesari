@@ -73,7 +73,6 @@ export interface ExpenseWithCategory extends ExpenseTable {
   category: ExpenseCategoryTable
 }
 
-// Interface for expense filtering
 export interface ExpenseFilters {
   category?: string
   userId?: string
@@ -85,7 +84,6 @@ export interface ExpenseFilters {
   sortOrder?: 'asc' | 'desc'
 }
 
-// Response interfaces for API
 export interface ExpenseResponse {
   id: string
   expenseCategoryId: string

@@ -301,7 +301,7 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
       })
       .returning('*')
 
-    return result as ExpenseTable
+    return result
   }
 
   async deleteExpenseById(
