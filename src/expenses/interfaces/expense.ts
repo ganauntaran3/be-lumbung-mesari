@@ -44,6 +44,7 @@ export type UpdateExpense = Partial<
 
 // Extended interfaces for API responses
 export interface ExpenseWithCategoryTable extends ExpenseTable {
+  created_by_fullname: string
   category: ExpenseCategory
 }
 
@@ -72,7 +73,6 @@ export interface ExpenseWithCategory extends ExpenseTable {
   category: ExpenseCategoryTable
 }
 
-// Interface for expense filtering
 export interface ExpenseFilters {
   category?: string
   userId?: string
@@ -84,7 +84,6 @@ export interface ExpenseFilters {
   sortOrder?: 'asc' | 'desc'
 }
 
-// Response interfaces for API
 export interface ExpenseResponse {
   id: string
   expenseCategoryId: string
@@ -92,10 +91,14 @@ export interface ExpenseResponse {
   shuAmount: number
   capitalAmount: number
   totalAmount: number
-  createdBy: string
+  createdBy: {
+    id: string
+    fullname: string
+  }
   loanId?: string
   notes?: string
   source?: 'auto' | 'total' | 'capital' | 'shu'
+  txnDate: Date
   createdAt: Date
   updatedAt: Date
   category: {

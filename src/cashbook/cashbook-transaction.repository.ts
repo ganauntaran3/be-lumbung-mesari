@@ -249,9 +249,6 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
     }
   }
 
-  /**
-   * Update cashbook transaction by expense ID
-   */
   async updateTransactionByExpenseId(
     expenseId: string,
     data: Partial<CashbookTransactionTable>,

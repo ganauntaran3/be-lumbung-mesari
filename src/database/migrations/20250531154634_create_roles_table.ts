@@ -1,10 +1,8 @@
 import { Knex } from 'knex'
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.raw('CREATE EXTENSION IF NOT EXISTS pg_uuidv7;')
-
   await knex.schema.createTable('roles', (table) => {
-    table.string('id', 36).primary().defaultTo(knex.raw('uuid_generate_v7()'))
+    table.string('id', 36).primary()
     table.string('name', 64).notNullable().unique()
   })
 }

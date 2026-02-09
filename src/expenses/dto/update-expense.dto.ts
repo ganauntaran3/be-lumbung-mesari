@@ -1,13 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
+
 import { Type } from 'class-transformer'
 import {
-  IsNumber,
-  IsPositive,
-  IsOptional,
-  IsString,
-  MaxLength,
   IsEnum,
-  Max
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Max,
+  MaxLength
 } from 'class-validator'
 
 export class UpdateExpenseDto {
@@ -83,4 +84,13 @@ export class UpdateExpenseDto {
     message: 'Source must be one of: auto, total, capital, shu'
   })
   source?: 'auto' | 'total' | 'capital' | 'shu'
+
+  @ApiPropertyOptional({
+    description: 'Transaction date',
+    example: '2024-01-15T10:30:00Z',
+    type: Date
+  })
+  @IsOptional()
+  @Type(() => Date)
+  transactionDate?: Date
 }

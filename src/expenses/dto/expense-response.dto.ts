@@ -69,11 +69,33 @@ export class ExpenseResponseDto {
   })
   capitalAmount!: number
 
-  @ApiPropertyOptional({
-    description: 'User ID associated with the expense',
-    example: '01234567-89ab-cdef-0123-456789abcdef'
+  @ApiProperty({
+    description: 'Total amount of the expense (SHU + Capital)',
+    example: 150000,
+    type: Number
   })
-  userId?: string
+  totalAmount!: number
+
+  @ApiProperty({
+    description: 'User who created the expense',
+    type: 'object',
+    properties: {
+      id: {
+        type: 'string',
+        description: 'User ID',
+        example: '01234567-89ab-cdef-0123-456789abcdef'
+      },
+      fullname: {
+        type: 'string',
+        description: 'User full name',
+        example: 'John Doe'
+      }
+    }
+  })
+  createdBy!: {
+    id: string
+    fullname: string
+  }
 
   @ApiPropertyOptional({
     description: 'Loan ID associated with the expense',
@@ -93,6 +115,12 @@ export class ExpenseResponseDto {
     example: 'auto'
   })
   source?: ExpenseSource
+
+  @ApiProperty({
+    description: 'Expense transaction date',
+    example: '2024-01-15T10:30:00Z'
+  })
+  txnDate!: Date
 
   @ApiProperty({
     description: 'Expense creation timestamp',
