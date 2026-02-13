@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -389,5 +390,118 @@ export class LoansRepository extends BaseRepository<LoanTable> {
       .returning('*')
 
     return result as Installment
+  }
+
+  /**
+   * Get monthly installment payment totals
+   * Used for financial reporting
+   */
+  async getMonthlyInstallmentPayments(
+    year: number,
+    month: number
+  ): Promise<{
+    total_principal: number
+    total_interest: number
+    total_penalty: number
+  }> {
+    try {
+      const startDate = new Date(year, month - 1, 1) // month is 1-12
+      const endDate = new Date(year, month, 0, 23, 59, 59) // Last day of month
+
+      this.logger.debug(
+        `Fetching installment payments for ${year}-${month} (${startDate} to ${endDate})`
+      )
+
+      const result = await this.knex('installments')
+        .where('status', 'paid')
+        .whereBetween('paid_at', [startDate, endDate])
+        .sum('principal_amount as total_principal')
+        .sum('interest_amount as total_interest')
+        .sum('penalty_amount as total_penalty')
+        .first()
+
+      return {
+        total_principal: parseFloat(result?.total_principal || '0'),
+        total_interest: parseFloat(result?.total_interest || '0'),
+        total_penalty: parseFloat(result?.total_penalty || '0')
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to get monthly installment payments for ${year}-${month}:`,
+        error
+      )
+      throw error
+    }
+  }
+
+  async getKonvenPayments(
+    year: number,
+    month: number
+  ): Promise<
+    Array<{
+      loan_id: string
+      user_fullname: string
+      total_principal: number
+    }>
+  > {
+    try {
+      const startDate = new Date(year, month - 1, 1)
+      const endDate = new Date(year, month, 0, 23, 59, 59)
+
+      this.logger.debug(`Detecting konven payments for ${year}-${month}`)
+
+      // Find loans where:
+      // 1. All installments are paid
+      // 2. The last installment was paid in the target month
+      const konvenLoans = await this.knex('installments as i')
+        .join('loans as l', 'i.loan_id', 'l.id')
+        .join('users as u', 'l.user_id', 'u.id')
+        .select(
+          'i.loan_id',
+          'u.fullname as user_fullname',
+          this.knex.raw('COUNT(*) as total_installments'),
+          this.knex.raw(
+            "COUNT(CASE WHEN i.status = 'paid' THEN 1 END) as paid_installments"
+          ),
+          this.knex.raw('MAX(i.paid_at) as last_payment_date')
+        )
+        .groupBy('i.loan_id', 'u.fullname')
+        .having(
+          this.knex.raw('COUNT(*) = COUNT(CASE WHEN i.status = ? THEN 1 END)', [
+            'paid'
+          ])
+        )
+        .havingRaw('MAX(i.paid_at) BETWEEN ? AND ?', [startDate, endDate])
+
+      // For each konven loan, sum the principal amounts paid in target month
+      const konvenPayments = await Promise.all(
+        konvenLoans.map(async (loan) => {
+          const result = await this.knex('installments')
+            .where('loan_id', loan.loan_id)
+            .where('status', 'paid')
+            .whereBetween('paid_at', [startDate, endDate])
+            .sum('principal_amount as sum')
+            .first()
+
+          return {
+            loan_id: loan.loan_id,
+            user_fullname: loan.user_fullname,
+            total_principal: parseFloat(result?.sum || '0')
+          }
+        })
+      )
+
+      this.logger.debug(
+        `Found ${konvenPayments.length} konven payments for ${year}-${month}`
+      )
+
+      return konvenPayments
+    } catch (error) {
+      this.logger.error(
+        `Failed to get konven payments for ${year}-${month}:`,
+        error
+      )
+      throw error
+    }
   }
 }
