@@ -147,4 +147,31 @@ export class PrincipalSavingsRepository extends BaseRepository<PrincipalSavingsT
       throw error
     }
   }
+
+  /**
+   * Get monthly principal savings total
+   * Used for financial reporting
+   */
+  async getMonthlyTotal(year: number, month: number): Promise<number> {
+    try {
+      const startDate = new Date(year, month - 1, 1)
+      const endDate = new Date(year, month, 0, 23, 59, 59)
+
+      this.logger.debug(`Fetching principal savings total for ${year}-${month}`)
+
+      const result = await this.knex('principal_savings')
+        .where('status', 'paid')
+        .whereBetween('created_at', [startDate, endDate])
+        .sum('amount as total')
+        .first()
+
+      return parseFloat(result?.total || '0')
+    } catch (error) {
+      this.logger.error(
+        `Failed to get monthly principal savings total for ${year}-${month}:`,
+        error
+      )
+      throw error
+    }
+  }
 }
