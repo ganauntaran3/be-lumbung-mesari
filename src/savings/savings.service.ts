@@ -328,7 +328,7 @@ export class MandatorySavingsService {
       this.logger.log(`Starting settlement for mandatory savings ${savingsId}`)
 
       const mandatorySavings =
-        await this.savingsRepository.findMandatorySavingsById(savingsId)
+        await this.savingsRepository.findMandatorySavingsById(savingsId, trx)
 
       if (!mandatorySavings) {
         throw new NotFoundException('Mandatory savings not found')

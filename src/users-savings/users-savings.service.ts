@@ -37,7 +37,10 @@ export class UsersSavingsService {
 
     // 1. Find principal savings
     const principalSavings =
-      await this.principalSavingsRepository.findPrincipalSavingsByUserId(userId)
+      await this.principalSavingsRepository.findPrincipalSavingsByUserId(
+        userId,
+        trx
+      )
 
     if (!principalSavings) {
       throw new NotFoundException(

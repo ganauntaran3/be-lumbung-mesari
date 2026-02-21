@@ -363,12 +363,13 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     penaltyAmount: number,
     trx?: Knex.Transaction
   ): Promise<Installment> {
-    const query = trx ? trx('installments') : this.knex('installments')
+    const queryFn = trx || this.knex
 
-    // Get current penalty amount
-    const [currentInstallment] = await query
+    // Get current penalty amount using a separate query builder
+    const currentInstallment = await queryFn('installments')
       .where('id', installmentId)
       .select('penalty_amount', 'total_amount')
+      .first()
 
     if (!currentInstallment) {
       throw new Error(`Installment with id ${installmentId} not found`)
@@ -379,7 +380,8 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     const newPenalty = currentPenalty + penaltyAmount
     const newTotal = currentTotal + penaltyAmount
 
-    const [result] = await query
+    // Use a new query builder for the update
+    const [result] = await queryFn('installments')
       .where('id', installmentId)
       .update({
         penalty_amount: newPenalty.toFixed(4),

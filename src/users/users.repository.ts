@@ -22,34 +22,6 @@ export class UsersRepository extends BaseRepository<User> {
     return result as User | undefined
   }
 
-  async findByEmailWithRole(
-    email: string
-  ): Promise<(User & { role_name: string }) | undefined> {
-    const result = await this.knex('users')
-      .join('roles', 'roles.id', 'users.role_id')
-      .select([
-        'users.id',
-        'users.email',
-        'users.fullname',
-        'users.username',
-        'users.password',
-        'users.phone_number',
-        'users.address',
-        'users.status',
-        'users.role_id',
-        'users.otp_code',
-        'users.otp_expires_at',
-        'users.otp_verified',
-        'users.created_at',
-        'users.updated_at',
-        'roles.id as role'
-      ])
-      .where('users.email', email)
-      .first()
-
-    return result as (User & { role_name: string }) | undefined
-  }
-
   async findByIdentifierWithRole(
     identifier: string
   ): Promise<User | undefined> {

@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 
-import { IncomeTable, IncomeCategoryTable } from './interfaces/income.interface'
+import { IncomeCategoryTable, IncomeTable } from './interfaces/income.interface'
 
 @Injectable()
 export class IncomesRepository extends BaseRepository<IncomeTable> {
@@ -26,7 +26,7 @@ export class IncomesRepository extends BaseRepository<IncomeTable> {
       const [result] = await query
         .insert({
           ...data,
-          txn_date: new Date()
+          txn_date: data.txn_date || new Date()
         })
         .returning('*')
 
