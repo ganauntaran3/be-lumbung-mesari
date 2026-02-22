@@ -80,6 +80,8 @@ export class UsersService {
       otpCode,
       otpVerified,
       otpExpiresAt,
+      passwordResetToken,
+      passwordResetExpiresAt,
       ...otherData
     } = user
     return {
@@ -88,7 +90,9 @@ export class UsersService {
       role_id: roleId,
       otp_code: otpCode,
       otp_verified: otpVerified,
-      otp_expires_at: otpExpiresAt
+      otp_expires_at: otpExpiresAt,
+      password_reset_token: passwordResetToken,
+      password_reset_expires_at: passwordResetExpiresAt
     }
   }
 
@@ -124,6 +128,17 @@ export class UsersService {
 
   async findByUsername(username: string) {
     return await this.usersRepository.findByUsername(username)
+  }
+
+  async findByIdRaw(id: string) {
+    const user = await this.usersRepository.findById(id)
+    if (!user) return undefined
+    const { password, ...rest } = user
+    return rest
+  }
+
+  async findByResetToken(token: string) {
+    return await this.usersRepository.findByResetToken(token)
   }
 
   async findByIdIncludeOtp(id: string) {

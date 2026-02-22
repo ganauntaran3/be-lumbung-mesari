@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto'
+
 import {
   BadRequestException,
   Injectable,
@@ -278,6 +280,74 @@ export class AuthService {
     return this.generateTokens(user)
   }
 
+  async requestPasswordReset(userId: string) {
+    const user = await this.usersService.findByIdRaw(userId)
+    if (!user) {
+      throw new NotFoundException('User not found.')
+    }
+
+    const token = randomBytes(32).toString('hex')
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 1)
+
+    await this.usersService.update(user.id, {
+      passwordResetToken: token,
+      passwordResetExpiresAt: expiresAt
+    })
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`
+
+    const emailSent = await this.sendPasswordResetEmail(user, resetUrl)
+
+    this.logger.log(
+      `Password reset requested for ${user.email} - email sent: ${emailSent}`
+    )
+
+    return {
+      message: emailSent
+        ? 'Reset link sent to your email.'
+        : 'Reset link generated but could not be delivered. Please contact support.',
+      emailSent
+    }
+  }
+
+  async confirmPasswordReset(
+    token: string,
+    newPassword: string,
+    confirmPassword: string
+  ) {
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('Password confirmation does not match.')
+    }
+
+    const user = await this.usersService.findByResetToken(token)
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token.')
+    }
+
+    if (
+      !user.password_reset_expires_at ||
+      new Date() > new Date(user.password_reset_expires_at)
+    ) {
+      throw new BadRequestException(
+        'Reset token has expired. Please request a new one.'
+      )
+    }
+
+    const hashedPassword = await hash(newPassword, 10)
+
+    await this.usersService.update(user.id, {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpiresAt: null
+    })
+
+    this.logger.log(`Password reset successfully for user ${user.id}`)
+
+    return { message: 'Password updated successfully.' }
+  }
+
   private generateTokens(user: UserDataToken) {
     const payload: JwtPayload = {
       sub: user.id,
@@ -296,6 +366,36 @@ export class AuthService {
         }),
         refreshToken: this.jwtService.sign(payload, { expiresIn: '1d' })
       }
+    }
+  }
+
+  private async sendPasswordResetEmail(
+    user: any,
+    resetUrl: string
+  ): Promise<boolean> {
+    try {
+      const emailData: EmailData = {
+        template: NotificationTemplate.PASSWORD_RESET,
+        recipient: user.email,
+        data: {
+          fullname: user.fullname,
+          resetUrl,
+          expiry_time: '1 jam'
+        },
+        priority: 'high'
+      }
+
+      await this.emailHelperService.sendEmail(emailData)
+      this.logger.log(
+        `Password reset email sent successfully to ${user.email}`
+      )
+      return true
+    } catch (error) {
+      this.logger.error(
+        `Failed to send password reset email to ${user.email}:`,
+        error
+      )
+      return false
     }
   }
 

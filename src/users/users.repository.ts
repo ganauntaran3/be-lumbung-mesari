@@ -84,6 +84,25 @@ export class UsersRepository extends BaseRepository<User> {
     return result
   }
 
+  async findByResetToken(token: string): Promise<User | undefined> {
+    const result = await this.knex('users')
+      .select([
+        'users.id',
+        'users.email',
+        'users.fullname',
+        'users.username',
+        'users.password',
+        'users.status',
+        'users.role_id',
+        'users.password_reset_token',
+        'users.password_reset_expires_at'
+      ])
+      .where('users.password_reset_token', token)
+      .first()
+
+    return result as User | undefined
+  }
+
   async findAllUsers(
     options: PaginationOptions & {
       role?: string
