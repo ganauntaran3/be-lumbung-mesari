@@ -11,6 +11,8 @@ export type User = {
   otp_code?: string | null
   otp_expires_at?: Date | null
   otp_verified?: boolean
+  password_reset_token?: string | null
+  password_reset_expires_at?: Date | null
   created_at: Date
   updated_at: Date
 }
@@ -35,6 +37,8 @@ export type UpdateUserDto = {
   otpCode?: string | null
   otpVerified?: boolean
   otpExpiresAt?: Date | null
+  passwordResetToken?: string | null
+  passwordResetExpiresAt?: Date | null
 }
 
 export type CreatedUser = {
@@ -94,6 +98,8 @@ export interface UpdateUserEntity {
   otp_code?: string | null
   otp_verified?: boolean
   otp_expires_at?: Date | null
+  password_reset_token?: string | null
+  password_reset_expires_at?: Date | null
 }
 
 export interface UserJWT {
