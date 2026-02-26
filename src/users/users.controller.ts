@@ -93,24 +93,7 @@ export class UsersController {
     schema: TokenErrorSchemas.invalidToken
   })
   async getMyLoans(@CurrentUser() user: UserJWT) {
-    const loans = await this.loansService.findUserLoans(user.id)
-
-    // Transform to camelCase
-    return loans.map((loan: any) => ({
-      id: loan.id,
-      userId: loan.user_id,
-      loanPeriodId: loan.loan_period_id,
-      principalAmount: loan.principal_amount,
-      totalPayable: loan.total_payable_amount,
-      monthlyPayment: loan.monthly_payment,
-      status: loan.status,
-      notes: loan.notes,
-      approvedBy: loan.approved_by,
-      approvedAt: loan.approved_at,
-      disbursedAt: loan.disbursed_at,
-      createdAt: loan.created_at,
-      updatedAt: loan.updated_at
-    }))
+    return await this.loansService.findUserLoans(user.id)
   }
 
   @Get()

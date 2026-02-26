@@ -352,6 +352,43 @@ export class LoansService {
     }
   }
 
+  async findInstallmentsByLoan(loanId: string, user?: UserJWT) {
+    const loan = await this.loansRepository.findById(loanId)
+
+    if (!loan) {
+      throw new NotFoundException('Loan not found')
+    }
+
+    if (user) {
+      const isAdmin = user.role === 'admin' || user.role === 'superadmin'
+      const isOwner = loan.user_id === user.id
+
+      if (!isAdmin && !isOwner) {
+        throw new ForbiddenException(
+          'You do not have permission to view this loan\'s installments'
+        )
+      }
+    }
+
+    const installments =
+      await this.loansRepository.findInstallmentsByLoanId(loanId)
+
+    return installments.map((installment) => ({
+      id: installment.id,
+      loanId: installment.loan_id,
+      installmentNumber: installment.installment_number,
+      dueDate: installment.due_date,
+      principalAmount: parseFloat(installment.principal_amount),
+      interestAmount: parseFloat(installment.interest_amount),
+      penaltyAmount: parseFloat(installment.penalty_amount),
+      totalAmount: parseFloat(installment.total_amount),
+      paidAt: installment.paid_at,
+      status: installment.status,
+      createdAt: installment.created_at,
+      updatedAt: installment.updated_at
+    }))
+  }
+
   async findById(loanId: string, user?: UserJWT): Promise<LoanWithUser> {
     const loan = await this.loansRepository.findByIdWithUser(loanId)
 

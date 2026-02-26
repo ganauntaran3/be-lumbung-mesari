@@ -153,6 +153,42 @@ export class LoansController {
     return await this.loansService.createLoan(user.id, createLoanDto)
   }
 
+  @Get(':id/installments')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get installments for a loan',
+    description:
+      'Retrieve all installments for a specific loan. Admins can view any loan, users can only view their own.'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Loan ID',
+    type: 'string',
+    format: 'uuid'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Installments retrieved successfully'
+  })
+  @ApiNotFoundResponse({
+    description: 'Loan not found',
+    schema: NotFoundResponseSchema
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: AuthErrorSchemas.invalidCredentials
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions',
+    schema: AuthErrorSchemas.insufficientPermissions
+  })
+  async findInstallments(
+    @Param('id') loanId: string,
+    @CurrentUser() user: UserJWT
+  ) {
+    return await this.loansService.findInstallmentsByLoan(loanId, user)
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({

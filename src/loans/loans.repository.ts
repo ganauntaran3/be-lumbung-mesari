@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -123,10 +124,10 @@ export class LoansRepository extends BaseRepository<LoanTable> {
 
   async findUserLoans(userId: string): Promise<LoanTable[]> {
     try {
-      let query = this.knex('loans').where('loans.user_id', userId)
-
-      const data = await query
-        .select('loans.*')
+      const data = await this.knex('loans')
+        .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
+        .where('loans.user_id', userId)
+        .select(['loans.*', 'loan_periods.tenor'])
         .orderBy('loans.created_at', 'desc')
         .limit(3)
 
