@@ -6,6 +6,7 @@ import {
   NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+
 import Decimal from 'decimal.js'
 import { DatabaseError } from 'pg'
 
@@ -360,12 +361,13 @@ export class LoansService {
     }
 
     if (user) {
-      const isAdmin = user.role === 'admin' || user.role === 'superadmin'
+      const isAdmin =
+        user.role === 'administrator' || user.role === 'superadministrator'
       const isOwner = loan.user_id === user.id
 
       if (!isAdmin && !isOwner) {
         throw new ForbiddenException(
-          'You do not have permission to view this loan\'s installments'
+          "You do not have permission to view this loan's installments"
         )
       }
     }
@@ -397,7 +399,8 @@ export class LoansService {
     }
 
     if (user) {
-      const isAdmin = user.role === 'admin' || user.role === 'superadmin'
+      const isAdmin =
+        user.role === 'administrator' || user.role === 'superadministrator'
       const isOwner = loan.user_id === user.id
 
       if (!isAdmin && !isOwner) {
@@ -671,8 +674,10 @@ export class LoansService {
       this.logger.log(`Starting settlement for installment ${installmentId}`)
 
       // 1. Find installment with row locking (inside transaction)
-      const installment =
-        await this.loansRepository.findInstallmentById(installmentId, trx)
+      const installment = await this.loansRepository.findInstallmentById(
+        installmentId,
+        trx
+      )
 
       if (!installment) {
         throw new NotFoundException('Installment not found')
