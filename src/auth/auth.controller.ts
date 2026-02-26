@@ -38,6 +38,7 @@ import { ResendOtpResponseDto } from './dto/resend-otp.dto'
 import {
   ConfirmResetPasswordDto,
   ConfirmResetPasswordResponseDto,
+  RequestResetPasswordDto,
   RequestResetPasswordResponseDto
 } from './dto/reset-password.dto'
 import { VerifyOtpDto, VerifyOtpResponseDto } from './dto/verify-otp.dto'
@@ -281,30 +282,27 @@ export class AuthController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Request password reset email',
     description:
-      "Generates a reset token and sends a reset link to the authenticated user's email. Token expires in 1 hour."
+      'Generates a reset token and sends a reset link to the provided email. Token expires in 1 hour. Always returns the same response to prevent user enumeration.'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Reset link sent to email',
+    description:
+      'Reset link sent to email (or silently ignored if email not found)',
     type: RequestResetPasswordResponseDto
   })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - invalid or expired token',
-    schema: TokenErrorSchemas.invalidToken
+  @ApiBadRequestResponse({
+    description: 'Validation failed',
+    schema: AuthErrorSchemas.validationFailed
   })
-  @ApiNotFoundResponse({
-    description: 'User not found',
-    schema: AuthErrorSchemas.userNotFound
-  })
-  async requestPasswordReset(@CurrentUser() user: UserJWT) {
+  @ApiBody({ type: RequestResetPasswordDto })
+  async requestPasswordReset(@Body() dto: RequestResetPasswordDto) {
     try {
-      return await this.authService.requestPasswordReset(user.id)
+      return await this.authService.requestPasswordReset(dto.email)
     } catch (error) {
       throw error
     }

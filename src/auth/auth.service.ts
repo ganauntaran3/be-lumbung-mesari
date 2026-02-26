@@ -281,12 +281,19 @@ export class AuthService {
     return this.generateTokens(user)
   }
 
-  async requestPasswordReset(userId: string) {
+  async requestPasswordReset(email: string) {
     try {
-      const user = await this.usersService.findByIdRaw(userId)
+      const user = await this.usersService.findByEmail(email)
+      const message =
+        'If an account exists, a reset link has been sent to the registered email address.'
 
       if (!user) {
-        throw new NotFoundException('User not found.')
+        this.logger.warn(
+          `Password reset requested for non-existent email: ${email}`
+        )
+        return {
+          message
+        }
       }
 
       const token = randomBytes(32).toString('base64url')
@@ -310,14 +317,13 @@ export class AuthService {
         this.logger.error(
           `Failed to send password reset email for user ${user.id}`
         )
-        throw new InternalServerErrorException(
-          'Failed to send password reset email.'
-        )
+        return {
+          message
+        }
       }
 
       return {
-        message:
-          'If an account exists, a reset link has been sent to the registered email address.'
+        message
       }
     } catch (error) {
       if (error instanceof DatabaseError) {
@@ -327,7 +333,7 @@ export class AuthService {
       }
 
       this.logger.error(
-        `Password reset request failed for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Password reset request failed for email ${email}: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
       throw error
     }
