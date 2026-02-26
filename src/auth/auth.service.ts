@@ -1,8 +1,7 @@
-import { randomBytes } from 'node:crypto'
-
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   UnauthorizedException
@@ -10,6 +9,8 @@ import {
 import { JwtService } from '@nestjs/jwt'
 
 import { compare, hash } from 'bcrypt'
+import { randomBytes } from 'node:crypto'
+import { DatabaseError } from 'pg'
 
 import { UserRole, UserStatus } from '../common/constants'
 import { DatabaseService } from '../database/database.service'
@@ -281,34 +282,54 @@ export class AuthService {
   }
 
   async requestPasswordReset(userId: string) {
-    const user = await this.usersService.findByIdRaw(userId)
-    if (!user) {
-      throw new NotFoundException('User not found.')
-    }
+    try {
+      const user = await this.usersService.findByIdRaw(userId)
 
-    const token = randomBytes(32).toString('hex')
-    const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 1)
+      if (!user) {
+        throw new NotFoundException('User not found.')
+      }
 
-    await this.usersService.update(user.id, {
-      passwordResetToken: token,
-      passwordResetExpiresAt: expiresAt
-    })
+      const token = randomBytes(32).toString('base64url')
+      const expiresAt = new Date()
+      expiresAt.setHours(expiresAt.getHours() + 1)
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}`
+      await this.usersService.update(user.id, {
+        passwordResetToken: token,
+        passwordResetExpiresAt: expiresAt
+      })
 
-    const emailSent = await this.sendPasswordResetEmail(user, resetUrl)
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+      const resetUrl = `${frontendUrl}/profile/reset-password?token=${token}`
 
-    this.logger.log(
-      `Password reset requested for ${user.email} - email sent: ${emailSent}`
-    )
+      const emailSent = await this.sendPasswordResetEmail(user, resetUrl)
+      this.logger.log(
+        `Password reset requested for ${user.email} - email sent: ${emailSent}`
+      )
 
-    return {
-      message: emailSent
-        ? 'Reset link sent to your email.'
-        : 'Reset link generated but could not be delivered. Please contact support.',
-      emailSent
+      if (!emailSent) {
+        this.logger.error(
+          `Failed to send password reset email for user ${user.id}`
+        )
+        throw new InternalServerErrorException(
+          'Failed to send password reset email.'
+        )
+      }
+
+      return {
+        message:
+          'If an account exists, a reset link has been sent to the registered email address.'
+      }
+    } catch (error) {
+      if (error instanceof DatabaseError) {
+        throw new InternalServerErrorException(
+          `Database error: ${error.message}`
+        )
+      }
+
+      this.logger.error(
+        `Password reset request failed for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+      throw error
     }
   }
 
@@ -330,9 +351,10 @@ export class AuthService {
       !user.password_reset_expires_at ||
       new Date() > new Date(user.password_reset_expires_at)
     ) {
-      throw new BadRequestException(
-        'Reset token has expired. Please request a new one.'
+      this.logger.error(
+        'Failed password reset attempt with invalid/expired token'
       )
+      throw new BadRequestException('Invalid or expired reset token.')
     }
 
     const hashedPassword = await hash(newPassword, 10)
@@ -386,9 +408,7 @@ export class AuthService {
       }
 
       await this.emailHelperService.sendEmail(emailData)
-      this.logger.log(
-        `Password reset email sent successfully to ${user.email}`
-      )
+      this.logger.log(`Password reset email sent successfully to ${user.email}`)
       return true
     } catch (error) {
       this.logger.error(

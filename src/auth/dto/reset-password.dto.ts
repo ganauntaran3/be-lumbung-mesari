@@ -5,7 +5,7 @@ import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator'
 export class ConfirmResetPasswordDto {
   @ApiProperty({ description: 'Password reset token received via email' })
   @IsString()
-  @IsNotEmpty()
+  @Matches(/^[A-Za-z0-9_-]{43}$/, { message: 'Invalid token format' })
   token = ''
 
   @ApiProperty({
@@ -13,7 +13,7 @@ export class ConfirmResetPasswordDto {
   })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  @Matches(/[A-Z]/, {
+  @Matches(/^(?=.*[A-Z])/, {
     message: 'Password must contain at least one uppercase letter'
   })
   newPassword = ''

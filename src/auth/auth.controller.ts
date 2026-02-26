@@ -306,13 +306,7 @@ export class AuthController {
     try {
       return await this.authService.requestPasswordReset(user.id)
     } catch (error) {
-      if (error instanceof HttpException) throw error
-      console.error('Unexpected error during password reset request:', error)
-      throw new InternalServerErrorException({
-        statusCode: 500,
-        message: 'An unexpected error occurred',
-        error: 'Internal Server Error'
-      })
+      throw error
     }
   }
 
