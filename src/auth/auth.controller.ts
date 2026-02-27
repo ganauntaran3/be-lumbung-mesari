@@ -343,69 +343,6 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('reset-password')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Request password reset email',
-    description:
-      "Generates a reset token and sends a reset link to the authenticated user's email. Token expires in 1 hour."
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Reset link sent to email',
-    type: RequestResetPasswordResponseDto
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - invalid or expired token',
-    schema: TokenErrorSchemas.invalidToken
-  })
-  @ApiNotFoundResponse({
-    description: 'User not found',
-    schema: AuthErrorSchemas.userNotFound
-  })
-  async requestPasswordReset(@CurrentUser() user: UserJWT) {
-    try {
-      return await this.authService.requestPasswordReset(user.id)
-    } catch (error) {
-      throw error
-    }
-  }
-
-  @Post('reset-password/confirm')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Confirm password reset with token',
-    description: 'Validates the reset token from email and sets a new password.'
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Password updated successfully',
-    type: ConfirmResetPasswordResponseDto
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid/expired token or password mismatch',
-    schema: AuthErrorSchemas.validationFailed
-  })
-  @ApiBody({ type: ConfirmResetPasswordDto })
-  async confirmPasswordReset(@Body() dto: ConfirmResetPasswordDto) {
-    try {
-      return await this.authService.confirmPasswordReset(
-        dto.token,
-        dto.newPassword,
-        dto.confirmPassword
-      )
-    } catch (error) {
-      if (error instanceof HttpException) throw error
-      console.error('Unexpected error during password reset confirm:', error)
-      throw new InternalServerErrorException({
-        statusCode: 500,
-        message: 'An unexpected error occurred',
-        error: 'Internal Server Error'
-      })
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Post('refresh')
   @ApiOperation({
     summary: 'Refresh access token',
