@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common'
 
 import * as ExcelJS from 'exceljs'
 
+import { CashbookBalanceRepository } from '../cashbook/cashbook-balance.repository'
+import { ExpensesRepository } from '../expenses/expenses.repository'
+import { LoansRepository } from '../loans/loans.repository'
 import { MandatorySavingsRepository } from '../savings/mandatory-savings.repository'
+import { PrincipalSavingsRepository } from '../savings/principal-savings.repository'
 import { UsersRepository } from '../users/users.repository'
 
 interface MemberSavingsData {
@@ -18,7 +22,11 @@ export class ReportsService {
 
   constructor(
     private readonly savingsRepository: MandatorySavingsRepository,
-    private readonly usersRepository: UsersRepository
+    private readonly usersRepository: UsersRepository,
+    private readonly loansRepository: LoansRepository,
+    private readonly principalSavingsRepository: PrincipalSavingsRepository,
+    private readonly expensesRepository: ExpensesRepository,
+    private readonly cashbookBalanceRepository: CashbookBalanceRepository
   ) {}
 
   async generateMandatorySavingsReport(year: number): Promise<Buffer> {
@@ -254,6 +262,214 @@ export class ReportsService {
 
     this.logger.log(
       `Successfully generated report for ${memberDataArray.length} members with ${totalSavingsProcessed} savings records`
+    )
+
+    return Buffer.from(buffer)
+  }
+
+  async generateMonthlyFinancialReport(
+    year: number,
+    month: number
+  ): Promise<Buffer> {
+    this.logger.log(`Generating monthly financial report for ${year}-${month}`)
+
+    // 1. Get opening balance (current balance - we'll show current state)
+    const balances = await this.cashbookBalanceRepository.getAllBalances()
+    const openingBalance = balances.total || 0
+
+    // 2. Aggregate income data
+    const installments =
+      await this.loansRepository.getMonthlyInstallmentPayments(year, month)
+    const konvenPayments = await this.loansRepository.getKonvenPayments(
+      year,
+      month
+    )
+    const mandatorySavings = await this.savingsRepository.getMonthlyTotal(
+      year,
+      month
+    )
+    const principalSavings =
+      await this.principalSavingsRepository.getMonthlyTotal(year, month)
+
+    // Calculate income categories
+    const angsuran = installments.total_principal
+    const bunga = installments.total_interest + installments.total_penalty
+    const iuran = mandatorySavings + principalSavings
+    const konvenTotal = konvenPayments.reduce(
+      (sum, k) => sum + k.total_principal,
+      0
+    )
+
+    // 3. Get expense data
+    const expenses = await this.expensesRepository.getMonthlyExpenses(
+      year,
+      month
+    )
+
+    // 4. Calculate totals
+    const totalDebet = angsuran + bunga + iuran + konvenTotal
+    const totalKredit = expenses.total
+    const saldo = openingBalance + totalDebet - totalKredit
+
+    this.logger.log(
+      `Report summary - Debet: ${totalDebet}, Kredit: ${totalKredit}, Saldo: ${saldo}`
+    )
+
+    // 5. Generate Excel
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Laporan Keuangan')
+
+    // Set column widths
+    worksheet.columns = [
+      { width: 12 }, // TGL
+      { width: 30 }, // KETERANGAN
+      { width: 15 }, // DEBET
+      { width: 15 }, // KREDIT
+      { width: 15 } // SALDO
+    ]
+
+    // Header rows
+    const header1 = worksheet.addRow(['SEKEHE DEMEN'])
+    worksheet.mergeCells(1, 1, 1, 5)
+    header1.alignment = { horizontal: 'center', vertical: 'middle' }
+    header1.font = { bold: true }
+
+    const header2 = worksheet.addRow(['LUMBUNG MESARI'])
+    worksheet.mergeCells(2, 1, 2, 5)
+    header2.alignment = { horizontal: 'center', vertical: 'middle' }
+    header2.font = { bold: true }
+
+    const header3 = worksheet.addRow(['BR. BADUNG SIBANGGEDE'])
+    worksheet.mergeCells(3, 1, 3, 5)
+    header3.alignment = { horizontal: 'center', vertical: 'middle' }
+    header3.font = { bold: true }
+
+    worksheet.addRow([]) // Empty row
+
+    // Define border style
+    const thinBorder: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
+      right: { style: 'thin' as const }
+    }
+
+    // Column headers
+    const headerRow = worksheet.addRow([
+      'TGL',
+      'KETERANGAN',
+      'DEBET',
+      'KREDIT',
+      'SALDO'
+    ])
+    headerRow.font = { bold: true }
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' }
+    headerRow.eachCell({ includeEmpty: true }, (cell) => {
+      cell.border = thinBorder
+    })
+
+    // Helper function to add data row
+    const addDataRow = (
+      date: string,
+      description: string,
+      debet: number | string,
+      kredit: number | string
+    ) => {
+      const row = worksheet.addRow([date, description, debet, kredit, ''])
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.border = thinBorder
+        if (colNumber >= 3 && colNumber <= 4) {
+          // Debet and Kredit columns
+          cell.alignment = { horizontal: 'right', vertical: 'middle' }
+          if (typeof cell.value === 'number') {
+            cell.numFmt = '#,##0'
+          }
+        }
+      })
+      return row
+    }
+
+    // Opening balance
+    const monthNames = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ]
+    const prevMonth = month === 1 ? 12 : month - 1
+    const prevMonthName = monthNames[prevMonth - 1]
+    const prevYear = month === 1 ? year - 1 : year
+
+    addDataRow(
+      `${month}/1/${year}`,
+      `Saldo bulan lalu (${prevMonthName} ${prevYear})`,
+      openingBalance,
+      ''
+    )
+
+    // Income section
+    addDataRow('', 'Penerimaan', '', '')
+    if (angsuran > 0) {
+      addDataRow('', '  Angsuran', angsuran, '')
+    }
+    if (bunga > 0) {
+      addDataRow('', '  Bunga', bunga, '')
+    }
+    if (iuran > 0) {
+      addDataRow('', '  Iuran', iuran, '')
+    }
+
+    // Expenses section
+    if (expenses.by_category.length > 0) {
+      addDataRow('', 'Pengeluaran kredit', '', '')
+      expenses.by_category.forEach((cat) => {
+        addDataRow('', `  ${cat.category_name}`, '', cat.amount)
+      })
+    }
+
+    // Konven section
+    if (konvenPayments.length > 0) {
+      addDataRow('', 'Pelunasan konven', '', '')
+      konvenPayments.forEach((konven) => {
+        addDataRow('', `  ${konven.user_fullname}`, konven.total_principal, '')
+      })
+    }
+
+    // Empty row before totals
+    addDataRow('', '', '', '')
+
+    // Totals row
+    const totalRow = worksheet.addRow([
+      '',
+      'TOTAL',
+      totalDebet,
+      totalKredit,
+      saldo
+    ])
+    totalRow.font = { bold: true }
+    totalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      cell.border = thinBorder
+      if (colNumber >= 3 && colNumber <= 5) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' }
+        if (typeof cell.value === 'number') {
+          cell.numFmt = '#,##0'
+        }
+      }
+    })
+
+    // Generate buffer
+    const buffer = await workbook.xlsx.writeBuffer()
+
+    this.logger.log(
+      `Successfully generated monthly financial report for ${year}-${month}`
     )
 
     return Buffer.from(buffer)

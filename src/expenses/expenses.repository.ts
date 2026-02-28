@@ -316,4 +316,58 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
 
     return result as ExpenseTable
   }
+
+  async getMonthlyExpenses(
+    year: number,
+    month: number
+  ): Promise<{
+    total_shu: number
+    total_capital: number
+    total: number
+    by_category: Array<{
+      category_name: string
+      amount: number
+    }>
+  }> {
+    const startDate = new Date(year, month - 1, 1)
+    const endDate = new Date(year, month, 0, 23, 59, 59)
+
+    // Get totals
+    const totalsResult = await this.knex('expenses')
+      .whereBetween('txn_date', [startDate, endDate])
+      .sum('shu_amount as total_shu')
+      .sum('capital_amount as total_capital')
+      .first()
+
+    const total_shu = parseFloat(totalsResult?.total_shu || '0')
+    const total_capital = parseFloat(totalsResult?.total_capital || '0')
+
+    // Get breakdown by category
+    const categoryBreakdown = (await this.knex('expenses as e')
+      .join('expense_categories as ec', 'e.expense_category_id', 'ec.id')
+      .whereBetween('e.txn_date', [startDate, endDate])
+      .select('ec.name as category_name')
+      .sum(
+        this.knex.raw(
+          '(e.shu_amount::decimal + e.capital_amount::decimal) as amount'
+        )
+      )
+      .groupBy('ec.name')
+      .orderBy('amount', 'desc')) as Array<{
+      category_name: string
+      amount: string
+    }>
+
+    const by_category = categoryBreakdown.map((row) => ({
+      category_name: row.category_name,
+      amount: parseFloat(row.amount || '0')
+    }))
+
+    return {
+      total_shu,
+      total_capital,
+      total: total_shu + total_capital,
+      by_category
+    }
+  }
 }
