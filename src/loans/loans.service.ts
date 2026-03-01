@@ -353,23 +353,21 @@ export class LoansService {
     }
   }
 
-  async findInstallmentsByLoan(loanId: string, user?: UserJWT) {
+  async findInstallmentsByLoan(loanId: string, user: UserJWT) {
     const loan = await this.loansRepository.findById(loanId)
 
     if (!loan) {
       throw new NotFoundException('Loan not found')
     }
 
-    if (user) {
-      const isAdmin =
-        user.role === 'administrator' || user.role === 'superadministrator'
-      const isOwner = loan.user_id === user.id
+    const isAdmin =
+      user.role === 'administrator' || user.role === 'superadministrator'
+    const isOwner = loan.user_id === user.id
 
-      if (!isAdmin && !isOwner) {
-        throw new ForbiddenException(
-          "You do not have permission to view this loan's installments"
-        )
-      }
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException(
+        "You do not have permission to view this loan's installments"
+      )
     }
 
     const installments =
@@ -391,23 +389,21 @@ export class LoansService {
     }))
   }
 
-  async findById(loanId: string, user?: UserJWT): Promise<LoanWithUser> {
+  async findById(loanId: string, user: UserJWT): Promise<LoanWithUser> {
     const loan = await this.loansRepository.findByIdWithUser(loanId)
 
     if (!loan) {
       throw new NotFoundException('Loan not found')
     }
 
-    if (user) {
-      const isAdmin =
-        user.role === 'administrator' || user.role === 'superadministrator'
-      const isOwner = loan.user_id === user.id
+    const isAdmin =
+      user.role === 'administrator' || user.role === 'superadministrator'
+    const isOwner = loan.user_id === user.id
 
-      if (!isAdmin && !isOwner) {
-        throw new ForbiddenException(
-          'You do not have permission to view this loan'
-        )
-      }
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException(
+        'You do not have permission to view this loan'
+      )
     }
 
     return this.transformLoanRecord(loan)

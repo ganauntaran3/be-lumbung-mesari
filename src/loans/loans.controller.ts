@@ -44,6 +44,7 @@ import {
   LoanApprovalResponseDto,
   RejectLoanDto
 } from './dto/loan-approval.dto'
+import { LoanPeriodResponseDto } from './dto/loans-period.dto'
 import { LoansQueryDto } from './dto/loans-query.dto'
 import { LoansService } from './loans.service'
 
@@ -65,17 +66,7 @@ export class LoansController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Loan periods retrieved successfully',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          tenor: { type: 'number', example: 12 },
-          interestRate: { type: 'number', example: 1 }
-        }
-      }
-    }
+    type: LoanPeriodResponseDto
   })
   async getLoanPeriods() {
     return await this.loansService.findAllPeriods()
@@ -180,7 +171,7 @@ export class LoansController {
   })
   @ApiForbiddenResponse({
     description: 'Forbidden - Insufficient permissions',
-    schema: AuthErrorSchemas.insufficientPermissions
+    schema: AuthErrorSchemas.insufficientUserPermissions
   })
   async findInstallments(
     @Param('id') loanId: string,
@@ -216,7 +207,7 @@ export class LoansController {
   })
   @ApiForbiddenResponse({
     description: 'Forbidden - Insufficient permissions',
-    schema: AuthErrorSchemas.insufficientPermissions
+    schema: AuthErrorSchemas.insufficientUserPermissions
   })
   async findOne(@Param('id') id: string, @CurrentUser() user: UserJWT) {
     return await this.loansService.findById(id, user)
