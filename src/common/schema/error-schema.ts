@@ -80,5 +80,8 @@ export const AuthErrorSchemas = {
   validationFailed: createBadRequestSchema('Validation failed'),
   insufficientPermissions: createForbiddenSchema(
     'User with role {role} does not have sufficient permissions'
+  ),
+  insufficientUserPermissions: createForbiddenSchema(
+    'You do not have permission to view this resource'
   )
 }
