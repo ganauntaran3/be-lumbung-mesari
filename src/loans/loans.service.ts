@@ -6,13 +6,15 @@ import {
   NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-
 import Decimal from 'decimal.js'
 import { DatabaseError } from 'pg'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
 import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { DatabaseService } from '../database/database.service'
+import { CreateExpenseDto } from '../expenses/dto/create-expense.dto'
+import { ExpenseCategoriesRepository } from '../expenses/expense-categories.repository'
+import { ExpensesService } from '../expenses/expenses.service'
 import { IncomesService } from '../incomes/incomes.service'
 import { UserJWT } from '../users/interface/users'
 
@@ -39,7 +41,9 @@ export class LoansService {
     private readonly configService: ConfigService,
     private readonly databaseService: DatabaseService,
     private readonly incomesService: IncomesService,
-    private readonly cashbookTransactionService: CashbookTransactionService
+    private readonly cashbookTransactionService: CashbookTransactionService,
+    private readonly expensesService: ExpensesService,
+    private readonly expenseCategoriesRepository: ExpenseCategoriesRepository
   ) {}
 
   private transformLoanPeriods(loanPeriods: LoanPeriodTable[]) {
@@ -497,18 +501,60 @@ export class LoansService {
       })
     }
 
+    const disbursedAmount = parseFloat(loan.disbursed_amount as any)
+    const adminFeeAmount = parseFloat(loan.admin_fee_amount as any)
+
+    // Find expense category upfront — fail fast before any DB changes
+    const disbursementCategory =
+      await this.expenseCategoriesRepository.findByCode('loan_disbursement')
+
+    if (!disbursementCategory) {
+      throw new NotFoundException(
+        'Expense category "loan_disbursement" not found. Please run seed.'
+      )
+    }
+
     const knex = this.databaseService.getKnex()
     const trx = await knex.transaction()
 
     try {
       this.logger.log(`Starting loan disbursement for loan ${loanId}`)
 
-      // Update loan status to active and set disbursed_at
+      // 1. Update loan status to active and set disbursed_at
       await this.loansRepository.disburseLoan(loanId, trx)
 
-      // Generate installments with rounding
+      // 2. Generate installments with rounding
       const installments = await this.generateInstallments(loan, adminId)
       await this.loansRepository.createInstallments(installments, trx)
+
+      // 3. Create disbursement expense + cashbook tx (cash going out to member)
+      await this.expensesService.createExpenseInTransaction(
+        {
+          expenseCategoryId: disbursementCategory.id,
+          name: 'Pencairan Pinjaman',
+          amount: disbursedAmount,
+          loanId,
+          notes: 'Pencairan pinjaman kepada anggota',
+          source: 'capital'
+        } as CreateExpenseDto,
+        adminId,
+        trx
+      )
+
+      // 4. Create admin fee income + cashbook tx (retained by cooperative → SHU)
+      const adminFeeIncome = await this.incomesService.createLoanAdminFeeIncome(
+        loanId,
+        adminFeeAmount,
+        'Biaya administrasi pinjaman',
+        trx
+      )
+
+      await this.cashbookTransactionService.createIncomeTransaction(
+        adminFeeIncome.id,
+        adminFeeAmount,
+        IncomeDestination.SHU,
+        trx
+      )
 
       await trx.commit()
       this.logger.log(`Loan ${loanId} disbursed successfully`)
