@@ -118,5 +118,5 @@ export class ExpensesQueryDto extends PaginationQueryDto {
   @IsEnum(['asc', 'desc'], {
     message: 'Sort order must be either asc or desc'
   })
-  sortOrder?: 'asc' | 'desc'
+  declare sortOrder?: 'asc' | 'desc'
 }
