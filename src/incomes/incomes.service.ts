@@ -179,6 +179,46 @@ export class IncomesService {
     }
   }
 
+  async createLoanAdminFeeIncome(
+    loanId: string,
+    amount: number,
+    notes?: string,
+    trx?: any
+  ): Promise<IncomeTable> {
+    try {
+      this.logger.log(`Creating loan admin fee income with amount ${amount}`)
+
+      const category = await this.incomesRepository.findCategoryByCode(
+        IncomeCategoryCode.LOAN_ADMIN_FEE,
+        trx
+      )
+
+      if (!category) {
+        throw new NotFoundException(
+          'Income category "loan_admin_fee" not found. Please run seed.'
+        )
+      }
+
+      const income = await this.incomesRepository.createIncome(
+        {
+          name: 'Biaya Administrasi Pinjaman',
+          income_category_id: category.id,
+          amount,
+          loan_id: loanId,
+          notes: notes || 'Biaya administrasi pinjaman'
+        },
+        trx
+      )
+
+      this.logger.log(`Loan admin fee income created: ${income.id}`)
+
+      return income
+    } catch (error) {
+      this.logger.error(`Failed to create loan admin fee income:`, error)
+      throw error
+    }
+  }
+
   async createInstallmentPenaltyIncome(
     installmentId: string,
     name: string,
