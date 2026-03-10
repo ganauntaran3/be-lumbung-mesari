@@ -66,7 +66,8 @@ export class LoansController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Loan periods retrieved successfully',
-    type: LoanPeriodResponseDto
+    type: LoanPeriodResponseDto,
+    isArray: true
   })
   async getLoanPeriods() {
     return await this.loansService.findAllPeriods()

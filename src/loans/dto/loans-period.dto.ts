@@ -10,15 +10,13 @@ export class LoanPeriodResponseDto {
 
   @ApiProperty({
     description: 'Tenor',
-    example: 12,
-    format: 'number'
+    example: 12
   })
   tenor!: number
 
   @ApiProperty({
     description: 'Interest Rate',
-    example: 0.01,
-    format: 'number'
+    example: 0.01
   })
   interestRate!: number
 }
