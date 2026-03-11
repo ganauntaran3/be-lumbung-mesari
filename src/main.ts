@@ -6,13 +6,13 @@ import * as compression from 'compression'
 import helmet from 'helmet'
 
 import { AppModule } from './app.module'
-import { JsonLogger } from './logger'
+import { JsonLogger } from './common/utils/logger'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: new JsonLogger({
       json: true,
-      logLevels: ['error', 'warn', 'log', 'debug', 'verbose'],
+      logLevels: ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'],
       colors: true
     })
   })
