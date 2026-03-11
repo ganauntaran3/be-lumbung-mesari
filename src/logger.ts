@@ -1,7 +1,15 @@
-import { ConsoleLogger, LogLevel } from '@nestjs/common'
+import {
+  ConsoleLogger,
+  type ConsoleLoggerOptions,
+  LogLevel
+} from '@nestjs/common'
 
 export class JsonLogger extends ConsoleLogger {
-  protected printAsJson(
+  constructor(options: ConsoleLoggerOptions) {
+    super(options)
+  }
+
+  protected getJsonLogObject(
     message: unknown,
     options: {
       context: string
@@ -9,31 +17,15 @@ export class JsonLogger extends ConsoleLogger {
       writeStreamType?: 'stdout' | 'stderr'
       errorStack?: unknown
     }
-  ): void {
-    const logObject = this.getJsonLogObject(message, options)
-    const output = {
+  ): ReturnType<ConsoleLogger['getJsonLogObject']> {
+    const logObject = super.getJsonLogObject(message, options)
+    const date = new Date(logObject.timestamp)
+    const datePart = date.toLocaleDateString('en-CA')
+    const timePart = date.toLocaleTimeString('en-GB', { hour12: false })
+    const timestamp = `${datePart} ${timePart}`
+    return {
       ...logObject,
-      timestamp: new Date(logObject.timestamp).toISOString()
+      timestamp: timestamp as unknown as number
     }
-    const stringified = JSON.stringify(output)
-    const formatted = this.options.colors
-      ? this.colorize(stringified, options.logLevel)
-      : stringified
-    const stream =
-      options.writeStreamType === 'stderr' ? process.stderr : process.stdout
-    stream.write(formatted + '\n')
-  }
-
-  protected colorize(message: string, logLevel: LogLevel): string {
-    const colorMap: Record<LogLevel, string> = {
-      error: '\x1b[31m',
-      warn: '\x1b[33m',
-      log: '\x1b[32m',
-      debug: '\x1b[36m',
-      verbose: '\x1b[35m',
-      fatal: '\x1b[31m'
-    }
-    const reset = '\x1b[0m'
-    return `${colorMap[logLevel]}${message}${reset}`
   }
 }
