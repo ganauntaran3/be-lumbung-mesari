@@ -9,14 +9,14 @@
 ```bash
 # install node
 $ node -v
-# Version used: >22.x
+# Version used: >24.x
 
 # If you don't have node, install it from https://nodejs.org/en/download/
 # If you don't have npm, install it from https://www.npmjs.com/get-npm
 
-# Install node version 22.x
-$ nvm install 22.x
-$ nvm use 22.x
+# Install node version 24
+$ nvm install 24
+$ nvm use 24
 
 
 # install dependencies

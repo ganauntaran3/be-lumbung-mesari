@@ -1,13 +1,21 @@
-import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import helmet from 'helmet'
-import * as compression from 'compression'
+import { BadRequestException, ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { ValidationPipe, BadRequestException } from '@nestjs/common'
+import { NestFactory } from '@nestjs/core'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import * as compression from 'compression'
+import helmet from 'helmet'
+
+import { AppModule } from './app.module'
+import { JsonLogger } from './common/utils/logger'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule, {
+    logger: new JsonLogger({
+      json: true,
+      logLevels: ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'],
+      colors: true
+    })
+  })
   const configService = app.get(ConfigService)
 
   app.useGlobalPipes(
