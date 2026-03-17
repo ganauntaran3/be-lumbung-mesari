@@ -6,18 +6,17 @@ import {
   Logger,
   NotFoundException
 } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { UserStatus } from '../common/constants'
 import { DatabaseService } from '../database/database.service'
 import { PaginationQueryDto } from '../database/dto/pagination.dto'
-import { LoansService } from '../loans/loans.service'
 import {
   EmailData,
   EmailHelperService,
   NotificationTemplate
 } from '../notifications/email/email-helper.service'
+import { MandatorySavingsRepository } from '../savings/mandatory-savings.repository'
 import { UsersSavingsService } from '../users-savings/users-savings.service'
 
 import {
@@ -26,6 +25,8 @@ import {
   ApproveUserDto,
   RejectUserQueryDto
 } from './dto/approve-user.dto'
+import { MySavingsQueryDto } from './dto/users-savings-query.dto'
+import { MySavingsResponseDto } from './dto/users-savings-response.dto'
 import { EmailNotificationFailedException } from './exceptions/user.exceptions'
 import {
   CreatedUser,
@@ -46,7 +47,7 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     private readonly emailHelperService: EmailHelperService,
     private readonly usersSavingsService: UsersSavingsService,
-    private readonly loansService: LoansService,
+    private readonly mandatorySavingsRepository: MandatorySavingsRepository,
     private readonly databaseService: DatabaseService
   ) {}
 
@@ -368,6 +369,21 @@ export class UsersService {
         this.logger.error(`Transaction rolled back for user ${userId}`)
       }
       throw error
+    }
+  }
+
+  async getMySavings(
+    userId: string,
+    queryParams: MySavingsQueryDto
+  ): Promise<MySavingsResponseDto> {
+    const year = queryParams.year ?? new Date().getFullYear()
+
+    const savingsRecords =
+      await this.mandatorySavingsRepository.findByUserIdAndYear(userId, year)
+
+    return {
+      data: savingsRecords,
+      year
     }
   }
 

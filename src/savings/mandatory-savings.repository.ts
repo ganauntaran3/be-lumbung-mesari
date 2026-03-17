@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { MySavingsItemDto } from 'src/users/dto/users-savings-response.dto'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
@@ -532,5 +533,35 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
       )
       throw error
     }
+  }
+
+  async findByUserIdAndYear(
+    userId: string,
+    year: number
+  ): Promise<MySavingsItemDto[]> {
+    const startDate = new Date(Date.UTC(year, 0, 1))
+    const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59))
+
+    this.logger.debug(
+      `Finding mandatory savings for user ${userId} in year ${year} (${startDate.toISOString()} - ${endDate.toISOString()})`
+    )
+
+    const data = await this.knex('mandatory_savings as ms')
+      .where('ms.user_id', userId)
+      .whereBetween('ms.period_date', [startDate, endDate])
+      .select([
+        'ms.id as id',
+        'ms.user_id as userId',
+        'ms.period_date as periodDate',
+        'ms.amount as amount',
+        'ms.status as status',
+        'ms.paid_at as paidAt',
+        'ms.created_at as createdAt',
+        'ms.updated_at as updatedAt',
+        'ms.processed_by as processedBy'
+      ])
+      .orderBy('ms.period_date', 'asc')
+
+    return data
   }
 }
