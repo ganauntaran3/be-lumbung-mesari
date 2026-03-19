@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { MySavingsItemDto } from 'src/users/dto/users-savings-response.dto'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
 import { PaginationResult } from '../interface/pagination'
 
+import { UsersSavingsItemDto } from './dto/mandatory-savings-item.dto'
 import { SavingsQueryDto } from './dto/savings-query.dto'
 import {
   MandatorySavingsPaginatedResponse,
@@ -538,9 +538,9 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
   async findByUserIdAndYear(
     userId: string,
     year: number
-  ): Promise<MySavingsItemDto[]> {
+  ): Promise<UsersSavingsItemDto[]> {
     const startDate = new Date(Date.UTC(year, 0, 1))
-    const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59))
+    const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999))
 
     this.logger.debug(
       `Finding mandatory savings for user ${userId} in year ${year} (${startDate.toISOString()} - ${endDate.toISOString()})`
