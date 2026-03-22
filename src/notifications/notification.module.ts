@@ -1,9 +1,9 @@
-import { join } from 'path'
+import { join } from 'node:path'
 
-import { Global, Module } from '@nestjs/common'
-import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MailerModule } from '@nestjs-modules/mailer'
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter'
+import { Global, Module } from '@nestjs/common'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 
 import { EmailHelperService } from './email/email-helper.service'
 import { TemplateService } from './template.service'
@@ -28,8 +28,8 @@ import { TemplateService } from './template.service'
           transport: {
             host: smtpHost,
             port: smtpPort,
-            secure: !isDevelopment ? false : true,
-            ignoreTLS: !isDevelopment ? false : true,
+            secure: !isDevelopment,
+            ignoreTLS: !isDevelopment,
             auth: configService.get<string>('SMTP_USER')
               ? {
                   user: configService.get<string>('SMTP_USER'),

@@ -2,17 +2,19 @@ name: Deploy to Production
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -20,31 +22,5 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-            # Pastikan Node 24
-            nvm use 24
-            NODE_VERSION=$(node -v)
-            echo "Using Node: $NODE_VERSION"
-            if [[ "$NODE_VERSION" != v24* ]]; then
-              echo "ERROR: Node 24 required, got $NODE_VERSION"
-              exit 1
-            fi
-
-            cd ~/apps/be-lumbung-mesari
-            git pull origin main
-            npm ci
-            npm run build
-
-            # Cek apakah process sudah ada, kalau belum start, kalau sudah restart
-            if pm2 list | grep -q "lumbung-mesari"; then
-              echo "Process found, restarting..."
-              pm2 restart lumbung-mesari
-            else
-              echo "Process not found, starting fresh..."
-              pm2 start dist/src/main.js --name lumbung-mesari
-            fi
-
-            pm2 save
+          fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
+          script: bash ~/apps/be-lumbung-mesari/deployment/deploy.sh
