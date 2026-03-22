@@ -1,4 +1,4 @@
-import { BadRequestException, ValidationPipe } from '@nestjs/common'
+import { BadRequestException, LOG_LEVELS, ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
@@ -12,7 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: new JsonLogger({
       json: true,
-      logLevels: ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'],
+      logLevels: LOG_LEVELS,
       colors: true
     })
   })
