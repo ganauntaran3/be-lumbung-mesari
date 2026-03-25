@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -305,7 +304,7 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     return results as Installment[]
   }
 
-  async findOverdueInstallments(beforeDate: Date): Promise<Installment[]> {
+  async findOverdueInstallments(beforeDate: string): Promise<Installment[]> {
     const results = await this.knex('installments')
       .where('status', 'due')
       .where('due_date', '<=', beforeDate)
