@@ -249,6 +249,45 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
     }
   }
 
+  async getTransactionsWithCategory(filters: {
+    limit: number
+    offset: number
+  }): Promise<any[]> {
+    try {
+      this.logger.debug(
+        `Getting transactions with category, limit: ${filters.limit}, offset: ${filters.offset}`
+      )
+
+      const results = await this.knex('cashbook_transactions as ct')
+        .select(
+          'ct.id',
+          'ct.txn_date',
+          'ct.direction',
+          'ct.capital_amount',
+          'ct.shu_amount',
+          'ct.total_balance_after',
+          'ct.created_at',
+          this.knex.raw('COALESCE(ic.id, ec.id) AS category_id'),
+          this.knex.raw('COALESCE(ic.code, ec.code) AS category_code'),
+          this.knex.raw('COALESCE(ic.name, ec.name) AS category_name')
+        )
+        .leftJoin('incomes as i', 'ct.income_id', 'i.id')
+        .leftJoin('income_categories as ic', 'i.income_category_id', 'ic.id')
+        .leftJoin('expenses as e', 'ct.expense_id', 'e.id')
+        .leftJoin('expense_categories as ec', 'e.expense_category_id', 'ec.id')
+        .orderBy('ct.created_at', 'desc')
+        .limit(filters.limit)
+        .offset(filters.offset)
+
+      this.logger.debug(`Retrieved ${results.length} transactions with category`)
+
+      return results
+    } catch (error) {
+      this.logger.error('Failed to get transactions with category:', error)
+      throw error
+    }
+  }
+
   async updateTransactionByExpenseId(
     expenseId: string,
     data: Partial<CashbookTransactionTable>,
