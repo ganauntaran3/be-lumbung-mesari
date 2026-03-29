@@ -533,4 +533,31 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
       throw error
     }
   }
+
+  /**
+   * Get monthly mandatory savings total
+   * Used for financial reporting
+   */
+  async getMonthlyTotal(year: number, month: number): Promise<number> {
+    try {
+      const startDate = new Date(year, month - 1, 1)
+      const endDate = new Date(year, month, 0, 23, 59, 59)
+
+      this.logger.debug(`Fetching mandatory savings total for ${year}-${month}`)
+
+      const result = await this.knex('mandatory_savings')
+        .where('status', 'paid')
+        .whereBetween('paid_at', [startDate, endDate])
+        .sum('amount as total')
+        .first()
+
+      return parseFloat(result?.total || '0')
+    } catch (error) {
+      this.logger.error(
+        `Failed to get monthly mandatory savings total for ${year}-${month}:`,
+        error
+      )
+      throw error
+    }
+  }
 }
