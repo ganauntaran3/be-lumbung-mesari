@@ -672,14 +672,19 @@ export class LoansService {
   async processOverdueInstallments(): Promise<void> {
     this.logger.log('Processing overdue installments...')
 
-    // Get yesterday's date (20th if running on 21st)
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(23, 59, 59, 999)
+    // Construct cutoff as the 20th of the current month in UTC.
+    // The cron always fires on 21st 00:00 WIB (UTC+7) = 20th 17:00 UTC,
+    // so getUTCMonth() reliably gives the correct month regardless of server timezone.
+    // All installments are due on the 20th, so `<= YYYY-MM-20` catches everything
+    // overdue up to and including the current month.
+    const now = new Date()
+    const year = now.getUTCFullYear()
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0')
+    const cutoff = `${year}-${month}-20`
 
     // Find all 'due' installments that are past their due date
     const overdueInstallments =
-      await this.loansRepository.findOverdueInstallments(yesterday)
+      await this.loansRepository.findOverdueInstallments(cutoff)
 
     this.logger.log(
       `Found ${overdueInstallments.length} overdue installments to process`
