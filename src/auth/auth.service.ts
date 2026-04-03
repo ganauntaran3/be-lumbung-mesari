@@ -228,7 +228,7 @@ export class AuthService {
         message: 'OTP verified successfully!'
       }
     } catch (error) {
-      if (!trx.isCompleted) {
+      if (!trx.isCompleted()) {
         await trx.rollback()
       }
 
