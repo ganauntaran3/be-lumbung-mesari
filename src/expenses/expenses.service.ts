@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
@@ -23,6 +22,7 @@ import { ExpensesPaginatedResponse } from './interfaces'
 import {
   ExpenseCategoryTable,
   ExpenseResponse,
+  ExpenseTable,
   ExpenseWithCategoryTable,
   NewExpense,
   UpdateExpense
@@ -143,6 +143,29 @@ export class ExpensesService {
       )
     }
 
+    try {
+      const knex = this.databaseService.getKnex()
+      const result = await knex.transaction((trx: Knex.Transaction) =>
+        this.createExpenseInTransaction(createExpenseDto, currentUserId, trx)
+      )
+
+      this.logger.log(`Expense created successfully with ID: ${result.id}`)
+
+      const createdExpense = await this.expensesRepository.findByIdWithCategory(
+        result.id
+      )
+      return this.formatExpenseResponse(createdExpense!)
+    } catch (error: any) {
+      this.logger.error(`Error creating expense: ${error.message}`)
+      throw error
+    }
+  }
+
+  async createExpenseInTransaction(
+    createExpenseDto: CreateExpenseDto,
+    currentUserId: string,
+    trx: Knex.Transaction
+  ): Promise<ExpenseTable> {
     const category = await this.expenseCategoriesRepository.findById(
       createExpenseDto.expenseCategoryId
     )
@@ -153,61 +176,45 @@ export class ExpensesService {
     const effectiveSource = (createExpenseDto.source ||
       category.default_source) as ExpenseSource
 
-    try {
-      const knex = this.databaseService.getKnex()
-      const result = await knex.transaction(async (trx: Knex.Transaction) => {
-        // Check balance and allocate amounts INSIDE transaction with lock
-        const { shuAmount, capitalAmount } = await this.allocateAmounts(
-          createExpenseDto.amount,
-          effectiveSource,
-          trx
-        )
+    const { shuAmount, capitalAmount } = await this.allocateAmounts(
+      createExpenseDto.amount,
+      effectiveSource,
+      trx
+    )
 
-        this.logger.debug(
-          `Allocated amounts - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
-        )
+    this.logger.debug(
+      `Allocated amounts - SHU: ${shuAmount}, Capital: ${capitalAmount}, Source: ${effectiveSource}`
+    )
 
-        const expenseData: NewExpense = {
-          expense_category_id: createExpenseDto.expenseCategoryId,
-          name: createExpenseDto.name,
-          shu_amount: shuAmount.toString(),
-          capital_amount: capitalAmount.toString(),
-          txn_date: createExpenseDto.transactionDate || new Date(),
-          created_by: currentUserId,
-          loan_id: createExpenseDto.loanId,
-          notes: createExpenseDto.notes,
-          source: effectiveSource
-        }
-
-        const expense = await this.expensesRepository.createExpense(
-          expenseData,
-          trx
-        )
-
-        // Create cashbook transaction (application-level sync)
-        await this.cashbookTransactionService.createExpenseTransaction(
-          expense.id,
-          currentUserId,
-          shuAmount,
-          capitalAmount,
-          trx,
-          expense.txn_date
-        )
-
-        return expense
-      })
-
-      this.logger.log(`Expense created successfully with ID: ${result.id}`)
-
-      // Fetch the created expense with category and fullname
-      const createdExpense = await this.expensesRepository.findByIdWithCategory(
-        result.id
-      )
-      return this.formatExpenseResponse(createdExpense!)
-    } catch (error: any) {
-      this.logger.error(`Error creating expense: ${error.message}`)
-      throw error
+    const expenseData: NewExpense = {
+      expense_category_id: createExpenseDto.expenseCategoryId,
+      name: createExpenseDto.name,
+      shu_amount: shuAmount.toString(),
+      capital_amount: capitalAmount.toString(),
+      txn_date: createExpenseDto.transactionDate || new Date(),
+      created_by: currentUserId,
+      loan_id: createExpenseDto.loanId,
+      notes: createExpenseDto.notes,
+      source: effectiveSource
     }
+
+    const expense = await this.expensesRepository.createExpense(
+      expenseData,
+      trx
+    )
+
+    await this.cashbookTransactionService.createExpenseTransaction(
+      expense.id,
+      currentUserId,
+      shuAmount,
+      capitalAmount,
+      trx,
+      expense.txn_date
+    )
+
+    this.logger.log(`Expense created in transaction with ID: ${expense.id}`)
+
+    return expense
   }
 
   async findAllExpenses(

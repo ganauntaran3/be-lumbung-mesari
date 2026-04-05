@@ -4,7 +4,7 @@
   "semi": false,
   "plugins": ["@trivago/prettier-plugin-sort-imports"],
   "importOrder": [
-    "^@nestjs/(.*)$",
+    "<BUILTIN_MODULES>",
     "<THIRD_PARTY_MODULES>",
     "^[.][.]/",
     "^[.]/",

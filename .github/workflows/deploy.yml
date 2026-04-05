@@ -1,0 +1,26 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
+          script: bash ~/apps/be-lumbung-mesari/deployment/deploy.sh

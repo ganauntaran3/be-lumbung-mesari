@@ -64,5 +64,5 @@ export class UsersQueryDto extends PaginationQueryDto {
   @IsEnum(UserSortBy, {
     message: 'SortBy must be one of: createdAt, updatedAt, id, username'
   })
-  sortBy?: UserSortBy
+  declare sortBy?: UserSortBy
 }

@@ -12,6 +12,9 @@ import { DatabaseError } from 'pg'
 import { CashbookTransactionService } from '../cashbook/cashbook-transaction.service'
 import { IncomeDestination } from '../cashbook/interfaces/transaction.interface'
 import { DatabaseService } from '../database/database.service'
+import { CreateExpenseDto } from '../expenses/dto/create-expense.dto'
+import { ExpenseCategoriesRepository } from '../expenses/expense-categories.repository'
+import { ExpensesService } from '../expenses/expenses.service'
 import { IncomesService } from '../incomes/incomes.service'
 import { UserJWT } from '../users/interface/users'
 
@@ -38,7 +41,9 @@ export class LoansService {
     private readonly configService: ConfigService,
     private readonly databaseService: DatabaseService,
     private readonly incomesService: IncomesService,
-    private readonly cashbookTransactionService: CashbookTransactionService
+    private readonly cashbookTransactionService: CashbookTransactionService,
+    private readonly expensesService: ExpensesService,
+    private readonly expenseCategoriesRepository: ExpenseCategoriesRepository
   ) {}
 
   private transformLoanPeriods(loanPeriods: LoanPeriodTable[]) {
@@ -352,22 +357,57 @@ export class LoansService {
     }
   }
 
-  async findById(loanId: string, user?: UserJWT): Promise<LoanWithUser> {
+  async findInstallmentsByLoan(loanId: string, user: UserJWT) {
+    const loan = await this.loansRepository.findById(loanId)
+
+    if (!loan) {
+      throw new NotFoundException('Loan not found')
+    }
+
+    const isAdmin =
+      user.role === 'administrator' || user.role === 'superadministrator'
+    const isOwner = loan.user_id === user.id
+
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException(
+        "You do not have permission to view this loan's installments"
+      )
+    }
+
+    const installments =
+      await this.loansRepository.findInstallmentsByLoanId(loanId)
+
+    return installments.map((installment) => ({
+      id: installment.id,
+      loanId: installment.loan_id,
+      installmentNumber: installment.installment_number,
+      dueDate: installment.due_date,
+      principalAmount: parseFloat(installment.principal_amount),
+      interestAmount: parseFloat(installment.interest_amount),
+      penaltyAmount: parseFloat(installment.penalty_amount),
+      totalAmount: parseFloat(installment.total_amount),
+      paidAt: installment.paid_at,
+      status: installment.status,
+      createdAt: installment.created_at,
+      updatedAt: installment.updated_at
+    }))
+  }
+
+  async findById(loanId: string, user: UserJWT): Promise<LoanWithUser> {
     const loan = await this.loansRepository.findByIdWithUser(loanId)
 
     if (!loan) {
       throw new NotFoundException('Loan not found')
     }
 
-    if (user) {
-      const isAdmin = user.role === 'admin' || user.role === 'superadmin'
-      const isOwner = loan.user_id === user.id
+    const isAdmin =
+      user.role === 'administrator' || user.role === 'superadministrator'
+    const isOwner = loan.user_id === user.id
 
-      if (!isAdmin && !isOwner) {
-        throw new ForbiddenException(
-          'You do not have permission to view this loan'
-        )
-      }
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException(
+        'You do not have permission to view this loan'
+      )
     }
 
     return this.transformLoanRecord(loan)
@@ -461,18 +501,60 @@ export class LoansService {
       })
     }
 
+    const disbursedAmount = parseFloat(loan.disbursed_amount as any)
+    const adminFeeAmount = parseFloat(loan.admin_fee_amount as any)
+
+    // Find expense category upfront — fail fast before any DB changes
+    const disbursementCategory =
+      await this.expenseCategoriesRepository.findByCode('loan_disbursement')
+
+    if (!disbursementCategory) {
+      throw new NotFoundException(
+        'Expense category "loan_disbursement" not found. Please run seed.'
+      )
+    }
+
     const knex = this.databaseService.getKnex()
     const trx = await knex.transaction()
 
     try {
       this.logger.log(`Starting loan disbursement for loan ${loanId}`)
 
-      // Update loan status to active and set disbursed_at
+      // 1. Update loan status to active and set disbursed_at
       await this.loansRepository.disburseLoan(loanId, trx)
 
-      // Generate installments with rounding
+      // 2. Generate installments with rounding
       const installments = await this.generateInstallments(loan, adminId)
       await this.loansRepository.createInstallments(installments, trx)
+
+      // 3. Create disbursement expense + cashbook tx (cash going out to member)
+      await this.expensesService.createExpenseInTransaction(
+        {
+          expenseCategoryId: disbursementCategory.id,
+          name: 'Pencairan Pinjaman',
+          amount: disbursedAmount,
+          loanId,
+          notes: 'Pencairan pinjaman kepada anggota',
+          source: 'capital'
+        } as CreateExpenseDto,
+        adminId,
+        trx
+      )
+
+      // 4. Create admin fee income + cashbook tx (retained by cooperative → SHU)
+      const adminFeeIncome = await this.incomesService.createLoanAdminFeeIncome(
+        loanId,
+        adminFeeAmount,
+        'Biaya administrasi pinjaman',
+        trx
+      )
+
+      await this.cashbookTransactionService.createIncomeTransaction(
+        adminFeeIncome.id,
+        adminFeeAmount,
+        IncomeDestination.SHU,
+        trx
+      )
 
       await trx.commit()
       this.logger.log(`Loan ${loanId} disbursed successfully`)
@@ -590,14 +672,19 @@ export class LoansService {
   async processOverdueInstallments(): Promise<void> {
     this.logger.log('Processing overdue installments...')
 
-    // Get yesterday's date (20th if running on 21st)
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(23, 59, 59, 999)
+    // Construct cutoff as the 20th of the current month in UTC.
+    // The cron always fires on 21st 00:00 WIB (UTC+7) = 20th 17:00 UTC,
+    // so getUTCMonth() reliably gives the correct month regardless of server timezone.
+    // All installments are due on the 20th, so `<= YYYY-MM-20` catches everything
+    // overdue up to and including the current month.
+    const now = new Date()
+    const year = now.getUTCFullYear()
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0')
+    const cutoff = `${year}-${month}-20`
 
     // Find all 'due' installments that are past their due date
     const overdueInstallments =
-      await this.loansRepository.findOverdueInstallments(yesterday)
+      await this.loansRepository.findOverdueInstallments(cutoff)
 
     this.logger.log(
       `Found ${overdueInstallments.length} overdue installments to process`
@@ -634,8 +721,10 @@ export class LoansService {
       this.logger.log(`Starting settlement for installment ${installmentId}`)
 
       // 1. Find installment with row locking (inside transaction)
-      const installment =
-        await this.loansRepository.findInstallmentById(installmentId, trx)
+      const installment = await this.loansRepository.findInstallmentById(
+        installmentId,
+        trx
+      )
 
       if (!installment) {
         throw new NotFoundException('Installment not found')

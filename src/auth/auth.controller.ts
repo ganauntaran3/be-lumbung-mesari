@@ -35,6 +35,12 @@ import { CurrentUser } from './decorators/current-user.decorator'
 import { LoginRequestDto, LoginResponseDto } from './dto/login.dto'
 import { RegisterDto, RegisterResponseDto } from './dto/register.dto'
 import { ResendOtpResponseDto } from './dto/resend-otp.dto'
+import {
+  ConfirmResetPasswordDto,
+  ConfirmResetPasswordResponseDto,
+  RequestResetPasswordDto,
+  RequestResetPasswordResponseDto
+} from './dto/reset-password.dto'
 import { VerifyOtpDto, VerifyOtpResponseDto } from './dto/verify-otp.dto'
 import { JwtAuthGuard } from './guards/auth.guard'
 
@@ -271,6 +277,66 @@ export class AuthController {
       throw new InternalServerErrorException({
         statusCode: 500,
         message: 'An unexpected error occurred while resending OTP',
+        error: 'Internal Server Error'
+      })
+    }
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request password reset email',
+    description:
+      'Generates a reset token and sends a reset link to the provided email. Token expires in 1 hour. Always returns the same response to prevent user enumeration.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      'Reset link sent to email (or silently ignored if email not found)',
+    type: RequestResetPasswordResponseDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation failed',
+    schema: AuthErrorSchemas.validationFailed
+  })
+  @ApiBody({ type: RequestResetPasswordDto })
+  async requestPasswordReset(@Body() dto: RequestResetPasswordDto) {
+    try {
+      return await this.authService.requestPasswordReset(dto.email)
+    } catch (error) {
+      throw error
+    }
+  }
+
+  @Post('reset-password/confirm')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Confirm password reset with token',
+    description: 'Validates the reset token from email and sets a new password.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Password updated successfully',
+    type: ConfirmResetPasswordResponseDto
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid/expired token or password mismatch',
+    schema: AuthErrorSchemas.validationFailed
+  })
+  @ApiBody({ type: ConfirmResetPasswordDto })
+  async confirmPasswordReset(@Body() dto: ConfirmResetPasswordDto) {
+    try {
+      return await this.authService.confirmPasswordReset(
+        dto.token,
+        dto.newPassword,
+        dto.confirmPassword
+      )
+    } catch (error) {
+      if (error instanceof HttpException) throw error
+      console.error('Unexpected error during password reset confirm:', error)
+      throw new InternalServerErrorException({
+        statusCode: 500,
+        message: 'An unexpected error occurred',
         error: 'Internal Server Error'
       })
     }

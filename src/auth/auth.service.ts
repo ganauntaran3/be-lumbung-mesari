@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   UnauthorizedException
@@ -8,6 +9,8 @@ import {
 import { JwtService } from '@nestjs/jwt'
 
 import { compare, hash } from 'bcrypt'
+import { randomBytes } from 'node:crypto'
+import { DatabaseError } from 'pg'
 
 import { UserRole, UserStatus } from '../common/constants'
 import { DatabaseService } from '../database/database.service'
@@ -278,6 +281,101 @@ export class AuthService {
     return this.generateTokens(user)
   }
 
+  async requestPasswordReset(email: string) {
+    try {
+      const user = await this.usersService.findByEmail(email)
+      const message =
+        'If an account exists, a reset link has been sent to the registered email address.'
+
+      if (!user) {
+        this.logger.warn(
+          `Password reset requested for non-existent email: ${email}`
+        )
+        return {
+          message
+        }
+      }
+
+      const token = randomBytes(32).toString('base64url')
+      const expiresAt = new Date()
+      expiresAt.setHours(expiresAt.getHours() + 1)
+
+      await this.usersService.update(user.id, {
+        passwordResetToken: token,
+        passwordResetExpiresAt: expiresAt
+      })
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+      const resetUrl = `${frontendUrl}/profile/reset-password?token=${token}`
+
+      const emailSent = await this.sendPasswordResetEmail(user, resetUrl)
+      this.logger.log(
+        `Password reset requested for ${user.email} - email sent: ${emailSent}`
+      )
+
+      if (!emailSent) {
+        this.logger.error(
+          `Failed to send password reset email for user ${user.id}`
+        )
+        return {
+          message
+        }
+      }
+
+      return {
+        message
+      }
+    } catch (error) {
+      if (error instanceof DatabaseError) {
+        throw new InternalServerErrorException(
+          `Database error: ${error.message}`
+        )
+      }
+
+      this.logger.error(
+        `Password reset request failed for email ${email}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+      throw error
+    }
+  }
+
+  async confirmPasswordReset(
+    token: string,
+    newPassword: string,
+    confirmPassword: string
+  ) {
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('Password confirmation does not match.')
+    }
+
+    const user = await this.usersService.findByResetToken(token)
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token.')
+    }
+
+    if (
+      !user.password_reset_expires_at ||
+      new Date() > new Date(user.password_reset_expires_at)
+    ) {
+      this.logger.error(
+        'Failed password reset attempt with invalid/expired token'
+      )
+      throw new BadRequestException('Invalid or expired reset token.')
+    }
+
+    const hashedPassword = await hash(newPassword, 10)
+
+    await this.usersService.update(user.id, {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpiresAt: null
+    })
+
+    this.logger.log(`Password reset successfully for user ${user.id}`)
+
+    return { message: 'Password updated successfully.' }
+  }
+
   private generateTokens(user: UserDataToken) {
     const payload: JwtPayload = {
       sub: user.id,
@@ -296,6 +394,34 @@ export class AuthService {
         }),
         refreshToken: this.jwtService.sign(payload, { expiresIn: '1d' })
       }
+    }
+  }
+
+  private async sendPasswordResetEmail(
+    user: any,
+    resetUrl: string
+  ): Promise<boolean> {
+    try {
+      const emailData: EmailData = {
+        template: NotificationTemplate.PASSWORD_RESET,
+        recipient: user.email,
+        data: {
+          fullname: user.fullname,
+          resetUrl,
+          expiry_time: '1 jam'
+        },
+        priority: 'high'
+      }
+
+      await this.emailHelperService.sendEmail(emailData)
+      this.logger.log(`Password reset email sent successfully to ${user.email}`)
+      return true
+    } catch (error) {
+      this.logger.error(
+        `Failed to send password reset email to ${user.email}:`,
+        error
+      )
+      return false
     }
   }
 

@@ -30,7 +30,8 @@ import { RolesGuard } from '../auth/guards/roles.guard'
 import { UserRole } from '../common/constants'
 import {
   AuthErrorSchemas,
-  TokenErrorSchemas
+  TokenErrorSchemas,
+  createBadRequestSchema
 } from '../common/schema/error-schema'
 import { LoansService } from '../loans/loans.service'
 
@@ -41,6 +42,8 @@ import {
 } from './dto/approve-user.dto'
 import { UsersQueryDto } from './dto/users-query.dto'
 import { UsersPaginatedResponseDto } from './dto/users-response.dto'
+import { MySavingsQueryDto } from './dto/users-savings-query.dto'
+import { MySavingsResponseDto } from './dto/users-savings-response.dto'
 import { EmailNotificationFailedException } from './exceptions/user.exceptions'
 import { UserJWT } from './interface/users'
 import { UsersService } from './users.service'
@@ -93,24 +96,33 @@ export class UsersController {
     schema: TokenErrorSchemas.invalidToken
   })
   async getMyLoans(@CurrentUser() user: UserJWT) {
-    const loans = await this.loansService.findUserLoans(user.id)
+    return await this.loansService.findUserLoans(user.id)
+  }
 
-    // Transform to camelCase
-    return loans.map((loan: any) => ({
-      id: loan.id,
-      userId: loan.user_id,
-      loanPeriodId: loan.loan_period_id,
-      principalAmount: loan.principal_amount,
-      totalPayable: loan.total_payable_amount,
-      monthlyPayment: loan.monthly_payment,
-      status: loan.status,
-      notes: loan.notes,
-      approvedBy: loan.approved_by,
-      approvedAt: loan.approved_at,
-      disbursedAt: loan.disbursed_at,
-      createdAt: loan.created_at,
-      updatedAt: loan.updated_at
-    }))
+  @Get('me/savings')
+  @ApiOperation({
+    summary: 'Get current user savings by year',
+    description:
+      'Retrieve mandatory savings records for the authenticated user. Supports optional filtering by year (e.g. 2025, 2026). Default to current year.'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Savings retrieved successfully',
+    type: MySavingsResponseDto
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or expired token',
+    schema: TokenErrorSchemas.invalidToken
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - Invalid query parameter',
+    schema: createBadRequestSchema('Invalid query parameters provided')
+  })
+  async getMySavings(
+    @CurrentUser() user: UserJWT,
+    @Query() queryParams: MySavingsQueryDto
+  ): Promise<MySavingsResponseDto> {
+    return await this.usersService.getMySavings(user.id, queryParams)
   }
 
   @Get()

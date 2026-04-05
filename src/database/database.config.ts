@@ -1,5 +1,13 @@
 import { ConfigService } from '@nestjs/config'
 import { Knex } from 'knex'
+import { types } from 'pg'
+
+// Prevent the pg driver from converting `date` columns to JS Date objects.
+// Without this, date-only values (e.g. "2026-02-27") get parsed as midnight
+// in the server's local timezone and serialized as a full UTC ISO timestamp,
+// causing off-by-one-day bugs on clients in different timezones.
+// OID 1082 = date type
+types.setTypeParser(1082, (val: string) => val)
 
 export const getDatabaseConfig = (
   configService: ConfigService

@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Knex } from 'knex'
 
+import { PaginationResult } from '../interface/pagination'
+
 import { CashbookTransactionRepository } from './cashbook-transaction.repository'
+import { CashbookTransactionResponseDto } from './dto/transaction.dto'
 import { CashbookTransactionTable } from './interfaces/transaction.interface'
 
 export interface TransactionFilters {
@@ -262,6 +265,52 @@ export class CashbookTransactionService {
         `Failed to delete income transaction for ${incomeId}:`,
         error
       )
+      throw error
+    }
+  }
+
+  async listTransactions(
+    page: number,
+    limit: number
+  ): Promise<PaginationResult<CashbookTransactionResponseDto>> {
+    try {
+      this.logger.log(`Listing transactions: page=${page}, limit=${limit}`)
+
+      const offset = (page - 1) * limit
+
+      const [rows, totalData] = await Promise.all([
+        this.transactionRepository.getTransactionsWithCategory({ limit, offset }),
+        this.transactionRepository.getTransactionCount({})
+      ])
+
+      const data: CashbookTransactionResponseDto[] = rows.map((row) => ({
+        id: row.id,
+        txnDate: row.txn_date,
+        type: row.direction === 'in' ? 'income' : 'expense',
+        capitalAmount: parseFloat(row.capital_amount),
+        shuAmount: parseFloat(row.shu_amount),
+        totalBalanceAfter: parseFloat(row.total_balance_after),
+        category: {
+          id: row.category_id,
+          code: row.category_code,
+          name: row.category_name
+        },
+        createdAt: row.created_at
+      }))
+
+      const totalPage = Math.ceil(totalData / limit)
+
+      return {
+        data,
+        page,
+        limit,
+        totalData,
+        totalPage,
+        next: page < totalPage,
+        prev: page > 1
+      }
+    } catch (error) {
+      this.logger.error('Failed to list transactions:', error)
       throw error
     }
   }
