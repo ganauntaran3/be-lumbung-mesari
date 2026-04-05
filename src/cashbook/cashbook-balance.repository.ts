@@ -113,6 +113,32 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
     }
   }
 
+  async lockAllForUpdate(
+    trx: Knex.Transaction
+  ): Promise<Record<'shu' | 'capital' | 'total', number>> {
+    const rows = await trx('cashbook_balances')
+      .select('type', 'balance')
+      .whereIn('type', ['shu', 'capital', 'total'])
+      .forUpdate()
+
+    return {
+      shu: parseFloat(rows.find((r) => r.type === 'shu')?.balance || '0'),
+      capital: parseFloat(rows.find((r) => r.type === 'capital')?.balance || '0'),
+      total: parseFloat(rows.find((r) => r.type === 'total')?.balance || '0')
+    }
+  }
+
+  async adjustBalance(
+    type: 'shu' | 'capital' | 'total',
+    delta: number,
+    trx: Knex.Transaction
+  ): Promise<void> {
+    await trx('cashbook_balances')
+      .where({ type })
+      .increment('balance', delta)
+      .update({ updated_at: new Date() })
+  }
+
   /**
    * Check if balance type exists
    */

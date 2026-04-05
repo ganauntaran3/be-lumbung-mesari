@@ -1,3 +1,9 @@
+export const MILLISECONDS_IN_MINUTE = 60000
+export const MILLISECONDS_IN_HOUR = 3600000
+export const MAXIMUM_AUTH_REQUESTS_PER_MINUTE = 8
+export const MAXIMUM_REQUESTS_PER_MINUTE = 60
+export const MAXIMUM_AUTH_REQUESTS_PER_MINUTE_NAME = 'auth'
+
 export enum UserStatus {
   WAITING_DEPOSIT = 'waiting_deposit',
   PENDING = 'pending',

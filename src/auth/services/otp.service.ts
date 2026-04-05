@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common'
 import { randomInt } from 'node:crypto'
+
+import { Injectable } from '@nestjs/common'
 
 @Injectable()
 export class OtpService {

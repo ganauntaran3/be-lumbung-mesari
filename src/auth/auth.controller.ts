@@ -21,7 +21,13 @@ import {
   ApiTags,
   ApiUnauthorizedResponse
 } from '@nestjs/swagger'
+import { SkipThrottle, Throttle } from '@nestjs/throttler'
 
+import {
+  MAXIMUM_AUTH_REQUESTS_PER_MINUTE,
+  MILLISECONDS_IN_HOUR,
+  MILLISECONDS_IN_MINUTE
+} from '../common/constants'
 import {
   AuthErrorSchemas,
   InternalServerErrorResponseSchema,
@@ -49,6 +55,12 @@ import { JwtAuthGuard } from './guards/auth.guard'
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({
+    auth: {
+      ttl: MILLISECONDS_IN_MINUTE,
+      limit: MAXIMUM_AUTH_REQUESTS_PER_MINUTE
+    }
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -118,6 +130,12 @@ export class AuthController {
     }
   }
 
+  @Throttle({
+    auth: {
+      ttl: MILLISECONDS_IN_HOUR,
+      limit: MAXIMUM_AUTH_REQUESTS_PER_MINUTE
+    }
+  })
   @Post('register')
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -171,6 +189,12 @@ export class AuthController {
     return await this.authService.register(registerDto)
   }
 
+  @Throttle({
+    auth: {
+      ttl: MILLISECONDS_IN_MINUTE,
+      limit: MAXIMUM_AUTH_REQUESTS_PER_MINUTE
+    }
+  })
   @UseGuards(JwtAuthGuard)
   @Post('verify-otp')
   @ApiOperation({
@@ -236,6 +260,12 @@ export class AuthController {
     }
   }
 
+  @Throttle({
+    auth: {
+      ttl: MILLISECONDS_IN_MINUTE * 6,
+      limit: MAXIMUM_AUTH_REQUESTS_PER_MINUTE
+    }
+  })
   @UseGuards(JwtAuthGuard)
   @Post('resend-otp')
   @ApiOperation({
@@ -282,6 +312,12 @@ export class AuthController {
     }
   }
 
+  @Throttle({
+    auth: {
+      ttl: MILLISECONDS_IN_MINUTE * 6,
+      limit: MAXIMUM_AUTH_REQUESTS_PER_MINUTE
+    }
+  })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -301,11 +337,7 @@ export class AuthController {
   })
   @ApiBody({ type: RequestResetPasswordDto })
   async requestPasswordReset(@Body() dto: RequestResetPasswordDto) {
-    try {
-      return await this.authService.requestPasswordReset(dto.email)
-    } catch (error) {
-      throw error
-    }
+    return await this.authService.requestPasswordReset(dto.email)
   }
 
   @Post('reset-password/confirm')
@@ -342,6 +374,7 @@ export class AuthController {
     }
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @Post('refresh')
   @ApiOperation({

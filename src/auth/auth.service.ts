@@ -259,7 +259,7 @@ export class AuthService {
     const otpExpiresAt = this.otpService.getOtpExpirationTime()
 
     await this.usersService.update(user.id, {
-      otpCode: otpCode,
+      otpCode,
       otpExpiresAt: otpExpiresAt
     })
 
