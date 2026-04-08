@@ -3,6 +3,7 @@ import {
   Get,
   HttpStatus,
   Logger,
+  ParseIntPipe,
   Query,
   Res,
   UseGuards
@@ -68,7 +69,7 @@ export class ReportsController {
   })
   async generateMandatorySavingsReport(
     @Res() res: Response,
-    @Query('year') year?: number
+    @Query('year', new ParseIntPipe({ optional: true })) year?: number
   ) {
     try {
       const reportYear = year || new Date().getFullYear()

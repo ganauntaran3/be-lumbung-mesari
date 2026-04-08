@@ -10,6 +10,7 @@ import { UsersModule } from '../users/users.module'
 import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
 import { OtpService } from './services/otp.service'
+import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy'
 import { JwtStrategy } from './strategies/jwt.strategy'
 
 @Module({
@@ -21,7 +22,7 @@ import { JwtStrategy } from './strategies/jwt.strategy'
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET', 'your-default-secret-key'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: configService.get('JWT_EXPIRES_IN', '1h')
         }
@@ -29,7 +30,7 @@ import { JwtStrategy } from './strategies/jwt.strategy'
       inject: [ConfigService]
     })
   ],
-  providers: [AuthService, JwtStrategy, OtpService],
+  providers: [AuthService, JwtStrategy, JwtRefreshStrategy, OtpService],
   controllers: [AuthController],
   exports: [AuthService]
 })

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator'
 
 export enum ApprovalAction {
   APPROVE = 'approve',
@@ -24,6 +24,7 @@ export class RejectUserQueryDto {
     example: 'Deposit proof image is not clear',
     maxLength: 500
   })
+  @IsNotEmpty({ message: 'Reason is required' })
   @IsString({ message: 'Reason must be a string' })
   @MaxLength(500, { message: 'Reason cannot exceed 500 characters' })
   reason!: string

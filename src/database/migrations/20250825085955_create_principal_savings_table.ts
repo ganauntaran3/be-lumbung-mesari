@@ -23,8 +23,15 @@ export async function up(knex: Knex): Promise<void> {
     table.timestamp('paid_at').nullable()
     table.timestamps(true, true)
   })
+
+  await knex.raw(`
+    CREATE UNIQUE INDEX uq_principal_savings_user_id ON principal_savings (user_id);
+  `)
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.raw(`
+    DROP INDEX uq_principal_savings_user_id;
+  `)
   await knex.schema.dropTableIfExists('principal_savings')
 }

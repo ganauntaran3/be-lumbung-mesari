@@ -40,27 +40,33 @@ async function bootstrap() {
   // Security Middleware
   app.use(helmet())
   app.use(compression())
-  app.enableCors()
+  app.enableCors({
+    origin: configService.get<string>('FRONTEND_URL', 'http://localhost:3000'),
+    credentials: true
+  })
 
   app.setGlobalPrefix('api')
-  // Swagger Configuration (Non-Versioned)
-  const config = new DocumentBuilder()
-    .setTitle('Lumbung Mesari API')
-    .setDescription('The Lumbung Mesari API documentation')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build()
 
-  const document = SwaggerModule.createDocument(app, config)
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      docExpansion: 'none',
-      filter: true,
-      showRequestHeaders: true
-    }
-  })
+  // Swagger — development/staging only
+  if (configService.get<string>('NODE_ENV') !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Lumbung Mesari API')
+      .setDescription('The Lumbung Mesari API documentation')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build()
+
+    const document = SwaggerModule.createDocument(app, config)
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        docExpansion: 'none',
+        filter: true,
+        showRequestHeaders: true
+      }
+    })
+  }
 
   const port = configService.get<number>('PORT', 8000)
   await app.listen(port)

@@ -90,24 +90,26 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
     sortBy: string = 'updated_at',
     sortOrder: 'asc' | 'desc' = 'desc'
   ): void {
+    const safeSortOrder = sortOrder === 'asc' ? 'asc' : 'desc'
+
     switch (sortBy) {
       case 'updated_at':
-        query.orderBy('expenses.updated_at', sortOrder)
+        query.orderBy('expenses.updated_at', safeSortOrder)
         break
       case 'created_at':
-        query.orderBy('expenses.created_at', sortOrder)
+        query.orderBy('expenses.created_at', safeSortOrder)
         break
       case 'amount':
         // Sort by total amount (shu_amount + capital_amount)
         query.orderByRaw(
-          `(expenses.shu_amount::decimal + expenses.capital_amount::decimal) ${sortOrder}`
+          `(expenses.shu_amount::decimal + expenses.capital_amount::decimal) ${safeSortOrder}`
         )
         break
       case 'category':
-        query.orderBy('expense_categories.name', sortOrder)
+        query.orderBy('expense_categories.name', safeSortOrder)
         break
       default:
-        query.orderBy('expenses.updated_at', sortOrder)
+        query.orderBy('expenses.updated_at', safeSortOrder)
     }
   }
 
@@ -182,7 +184,6 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.loan_id',
         'expenses.notes',
         'expenses.source',
-        'expenses.source',
         this.knex.raw("TO_CHAR(expenses.txn_date, 'YYYY-MM-DD') as txn_date"),
         'expenses.created_at',
         'expenses.updated_at',
@@ -241,7 +242,6 @@ export class ExpensesRepository extends BaseRepository<ExpenseTable> {
         'expenses.created_by',
         'expenses.loan_id',
         'expenses.notes',
-        'expenses.source',
         'expenses.source',
         this.knex.raw("TO_CHAR(expenses.txn_date, 'YYYY-MM-DD') as txn_date"),
         'expenses.created_at',
