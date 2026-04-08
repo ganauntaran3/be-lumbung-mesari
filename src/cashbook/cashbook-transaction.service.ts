@@ -218,7 +218,10 @@ export class CashbookTransactionService {
       const newEntryTotalAfter =
         reversalTotalAfter - (newShuAmount + newCapitalAmount)
 
-      // 4. Insert reversal row — trigger adds old amounts back to cashbook_balances
+      // 4. Soft-delete the original row so it no longer appears in history
+      await this.transactionRepository.softDeleteById(original.id, trxRequired)
+
+      // 5. Insert reversal row — trigger adds old amounts back to cashbook_balances
       await this.transactionRepository.createTransaction(
         {
           txn_date: original.txn_date,
@@ -238,7 +241,7 @@ export class CashbookTransactionService {
         trx
       )
 
-      // 5. Insert new entry row — trigger deducts new amounts from cashbook_balances
+      // 6. Insert new entry row — trigger deducts new amounts from cashbook_balances
       await this.transactionRepository.createTransaction(
         {
           txn_date: txnDate || original.txn_date,
@@ -323,6 +326,9 @@ export class CashbookTransactionService {
       const newEntryShuAfter = reversalShuAfter + newShuAmount
       const newEntryCapitalAfter = reversalCapitalAfter + newCapitalAmount
       const newEntryTotalAfter = reversalTotalAfter + amount
+
+      // Soft-delete the original row so it no longer appears in history
+      await this.transactionRepository.softDeleteById(original.id, trxRequired)
 
       // Insert reversal row — trigger deducts old amounts from cashbook_balances
       await this.transactionRepository.createTransaction(
