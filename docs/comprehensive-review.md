@@ -56,24 +56,7 @@ A 6-digit OTP has only 900,000 possible values. Without rate limiting, an attack
 
 ---
 
-### 1.3 OTP Stored in Plaintext + Timing-Unsafe Comparison
-
-**File:** `src/auth/auth.service.ts:176`
-
-```ts
-if (user.otp_code !== otpCode) {
-```
-
-Two issues:
-
-1. **Timing attack:** The `!==` comparison short-circuits on the first mismatched character, leaking information about correct OTP digits through response time.
-2. **Plaintext storage:** OTP codes are stored as plaintext in the database (`src/auth/auth.service.ts:70-73`, lines 109-118). If the database is compromised, all pending OTPs are immediately exposed.
-
-**Recommendation:** Use `crypto.timingSafeEqual()` for comparison. Hash OTPs (e.g., SHA-256) before storage, similar to password handling.
-
----
-
-### 1.4 `updateExpenseTransaction` Doesn't Recalculate Balance Snapshots
+### 1.3 `updateExpenseTransaction` Doesn't Recalculate Balance Snapshots
 
 **File:** `src/cashbook/cashbook-transaction.service.ts:158-190`
 
@@ -85,7 +68,7 @@ This means the cashbook transaction record will have incorrect balance history a
 
 ---
 
-### 1.5 Delete Transactions Don't Reverse Cashbook Balances
+### 1.4 Delete Transactions Don't Reverse Cashbook Balances
 
 **Files:** `src/cashbook/cashbook-transaction.service.ts:225-267`
 
@@ -97,7 +80,7 @@ This means the cashbook balance is permanently skewed after any deletion.
 
 ---
 
-### 1.6 Expense Update Doesn't Account for Existing Allocated Amount
+### 1.5 Expense Update Doesn't Account for Existing Allocated Amount
 
 **File:** `src/expenses/expenses.service.ts:290-310`
 
@@ -109,7 +92,7 @@ When updating an expense amount, `allocateAmounts()` checks if there are suffici
 
 ---
 
-### 1.7 `settlePrincipalSavings` Reads Outside Transaction (TOCTOU Race Condition)
+### 1.6 `settlePrincipalSavings` Reads Outside Transaction (TOCTOU Race Condition)
 
 **File:** `src/users-savings/users-savings.service.ts:39-40`
 
@@ -124,7 +107,7 @@ This method receives a `trx` parameter but doesn't pass it to the repository cal
 
 ---
 
-### 1.8 No Negative Balance Guard in Cashbook
+### 1.7 No Negative Balance Guard in Cashbook
 
 **File:** `src/database/migrations/20251121120850_create_cashbook_triggers.ts:37-57`
 
@@ -188,17 +171,7 @@ Problems:
 
 ---
 
-### 2.4 Cashbook Balances Exposed to All Users
-
-**File:** `src/cashbook/cashbook.controller.ts:27-49`
-
-`GET /cashbook/balances` requires only `JwtAuthGuard` -- any authenticated user (including regular members) can see the cooperative's total financial balances (total, capital, SHU). Financial summaries should likely be restricted to admins.
-
-**Recommendation:** Add `@UseGuards(RolesGuard)` and `@Roles('administrator', 'superadministrator')`.
-
----
-
-### 2.5 `isDevelopment` Variable Is Inverted in Notification Module
+### 2.4 `isDevelopment` Variable Is Inverted in Notification Module
 
 **File:** `src/notifications/notification.module.ts:18-19`
 
@@ -222,7 +195,7 @@ const isProduction = configService.get<string>('NODE_ENV') === 'production'
 
 ---
 
-### 2.6 JWT Validate Ignores Current User Status/Role
+### 2.5 JWT Validate Ignores Current User Status/Role
 
 **File:** `src/auth/strategies/jwt.strategy.ts:24-38`
 
@@ -237,7 +210,7 @@ Both `status` and `role` are returned from the **JWT payload** (stale data from 
 
 ---
 
-### 2.7 CASCADE Delete on Financial Installments
+### 2.6 CASCADE Delete on Financial Installments
 
 **File:** `src/database/migrations/20250825085945_create_installments_table.ts:10`
 
@@ -251,21 +224,7 @@ Deleting a loan cascades to delete all installments. In a financial system, this
 
 ---
 
-### 2.8 `console.log(memberDataMap)` Leaking PII in Production
-
-**File:** `src/reports/reports.service.ts:63`
-
-```ts
-console.log(memberDataMap)
-```
-
-Dumps the entire member data map (names, user IDs, monthly financial data) to stdout on every report generation. This is both a PII leak and a performance concern.
-
-**Recommendation:** Remove the `console.log` statement entirely, or replace with a `this.logger.debug()` that only fires in development.
-
----
-
-### 2.9 Sensitive Data in Error Messages
+### 2.8 Sensitive Data in Error Messages
 
 **Files:**
 
@@ -276,7 +235,7 @@ Dumps the entire member data map (names, user IDs, monthly financial data) to st
 
 ---
 
-### 2.10 Loan Creation Doesn't Check User Status
+### 2.9 Loan Creation Doesn't Check User Status
 
 **File:** `src/loans/loans.service.ts:221`
 
@@ -286,7 +245,7 @@ Any authenticated user can create a loan, including `PENDING`, `WAITING_DEPOSIT`
 
 ---
 
-### 2.11 Reports Controller Manual Validation Instead of DTO
+### 2.10 Reports Controller Manual Validation Instead of DTO
 
 **File:** `src/reports/reports.controller.ts:154-171`
 
@@ -296,7 +255,7 @@ The `generateMonthlyFinancialReport` endpoint manually validates `month` and `ye
 
 ---
 
-### 2.12 No Distributed Lock on Cron Jobs
+### 2.11 No Distributed Lock on Cron Jobs
 
 **Files:** `src/savings/savings.scheduler.ts`, `src/loans/loans.scheduler.ts`
 
@@ -315,7 +274,7 @@ Neither scheduler uses a distributed lock. In a multi-instance deployment, both 
 ```ts
 return {
   message: 'User rejected successfully',
-  status: UserStatus.WAITING_DEPOSIT,  // Bug: Should be UserStatus.REJECTED
+  status: UserStatus.WAITING_DEPOSIT, // Bug: Should be UserStatus.REJECTED
   userId: userId
 }
 ```

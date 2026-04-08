@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-
+import Decimal from 'decimal.js'
 import * as ExcelJS from 'exceljs'
 
 import { MandatorySavingsRepository } from '../savings/mandatory-savings.repository'
@@ -43,7 +43,7 @@ export class ReportsService {
         memberDataMap.set(member.id, {
           userId: member.id,
           fullname: member.fullname,
-          monthlyPayments: Array(12).fill(null),
+          monthlyPayments: new Array(12).fill(null),
           total: 0
         })
       })
@@ -51,8 +51,6 @@ export class ReportsService {
       hasNextMembers = membersResult.next
       memberPage++
     }
-
-    console.log(memberDataMap)
 
     this.logger.log(
       `Initialized ${memberDataMap.size} active members in the report`
@@ -81,7 +79,9 @@ export class ReportsService {
           const amount = parseFloat(saving.amount)
 
           memberData.monthlyPayments[month] = amount
-          memberData.total += amount
+          memberData.total = new Decimal(memberData.total)
+            .plus(amount)
+            .toNumber()
           totalSavingsProcessed++
         }
       })
@@ -220,7 +220,9 @@ export class ReportsService {
     memberDataArray.forEach((memberData) => {
       memberData.monthlyPayments.forEach((amount, monthIndex) => {
         if (amount !== null) {
-          monthlyTotals[monthIndex] += amount
+          monthlyTotals[monthIndex] = new Decimal(monthlyTotals[monthIndex])
+            .plus(amount)
+            .toNumber()
         }
       })
     })

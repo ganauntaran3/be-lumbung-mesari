@@ -3,9 +3,9 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
-  MaxLength,
-  Min
+  MaxLength
 } from 'class-validator'
 
 export class CreateLoanDto {
@@ -20,11 +20,11 @@ export class CreateLoanDto {
   @ApiProperty({
     description: 'Principal amount requested',
     example: 5000000,
-    minimum: 0
+    minimum: 1
   })
   @IsNotEmpty({ message: 'Principal amount is required' })
   @IsNumber({}, { message: 'Principal amount must be a number' })
-  @Min(0, { message: 'Principal amount must be greater than 0' })
+  @IsPositive({ message: 'Principal amount must be a positive number' })
   amount!: number
 
   @ApiPropertyOptional({

@@ -5,13 +5,12 @@ import { HttpException, HttpStatus } from '@nestjs/common'
  * This is a non-critical error that should not fail the main operation
  */
 export class EmailNotificationFailedException extends HttpException {
-  constructor(email: string, action: string, originalError?: any) {
+  constructor(_email: string, _action: string, _originalError?: any) {
     super(
       {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: `Failed to send ${action} notification email to ${email}`,
-        error: 'EmailNotificationFailed',
-        details: originalError?.message || 'Unknown email service error'
+        message: 'Notification could not be sent. Please try again later.',
+        error: 'EmailNotificationFailed'
       },
       HttpStatus.INTERNAL_SERVER_ERROR
     )

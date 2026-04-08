@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -161,8 +160,12 @@ export class UsersRepository extends BaseRepository<User> {
     }
   }
 
-  async findById(id: string): Promise<User | undefined> {
-    const result = await this.knex('users')
+  async findById(
+    id: string,
+    trx?: Knex.Transaction
+  ): Promise<User | undefined> {
+    const db = trx || this.knex
+    const result = await db('users')
       .select([
         'users.id',
         'users.email',

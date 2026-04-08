@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto'
+
 import {
   BadRequestException,
   Injectable,
@@ -6,13 +8,17 @@ import {
   NotFoundException,
   UnauthorizedException
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-
 import { compare, hash } from 'bcrypt'
-import { randomBytes } from 'node:crypto'
 import { DatabaseError } from 'pg'
 
-import { UserRole, UserStatus } from '../common/constants'
+import {
+  ACTIVE_USER_ACCESS_TOKEN_EXPIRY,
+  NON_ACTIVE_USER_ACCESS_TOKEN_EXPIRY,
+  UserRole,
+  UserStatus
+} from '../common/constants'
 import { DatabaseService } from '../database/database.service'
 import { JwtPayload } from '../interface/jwt'
 import {
@@ -42,6 +48,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     private readonly emailHelperService: EmailHelperService,
     private readonly otpService: OtpService,
     private readonly usersSavingsService: UsersSavingsService,
@@ -305,7 +312,10 @@ export class AuthService {
         passwordResetExpiresAt: expiresAt
       })
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+      const frontendUrl = this.configService.get<string>(
+        'FRONTEND_URL',
+        'http://localhost:3000'
+      )
       const resetUrl = `${frontendUrl}/profile/reset-password?token=${token}`
 
       const emailSent = await this.sendPasswordResetEmail(user, resetUrl)
@@ -385,14 +395,20 @@ export class AuthService {
       status: user.status || UserStatus.PENDING
     }
 
-    const accessTokenExpiry = user.status === UserStatus.PENDING ? '10m' : '1h'
+    const accessTokenExpiry =
+      user.status === UserStatus.PENDING
+        ? NON_ACTIVE_USER_ACCESS_TOKEN_EXPIRY
+        : ACTIVE_USER_ACCESS_TOKEN_EXPIRY
 
     return {
       token: {
         accessToken: this.jwtService.sign(payload, {
           expiresIn: accessTokenExpiry
         }),
-        refreshToken: this.jwtService.sign(payload, { expiresIn: '1d' })
+        refreshToken: this.jwtService.sign(payload, {
+          expiresIn: '1d',
+          secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET')
+        })
       }
     }
   }

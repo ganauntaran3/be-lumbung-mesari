@@ -48,6 +48,7 @@ import {
   RequestResetPasswordResponseDto
 } from './dto/reset-password.dto'
 import { VerifyOtpDto, VerifyOtpResponseDto } from './dto/verify-otp.dto'
+import { JwtRefreshGuard } from './guards/auth-refresh.guard'
 import { JwtAuthGuard } from './guards/auth.guard'
 
 @ApiTags('Authentication')
@@ -375,7 +376,7 @@ export class AuthController {
   }
 
   @SkipThrottle()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @ApiOperation({
     summary: 'Refresh access token',

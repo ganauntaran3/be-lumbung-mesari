@@ -35,9 +35,9 @@ export class InvalidExpenseAmountError extends BadRequestException {
 }
 
 export class InsufficientFundsError extends BadRequestException {
-  constructor(amount: number, balance: number, source: string) {
+  constructor(_amount: number, _balance: number, source: string) {
     super({
-      message: `Insufficient funds from ${source}. Amount: ${amount}, Balance: ${balance}`,
+      message: `Insufficient funds in ${source} balance`,
       error: 'INSUFFICIENT_FUNDS',
       statusCode: HttpStatus.BAD_REQUEST
     })

@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
-
-import { DatabaseService } from '../database/database.service'
 
 import { CashbookBalanceRepository } from './cashbook-balance.repository'
 
@@ -24,10 +21,7 @@ export interface BalanceHistory {
 export class CashbookBalanceService {
   private readonly logger = new Logger(CashbookBalanceService.name)
 
-  constructor(
-    private readonly databaseService: DatabaseService,
-    private readonly balanceRepository: CashbookBalanceRepository
-  ) {}
+  constructor(private readonly balanceRepository: CashbookBalanceRepository) {}
 
   async getCurrentBalances(): Promise<CashbookBalances> {
     try {
@@ -51,23 +45,12 @@ export class CashbookBalanceService {
     type: 'total' | 'capital' | 'shu',
     trx?: Knex.Transaction
   ): Promise<number> {
-    const transaction =
-      trx || (await this.databaseService.getKnex().transaction())
     try {
       this.logger.debug(`Retrieving ${type} balance`)
-
-      const balance = await this.balanceRepository.getBalance(type, transaction)
-
-      if (!trx) {
-        await transaction.commit()
-      }
-
+      const balance = await this.balanceRepository.getBalance(type, trx)
       this.logger.debug(`${type} balance: ${balance}`)
       return balance
     } catch (error) {
-      if (!trx) {
-        await transaction.rollback()
-      }
       this.logger.error(`Failed to get ${type} balance:`, error)
       throw error
     }
