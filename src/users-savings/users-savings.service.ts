@@ -5,7 +5,6 @@ import {
   NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-
 import { Knex } from 'knex'
 
 import { CashbookBalanceService } from '../cashbook/cashbook-balance.service'
@@ -37,7 +36,10 @@ export class UsersSavingsService {
 
     // 1. Find principal savings
     const principalSavings =
-      await this.principalSavingsRepository.findPrincipalSavingsByUserId(userId)
+      await this.principalSavingsRepository.findPrincipalSavingsByUserId(
+        userId,
+        trx
+      )
 
     if (!principalSavings) {
       throw new NotFoundException(

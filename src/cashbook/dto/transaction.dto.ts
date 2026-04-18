@@ -3,14 +3,24 @@ import { Type } from 'class-transformer'
 import { IsInt, IsOptional, Min } from 'class-validator'
 
 export class GetTransactionsQueryDto {
-  @ApiProperty({ description: 'Page number', example: 1, required: false, default: 1 })
+  @ApiProperty({
+    description: 'Page number',
+    example: 1,
+    required: false,
+    default: 1
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1
 
-  @ApiProperty({ description: 'Items per page', example: 10, required: false, default: 10 })
+  @ApiProperty({
+    description: 'Items per page',
+    example: 10,
+    required: false,
+    default: 10
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -19,7 +29,10 @@ export class GetTransactionsQueryDto {
 }
 
 export class TransactionCategoryDto {
-  @ApiProperty({ description: 'Category ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiProperty({
+    description: 'Category ID',
+    example: '123e4567-e89b-12d3-a456-426614174000'
+  })
   id!: string
 
   @ApiProperty({ description: 'Category code', example: 'INC-001' })
@@ -30,13 +43,24 @@ export class TransactionCategoryDto {
 }
 
 export class CashbookTransactionResponseDto {
-  @ApiProperty({ description: 'Transaction ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiProperty({
+    description: 'Transaction ID',
+    example: '123e4567-e89b-12d3-a456-426614174000'
+  })
   id!: string
 
-  @ApiProperty({ description: 'Transaction date', example: '2026-03-19T00:00:00.000Z', format: 'date-time' })
+  @ApiProperty({
+    description: 'Transaction date',
+    example: '2026-03-19T00:00:00.000Z',
+    format: 'date-time'
+  })
   txnDate!: Date
 
-  @ApiProperty({ description: 'Transaction type', enum: ['income', 'expense'], example: 'income' })
+  @ApiProperty({
+    description: 'Transaction type',
+    enum: ['income', 'expense'],
+    example: 'income'
+  })
   type!: 'income' | 'expense'
 
   @ApiProperty({ description: 'Capital amount', example: 500000 })
@@ -45,18 +69,31 @@ export class CashbookTransactionResponseDto {
   @ApiProperty({ description: 'SHU amount', example: 200000 })
   shuAmount!: number
 
-  @ApiProperty({ description: 'Total balance after transaction', example: 12000000 })
+  @ApiProperty({
+    description: 'Total balance after transaction',
+    example: 12000000
+  })
   totalBalanceAfter!: number
 
-  @ApiProperty({ description: 'Transaction category', type: TransactionCategoryDto })
+  @ApiProperty({
+    description: 'Transaction category',
+    type: TransactionCategoryDto
+  })
   category!: TransactionCategoryDto
 
-  @ApiProperty({ description: 'Created at', example: '2026-03-19T00:00:00.000Z', format: 'date-time' })
+  @ApiProperty({
+    description: 'Created at',
+    example: '2026-03-19T00:00:00.000Z',
+    format: 'date-time'
+  })
   createdAt!: Date
 }
 
 export class CashbookTransactionsPaginatedResponseDto {
-  @ApiProperty({ description: 'Array of transactions', type: [CashbookTransactionResponseDto] })
+  @ApiProperty({
+    description: 'Array of transactions',
+    type: [CashbookTransactionResponseDto]
+  })
   data!: CashbookTransactionResponseDto[]
 
   @ApiProperty({ description: 'Current page number', example: 1 })
@@ -74,6 +111,9 @@ export class CashbookTransactionsPaginatedResponseDto {
   @ApiProperty({ description: 'Whether there is a next page', example: true })
   next!: boolean
 
-  @ApiProperty({ description: 'Whether there is a previous page', example: false })
+  @ApiProperty({
+    description: 'Whether there is a previous page',
+    example: false
+  })
   prev!: boolean
 }

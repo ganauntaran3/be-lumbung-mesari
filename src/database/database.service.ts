@@ -1,8 +1,8 @@
 import {
   Injectable,
+  Logger,
   OnModuleDestroy,
-  OnModuleInit,
-  Logger
+  OnModuleInit
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Knex, knex } from 'knex'

@@ -1,15 +1,13 @@
 import {
-  registerDecorator,
-  ValidationOptions,
   ValidationArguments,
+  ValidationOptions,
   ValidatorConstraint,
-  ValidatorConstraintInterface
+  ValidatorConstraintInterface,
+  registerDecorator
 } from 'class-validator'
 
 @ValidatorConstraint({ name: 'isDateRangeValid', async: false })
-export class IsDateRangeValidConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsDateRangeValidConstraint implements ValidatorConstraintInterface {
   validate(endDate: string, args: ValidationArguments) {
     const [startDateProperty] = args.constraints
     const startDate = (args.object as any)[startDateProperty]
@@ -52,9 +50,7 @@ export function IsDateRangeValid(
 }
 
 @ValidatorConstraint({ name: 'isAmountRangeValid', async: false })
-export class IsAmountRangeValidConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsAmountRangeValidConstraint implements ValidatorConstraintInterface {
   validate(maxAmount: number, args: ValidationArguments) {
     const [minAmountProperty] = args.constraints
     const minAmount = (args.object as any)[minAmountProperty]

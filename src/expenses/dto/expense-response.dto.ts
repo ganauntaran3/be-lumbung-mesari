@@ -141,9 +141,7 @@ export class ExpenseResponseDto {
   category!: ExpenseCategoryResponseDto
 }
 
-export class ExpensesPaginatedResponseDto
-  implements PaginationResult<ExpenseResponseDto>
-{
+export class ExpensesPaginatedResponseDto implements PaginationResult<ExpenseResponseDto> {
   @ApiProperty({
     description: 'Array of expense records',
     type: [ExpenseResponseDto]

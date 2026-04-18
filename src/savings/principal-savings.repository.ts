@@ -57,12 +57,17 @@ export class PrincipalSavingsRepository extends BaseRepository<PrincipalSavingsT
    * Find principal savings by user ID with user information
    */
   async findPrincipalSavingsByUserId(
-    userId: string
+    userId: string,
+    trx?: any
   ): Promise<PrincipalSavingsWithUser | null> {
     try {
       this.logger.debug(`Finding principal savings for user ${userId}`)
 
-      const result = await this.knex('principal_savings as ps')
+      const query = trx
+        ? trx('principal_savings as ps')
+        : this.knex('principal_savings as ps')
+
+      const result = await query
         .join('users as u', 'ps.user_id', 'u.id')
         .leftJoin('users as pb', 'ps.processed_by', 'pb.id')
         .where('ps.user_id', userId)

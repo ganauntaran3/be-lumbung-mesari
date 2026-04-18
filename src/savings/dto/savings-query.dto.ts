@@ -1,6 +1,7 @@
-import { IsOptional, IsString, Matches, IsInt, Min, Max } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
+import { IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator'
+
 import { PaginationQueryDto } from '../../database/dto/pagination.dto'
 
 /**

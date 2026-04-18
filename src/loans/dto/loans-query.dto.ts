@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { Type } from 'class-transformer'
-import { IsEnum, IsInt, IsOptional, IsString, Min, IsIn } from 'class-validator'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
+
+import { PaginationQueryDto } from '../../database/dto/pagination.dto'
 
 export enum LoanSortBy {
   CREATED_AT = 'createdAt',
@@ -10,29 +11,7 @@ export enum LoanSortBy {
   PRINCIPAL_AMOUNT = 'principalAmount'
 }
 
-export class LoansQueryDto {
-  @ApiPropertyOptional({
-    description: 'Page number',
-    example: 1,
-    minimum: 1
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'Page must be an integer' })
-  @Min(1, { message: 'Page must be at least 1' })
-  page?: number = 1
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-    minimum: 1
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  limit?: number = 10
-
+export class LoansQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by loan status',
     example: 'pending',
@@ -64,17 +43,5 @@ export class LoansQueryDto {
     message:
       'SortBy must be one of: createdAt, updatedAt, id, status, principalAmount'
   })
-  sortBy?: LoanSortBy = LoanSortBy.CREATED_AT
-
-  @ApiPropertyOptional({
-    description: 'Sort order',
-    enum: ['asc', 'desc'],
-    default: 'desc',
-    example: 'desc'
-  })
-  @IsOptional()
-  @IsIn(['asc', 'desc'], {
-    message: 'SortOrder must be either "asc" or "desc"'
-  })
-  sortOrder?: 'asc' | 'desc' = 'desc'
+  override sortBy?: string = LoanSortBy.CREATED_AT
 }

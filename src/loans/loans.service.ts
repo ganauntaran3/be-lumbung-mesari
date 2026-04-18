@@ -110,58 +110,48 @@ export class LoansService {
         .mul(loan.interest_rate)
         .toNumber()
 
-      // Get all installments for this loan sorted by installment number
-      const allInstallments =
-        await this.loansRepository.findInstallmentsByLoanId(loanId)
+      const previouslyOverdueCount =
+        await this.loansRepository.countOverdueInstallmentsByLoanId(loanId, trx)
 
-      allInstallments.sort(
-        (a, b) => a.installment_number - b.installment_number
+      // Mark newly overdue installment as 'overdue' (only 1 per loan per month)
+      const installment = overdueInstallments[0]
+      await this.loansRepository.updateInstallmentStatus(
+        installment.id,
+        'overdue',
+        trx
+      )
+      this.logger.log(
+        `Marked installment ${installment.installment_number} of loan ${loanId} as overdue`
       )
 
-      // Count consecutive overdue installments
-      let consecutiveOverdueCount = 0
-      for (const installment of allInstallments) {
-        if (installment.status === 'due' || installment.status === 'overdue') {
-          consecutiveOverdueCount++
-        } else if (installment.status === 'paid') {
-          consecutiveOverdueCount = 0 // Reset counter when paid installment found
-        }
-      }
+      const totalOverdueCount = previouslyOverdueCount + 1
 
       this.logger.log(
-        `Loan ${loanId}: ${consecutiveOverdueCount} consecutive overdue installments, processing ${overdueInstallments.length} newly overdue`
+        `Loan ${loanId}: ${totalOverdueCount} total overdue installments (${previouslyOverdueCount} previous + 1 newly overdue)`
       )
 
-      // Mark all installments as overdue
-      for (const installment of overdueInstallments) {
-        await this.loansRepository.updateInstallmentStatus(
-          installment.id,
-          'overdue',
-          trx
-        )
-        this.logger.log(
-          `Marked installment ${installment.installment_number} of loan ${loanId} as overdue`
-        )
-      }
+      // Apply ONE penalty per overdue installment (each installment penalized once)
+      // Penalty goes to oldest unpenalized overdue installment
+      if (totalOverdueCount >= 2) {
+        const oldestUnpenalized =
+          await this.loansRepository.findOldestUnpenalizedOverdueInstallment(
+            loanId,
+            trx
+          )
 
-      // Apply ONE penalty per loan if there are 2+ consecutive overdue installments
-      if (consecutiveOverdueCount >= 2) {
-        // Apply penalty to the earliest overdue installment
-        const earliestOverdue = overdueInstallments.sort(
-          (a, b) => a.installment_number - b.installment_number
-        )[0]
-
-        await this.loansRepository.addPenaltyToInstallment(
-          earliestOverdue.id,
-          penaltyAmount,
-          trx
-        )
-        this.logger.log(
-          `Applied ONE penalty of ${penaltyAmount} to loan ${loanId} (${consecutiveOverdueCount} consecutive overdue installments)`
-        )
+        if (oldestUnpenalized) {
+          await this.loansRepository.addPenaltyToInstallment(
+            oldestUnpenalized.id,
+            penaltyAmount,
+            trx
+          )
+          this.logger.log(
+            `Applied penalty of ${penaltyAmount} to installment ${oldestUnpenalized.installment_number} of loan ${loanId} (${totalOverdueCount} total overdue installments)`
+          )
+        }
       } else {
         this.logger.log(
-          `No penalty for loan ${loanId} (only ${consecutiveOverdueCount} consecutive overdue)`
+          `No penalty for loan ${loanId} (only ${totalOverdueCount} overdue)`
         )
       }
 
@@ -198,10 +188,14 @@ export class LoansService {
       monthlyInterest
     )
 
-    // Calculate last month's principal as remainder
-    // This ensures total principal paid = original principal exactly
+    // Calculate last month's principal as remainder.
+    // Clamp to zero to avoid negative last-month principal when rounding causes
+    // first-month payments to exceed the total principal.
     const principalPaidInFirstMonths = roundedMonthlyPrincipal * (tenor - 1)
-    const lastMonthPrincipal = principal.minus(principalPaidInFirstMonths)
+    const lastMonthPrincipal = Decimal.max(
+      principal.minus(principalPaidInFirstMonths),
+      0
+    )
 
     const lastMonthPayment = lastMonthPrincipal.plus(monthlyInterest)
 
@@ -253,10 +247,11 @@ export class LoansService {
         tenor
       )
 
-      // Calculate dates
+      // Calculate dates — use UTC to avoid setMonth day-overflow (e.g. Jan 31 + 1 month = Mar 3)
       const startDate = new Date()
-      const endDate = new Date()
-      endDate.setMonth(endDate.getMonth() + tenor)
+      const endDate = new Date(
+        Date.UTC(startDate.getFullYear(), startDate.getMonth() + tenor, 1)
+      )
 
       const loanData = {
         user_id: userId,
