@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'

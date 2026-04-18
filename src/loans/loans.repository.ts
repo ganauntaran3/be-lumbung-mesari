@@ -314,6 +314,34 @@ export class LoansRepository extends BaseRepository<LoanTable> {
     return results as Installment[]
   }
 
+  async countOverdueInstallmentsByLoanId(
+    loanId: string,
+    trx?: Knex.Transaction
+  ): Promise<number> {
+    const query = trx ? trx('installments') : this.knex('installments')
+    const result = await query
+      .where('loan_id', loanId)
+      .where('status', 'overdue')
+      .count('id as count')
+
+    return Number(result[0].count)
+  }
+
+  async findOldestUnpenalizedOverdueInstallment(
+    loanId: string,
+    trx?: Knex.Transaction
+  ): Promise<Installment | null> {
+    const query = trx ? trx('installments') : this.knex('installments')
+    const result = await query
+      .where('loan_id', loanId)
+      .where('status', 'overdue')
+      .where('penalty_amount', '0')
+      .orderBy('installment_number', 'asc')
+      .first()
+
+    return result as Installment | null
+  }
+
   async settleInstallment(
     installmentId: string,
     adminId: string,

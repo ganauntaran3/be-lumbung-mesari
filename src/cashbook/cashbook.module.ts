@@ -17,6 +17,10 @@ import { CashbookController } from './cashbook.controller'
     CashbookBalanceRepository,
     CashbookTransactionRepository
   ],
-  exports: [CashbookBalanceService, CashbookTransactionService, CashbookBalanceRepository]
+  exports: [
+    CashbookBalanceService,
+    CashbookTransactionService,
+    CashbookBalanceRepository
+  ]
 })
 export class CashbookModule {}

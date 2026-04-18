@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -123,7 +122,9 @@ export class CashbookBalanceRepository extends BaseRepository<CashbookBalanceTab
 
     return {
       shu: parseFloat(rows.find((r) => r.type === 'shu')?.balance || '0'),
-      capital: parseFloat(rows.find((r) => r.type === 'capital')?.balance || '0'),
+      capital: parseFloat(
+        rows.find((r) => r.type === 'capital')?.balance || '0'
+      ),
       total: parseFloat(rows.find((r) => r.type === 'total')?.balance || '0')
     }
   }

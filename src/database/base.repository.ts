@@ -1,9 +1,9 @@
 import { Knex } from 'knex'
 
 import {
+  PAGINATION_DEFAULTS,
   PaginationOptions,
-  PaginationResult,
-  PAGINATION_DEFAULTS
+  PaginationResult
 } from '../interface/pagination'
 
 import { DatabaseService } from './database.service'

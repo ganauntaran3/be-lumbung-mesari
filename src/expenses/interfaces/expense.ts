@@ -110,5 +110,4 @@ export interface ExpenseResponse {
   }
 }
 
-export interface ExpensesPaginatedResponse
-  extends PaginationResult<ExpenseResponse> {}
+export interface ExpensesPaginatedResponse extends PaginationResult<ExpenseResponse> {}
