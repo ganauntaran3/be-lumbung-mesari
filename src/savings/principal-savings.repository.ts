@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
@@ -24,7 +25,7 @@ export class PrincipalSavingsRepository extends BaseRepository<PrincipalSavingsT
    */
   async createPrincipalSavings(
     data: Omit<PrincipalSavingsTable, 'id' | 'created_at' | 'updated_at'>,
-    trx?: any
+    trx?: Knex.Transaction
   ): Promise<PrincipalSavingsTable> {
     try {
       this.logger.debug(`Creating principal savings for user ${data.user_id}`)
@@ -57,12 +58,17 @@ export class PrincipalSavingsRepository extends BaseRepository<PrincipalSavingsT
    * Find principal savings by user ID with user information
    */
   async findPrincipalSavingsByUserId(
-    userId: string
+    userId: string,
+    trx?: Knex.Transaction
   ): Promise<PrincipalSavingsWithUser | null> {
     try {
       this.logger.debug(`Finding principal savings for user ${userId}`)
 
-      const result = await this.knex('principal_savings as ps')
+      const query = trx
+        ? trx('principal_savings as ps')
+        : this.knex('principal_savings as ps')
+
+      const result = await query
         .join('users as u', 'ps.user_id', 'u.id')
         .leftJoin('users as pb', 'ps.processed_by', 'pb.id')
         .where('ps.user_id', userId)
@@ -121,7 +127,7 @@ export class PrincipalSavingsRepository extends BaseRepository<PrincipalSavingsT
   async updatePrincipalSavings(
     id: string,
     updateData: UpdatePrincipalSavings,
-    trx?: any
+    trx?: Knex.Transaction
   ): Promise<PrincipalSavingsTable> {
     try {
       this.logger.debug(

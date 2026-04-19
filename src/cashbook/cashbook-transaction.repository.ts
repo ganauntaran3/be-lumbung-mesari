@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-
 import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
@@ -63,10 +62,10 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
         JSON.stringify(filters)
       )
 
-      let query = this.knex('cashbook_transactions').orderBy(
-        'created_at',
-        'desc'
-      )
+      let query = this.knex('cashbook_transactions')
+        .whereNull('deleted_at')
+        .where('is_reversal', false)
+        .orderBy('created_at', 'desc')
 
       // Apply date filters
       if (filters.dateFrom) {
@@ -213,6 +212,8 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
   ): Promise<number> {
     try {
       let query = this.knex('cashbook_transactions')
+        .whereNull('deleted_at')
+        .where('is_reversal', false)
 
       // Apply same filters as getTransactionsWithFilters but without pagination
       if (filters.dateFrom) {
@@ -259,6 +260,8 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
       )
 
       const results = await this.knex('cashbook_transactions as ct')
+        .whereNull('ct.deleted_at')
+        .where('ct.is_reversal', false)
         .select(
           'ct.id',
           'ct.txn_date',
@@ -279,7 +282,9 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
         .limit(filters.limit)
         .offset(filters.offset)
 
-      this.logger.debug(`Retrieved ${results.length} transactions with category`)
+      this.logger.debug(
+        `Retrieved ${results.length} transactions with category`
+      )
 
       return results
     } catch (error) {
@@ -415,5 +420,118 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
       )
       throw error
     }
+  }
+
+  async findLatestActiveByExpenseId(
+    expenseId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable | undefined> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query
+      .where({ expense_id: expenseId, is_reversal: false })
+      .whereNull('deleted_at')
+      .orderBy('created_at', 'desc')
+      .first()
+  }
+
+  async findLatestActiveByIncomeId(
+    incomeId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable | undefined> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query
+      .where({ income_id: incomeId, is_reversal: false })
+      .whereNull('deleted_at')
+      .orderBy('created_at', 'desc')
+      .first()
+  }
+
+  async findAllActiveByExpenseId(
+    expenseId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable[]> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query.where({ expense_id: expenseId }).whereNull('deleted_at')
+  }
+
+  async findAllByExpenseId(
+    expenseId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable[]> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query.where({ expense_id: expenseId })
+  }
+
+  async findAllActiveByIncomeId(
+    incomeId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable[]> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query.where({ income_id: incomeId }).whereNull('deleted_at')
+  }
+
+  async findAllByIncomeId(
+    incomeId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable[]> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query.where({ income_id: incomeId })
+  }
+
+  async softDeleteById(id: string, trx?: Knex.Transaction): Promise<void> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    await query
+      .where({ id })
+      .whereNull('deleted_at')
+      .update({ deleted_at: new Date() })
+  }
+
+  async softDeleteByExpenseId(
+    expenseId: string,
+    trx?: Knex.Transaction
+  ): Promise<void> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    await query
+      .where({ expense_id: expenseId })
+      .whereNull('deleted_at')
+      .update({ deleted_at: new Date() })
+  }
+
+  async softDeleteByIncomeId(
+    incomeId: string,
+    trx?: Knex.Transaction
+  ): Promise<void> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    await query
+      .where({ income_id: incomeId })
+      .whereNull('deleted_at')
+      .update({ deleted_at: new Date() })
   }
 }

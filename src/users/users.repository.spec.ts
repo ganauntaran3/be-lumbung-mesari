@@ -83,33 +83,6 @@ describe('UsersRepository', () => {
     })
   })
 
-  describe('findByEmailWithRole', () => {
-    it('should find user with role by email', async () => {
-      const mockUserWithRole = {
-        id: '1',
-        email: 'test@example.com',
-        fullname: 'Test User',
-        username: 'testuser',
-        role: 'member'
-      }
-
-      mockKnex.first.mockResolvedValue(mockUserWithRole)
-
-      const result = await repository.findByEmailWithRole('test@example.com')
-
-      expect(result).toEqual(mockUserWithRole)
-      expect(mockKnex.join).toHaveBeenCalledWith(
-        'roles',
-        'roles.id',
-        'users.role_id'
-      )
-      expect(mockKnex.where).toHaveBeenCalledWith(
-        'users.email',
-        'test@example.com'
-      )
-    })
-  })
-
   describe('findByIdentifierWithRole', () => {
     it('should find user by email or username', async () => {
       const mockUserWithRole = {

@@ -26,6 +26,7 @@ export async function up(knex: Knex): Promise<void> {
       .references('id')
       .inTable('expenses')
       .onDelete('CASCADE')
+
     table.timestamps(true, true)
 
     table.check(

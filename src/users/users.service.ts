@@ -119,10 +119,6 @@ export class UsersService {
     return await this.usersRepository.findByEmail(email)
   }
 
-  async findByEmailWithRole(email: string) {
-    return await this.usersRepository.findByEmailWithRole(email)
-  }
-
   async findByIdentifierWithRole(identifier: string) {
     return await this.usersRepository.findByIdentifierWithRole(identifier)
   }
@@ -223,7 +219,7 @@ export class UsersService {
   }
 
   async update(id: string, userData: UpdateUserDto, trx?: Knex.Transaction) {
-    const existingUser = await this.usersRepository.findById(id)
+    const existingUser = await this.usersRepository.findById(id, trx)
     if (!existingUser) {
       throw new NotFoundException('User not found')
     }
@@ -360,7 +356,7 @@ export class UsersService {
 
       return {
         message: 'User rejected successfully',
-        status: UserStatus.WAITING_DEPOSIT,
+        status: UserStatus.REJECTED,
         userId: userId
       }
     } catch (error) {

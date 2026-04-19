@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -26,7 +27,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
-import { UserRole } from '../common/constants'
+import { UserRole, UserStatus } from '../common/constants'
 import {
   AuthErrorSchemas,
   BadRequestResponseSchema,
@@ -142,6 +143,9 @@ export class LoansController {
     @CurrentUser() user: UserJWT,
     @Body() createLoanDto: CreateLoanDto
   ) {
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new ForbiddenException('Only active members can apply for loans')
+    }
     return await this.loansService.createLoan(user.id, createLoanDto)
   }
 

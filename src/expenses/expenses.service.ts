@@ -42,19 +42,20 @@ export class ExpensesService {
   private async allocateAmounts(
     totalAmount: number,
     source: 'auto' | 'total' | 'capital' | 'shu',
-    trx: Knex.Transaction
+    trx: Knex.Transaction,
+    restore?: { restoreShu: number; restoreCapital: number }
   ): Promise<{ shuAmount: number; capitalAmount: number }> {
     const balances = await trx('cashbook_balances')
       .select('type', 'balance')
       .whereIn('type', ['shu', 'capital'])
       .forUpdate()
 
-    const shuBalance = parseFloat(
-      balances.find((b) => b.type === 'shu')?.balance || '0'
-    )
-    const capitalBalance = parseFloat(
-      balances.find((b) => b.type === 'capital')?.balance || '0'
-    )
+    const shuBalance =
+      parseFloat(balances.find((b) => b.type === 'shu')?.balance || '0') +
+      (restore?.restoreShu ?? 0)
+    const capitalBalance =
+      parseFloat(balances.find((b) => b.type === 'capital')?.balance || '0') +
+      (restore?.restoreCapital ?? 0)
 
     switch (source) {
       case ExpenseSource.SHU:
@@ -75,6 +76,23 @@ export class ExpensesService {
           )
         }
         return { shuAmount: 0, capitalAmount: totalAmount }
+      case 'total': {
+        if (shuBalance + capitalBalance < totalAmount) {
+          throw new InsufficientFundsError(
+            totalAmount,
+            shuBalance + capitalBalance,
+            'total'
+          )
+        }
+        if (capitalBalance >= totalAmount) {
+          return { shuAmount: 0, capitalAmount: totalAmount }
+        }
+
+        return {
+          shuAmount: totalAmount - capitalBalance,
+          capitalAmount: capitalBalance
+        }
+      }
       case ExpenseSource.AUTO: {
         if (capitalBalance >= totalAmount) {
           return { shuAmount: 0, capitalAmount: totalAmount }
@@ -90,7 +108,9 @@ export class ExpensesService {
         }
       }
       default:
-        return { shuAmount: 0, capitalAmount: totalAmount }
+        throw new ExpenseValidationError(
+          `Unsupported expense source: ${source}`
+        )
     }
   }
 
@@ -302,11 +322,15 @@ export class ExpensesService {
           existingExpense.source ||
           effectiveCategory.default_source
 
-        // Allocate the new amount WITH LOCK
+        // Allocate the new amount WITH LOCK, reversing the old deduction first
         const { shuAmount, capitalAmount } = await this.allocateAmounts(
           updateExpenseDto.amount,
           effectiveSource,
-          trx
+          trx,
+          {
+            restoreShu: parseFloat(existingExpense.shu_amount),
+            restoreCapital: parseFloat(existingExpense.capital_amount)
+          }
         )
 
         updateData.shu_amount = shuAmount.toString()

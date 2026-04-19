@@ -3,6 +3,7 @@ import {
   Get,
   HttpStatus,
   Logger,
+  ParseIntPipe,
   Query,
   Res,
   UseGuards
@@ -15,7 +16,6 @@ import {
   ApiTags,
   ApiUnauthorizedResponse
 } from '@nestjs/swagger'
-
 import { Response } from 'express'
 
 import { Roles } from '../auth/decorators/roles.decorator'
@@ -68,7 +68,7 @@ export class ReportsController {
   })
   async generateMandatorySavingsReport(
     @Res() res: Response,
-    @Query('year') year?: number
+    @Query('year', new ParseIntPipe({ optional: true })) year?: number
   ) {
     try {
       const reportYear = year || new Date().getFullYear()

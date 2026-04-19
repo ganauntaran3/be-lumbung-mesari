@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, Query, UseGuards, ValidationPipe } from '@nestjs/common'
+import { Controller, Get, Logger, Query, UseGuards } from '@nestjs/common'
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -57,7 +57,8 @@ export class CashbookController {
   @Get('transactions')
   @ApiOperation({
     summary: 'Get transaction history',
-    description: 'Retrieve paginated cashbook transaction history with category.'
+    description:
+      'Retrieve paginated cashbook transaction history with category.'
   })
   @ApiResponse({
     status: 200,
@@ -68,11 +69,11 @@ export class CashbookController {
     description: 'Unauthorized - Invalid or expired token',
     schema: TokenErrorSchemas.invalidToken
   })
-  async getTransactions(
-    @Query(new ValidationPipe({ transform: true })) query: GetTransactionsQueryDto
-  ) {
+  async getTransactions(@Query() query: GetTransactionsQueryDto) {
     try {
-      this.logger.log(`Retrieving transaction history: page=${query.page}, limit=${query.limit}`)
+      this.logger.log(
+        `Retrieving transaction history: page=${query.page}, limit=${query.limit}`
+      )
       return await this.cashbookTransactionService.listTransactions(
         query.page ?? 1,
         query.limit ?? 10

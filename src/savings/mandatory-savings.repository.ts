@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
@@ -19,6 +20,19 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
 
   constructor(protected readonly databaseService: DatabaseService) {
     super(databaseService, 'mandatory_savings')
+  }
+
+  private readonly allowedSortColumns: Record<string, string> = {
+    period_date: 'ms.period_date',
+    amount: 'ms.amount',
+    status: 'ms.status',
+    paid_at: 'ms.paid_at',
+    created_at: 'ms.created_at',
+    updated_at: 'ms.updated_at'
+  }
+
+  private getSafeSortColumn(sortBy: string): string {
+    return this.allowedSortColumns[sortBy] || 'ms.period_date'
   }
 
   async findAllWithUsers(
@@ -89,7 +103,7 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
           'pb.id as processed_by_user_id',
           'pb.fullname as processed_by_user_fullname'
         ])
-        .orderBy(`ms.${sortBy}`, sortOrder)
+        .orderBy(this.getSafeSortColumn(sortBy), sortOrder)
         .orderBy('u.fullname', 'asc')
         .limit(limit)
         .offset(offset)
@@ -204,7 +218,7 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
           'pb.id as processed_by_user_id',
           'pb.fullname as processed_by_user_fullname'
         ])
-        .orderBy(`ms.${sortBy}`, sortOrder)
+        .orderBy(this.getSafeSortColumn(sortBy), sortOrder)
         .limit(limit)
         .offset(offset)
 
@@ -308,7 +322,7 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
   async updateMandatorySavings(
     id: string,
     updateData: UpdateMandatorySavings,
-    trx?: any
+    trx?: Knex.Transaction
   ): Promise<MandatorySavingsTable> {
     try {
       this.logger.debug(
@@ -333,10 +347,14 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
     }
   }
 
-  async findMandatorySavingsById(id: string) {
+  async findMandatorySavingsById(id: string, trx?: Knex.Transaction) {
     this.logger.debug(`Finding mandatory savings by ID ${id}`)
 
-    const result = await this.knex('mandatory_savings as ms')
+    const query = trx
+      ? trx('mandatory_savings as ms')
+      : this.knex('mandatory_savings as ms')
+
+    const result = await query
       .where('ms.id', id)
       .select([
         'ms.id',
@@ -349,6 +367,10 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
         'ms.processed_by'
       ])
       .first()
+
+    if (!result) {
+      return null
+    }
 
     return {
       id: result.id,

@@ -15,7 +15,7 @@ import { TemplateService } from './template.service'
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const isDevelopment =
+        const isProduction =
           configService.get<string>('NODE_ENV') === 'production'
         const smtpHost = configService.get<string>('SMTP_HOST', 'localhost')
         const smtpPort = configService.get<number>('SMTP_PORT', 1025)
@@ -28,8 +28,8 @@ import { TemplateService } from './template.service'
           transport: {
             host: smtpHost,
             port: smtpPort,
-            secure: !isDevelopment,
-            ignoreTLS: !isDevelopment,
+            secure: isProduction,
+            ignoreTLS: !isProduction,
             auth: configService.get<string>('SMTP_USER')
               ? {
                   user: configService.get<string>('SMTP_USER'),

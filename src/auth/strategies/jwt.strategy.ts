@@ -2,22 +2,21 @@ import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
+
+import { UserStatus } from '../../common/constants'
 import { JwtPayload } from '../../interface/jwt'
 import { UsersService } from '../../users/users.service'
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private configService: ConfigService,
-    private usersService: UsersService
+    configService: ConfigService,
+    private readonly usersService: UsersService
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>(
-        'JWT_SECRET',
-        'your-default-secret-key'
-      )
+      secretOrKey: configService.getOrThrow<string>('JWT_SECRET')
     })
   }
 
@@ -28,12 +27,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found')
     }
 
+    if (
+      user.status === UserStatus.INACTIVE ||
+      user.status === UserStatus.REJECTED
+    ) {
+      throw new UnauthorizedException('Account is deactivated')
+    }
+
     return {
-      id: payload.sub,
-      username: payload.username,
-      email: payload.email,
-      role: payload.roleId,
-      status: payload.status
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.roleId,
+      status: user.status
     }
   }
 }
