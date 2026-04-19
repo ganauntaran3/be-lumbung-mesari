@@ -171,21 +171,19 @@ export class CashbookTransactionService {
     expenseId: string,
     newShuAmount: number,
     newCapitalAmount: number,
-    txnDate?: Date,
-    trx?: Knex.Transaction
+    txnDate: Date | undefined,
+    trx: Knex.Transaction
   ): Promise<void> {
     try {
       this.logger.log(
         `Updating expense transaction for ${expenseId}: shu: ${newShuAmount}, capital: ${newCapitalAmount}`
       )
 
-      const trxRequired = trx!
-
       // 1. Fetch the original cashbook_transaction row
       const original =
         await this.transactionRepository.findLatestActiveByExpenseId(
           expenseId,
-          trxRequired
+          trx
         )
 
       if (!original) {
@@ -204,7 +202,7 @@ export class CashbookTransactionService {
         shu: currentShu,
         capital: currentCapital,
         total: currentTotal
-      } = await this.balanceRepository.lockAllForUpdate(trxRequired)
+      } = await this.balanceRepository.lockAllForUpdate(trx)
 
       // 3. Compute snapshots mathematically (avoids a second DB read)
       //    Reversal row (in): adds old amounts back
@@ -219,7 +217,7 @@ export class CashbookTransactionService {
         reversalTotalAfter - (newShuAmount + newCapitalAmount)
 
       // 4. Soft-delete the original row so it no longer appears in history
-      await this.transactionRepository.softDeleteById(original.id, trxRequired)
+      await this.transactionRepository.softDeleteById(original.id, trx)
 
       // 5. Insert reversal row — trigger adds old amounts back to cashbook_balances
       await this.transactionRepository.createTransaction(
@@ -284,20 +282,18 @@ export class CashbookTransactionService {
     incomeId: string,
     amount: number,
     destination: 'shu' | 'capital',
-    txnDate?: Date,
-    trx?: Knex.Transaction
+    txnDate: Date | undefined,
+    trx: Knex.Transaction
   ): Promise<void> {
     try {
       this.logger.log(
         `Updating income transaction for ${incomeId}: amount: ${amount}, destination: ${destination}`
       )
 
-      const trxRequired = trx!
-
       const original =
         await this.transactionRepository.findLatestActiveByIncomeId(
           incomeId,
-          trxRequired
+          trx
         )
 
       if (!original) {
@@ -313,7 +309,7 @@ export class CashbookTransactionService {
         shu: currentShu,
         capital: currentCapital,
         total: currentTotal
-      } = await this.balanceRepository.lockAllForUpdate(trxRequired)
+      } = await this.balanceRepository.lockAllForUpdate(trx)
 
       // Reversal row (out): deducts old amounts
       const reversalShuAfter = currentShu - oldShu
@@ -328,7 +324,7 @@ export class CashbookTransactionService {
       const newEntryTotalAfter = reversalTotalAfter + amount
 
       // Soft-delete the original row so it no longer appears in history
-      await this.transactionRepository.softDeleteById(original.id, trxRequired)
+      await this.transactionRepository.softDeleteById(original.id, trx)
 
       // Insert reversal row — trigger deducts old amounts from cashbook_balances
       await this.transactionRepository.createTransaction(
@@ -390,18 +386,16 @@ export class CashbookTransactionService {
    */
   async deleteExpenseTransaction(
     expenseId: string,
-    trx?: Knex.Transaction
+    trx: Knex.Transaction
   ): Promise<void> {
     try {
       this.logger.log(
         `Soft-deleting cashbook transactions for expense ${expenseId}`
       )
 
-      const trxRequired = trx!
-
-      const rows = await this.transactionRepository.findAllActiveByExpenseId(
+      const rows = await this.transactionRepository.findAllByExpenseId(
         expenseId,
-        trxRequired
+        trx
       )
 
       if (!rows.length) return
@@ -415,28 +409,17 @@ export class CashbookTransactionService {
       }
 
       if (netShu !== 0) {
-        await this.balanceRepository.adjustBalance('shu', -netShu, trxRequired)
+        await this.balanceRepository.adjustBalance('shu', -netShu, trx)
       }
       if (netCapital !== 0) {
-        await this.balanceRepository.adjustBalance(
-          'capital',
-          -netCapital,
-          trxRequired
-        )
+        await this.balanceRepository.adjustBalance('capital', -netCapital, trx)
       }
       const netTotal = netShu + netCapital
       if (netTotal !== 0) {
-        await this.balanceRepository.adjustBalance(
-          'total',
-          -netTotal,
-          trxRequired
-        )
+        await this.balanceRepository.adjustBalance('total', -netTotal, trx)
       }
 
-      await this.transactionRepository.softDeleteByExpenseId(
-        expenseId,
-        trxRequired
-      )
+      await this.transactionRepository.softDeleteByExpenseId(expenseId, trx)
 
       this.logger.log(
         `Cashbook transactions soft-deleted for expense ${expenseId}`
@@ -457,18 +440,16 @@ export class CashbookTransactionService {
    */
   async deleteIncomeTransaction(
     incomeId: string,
-    trx?: Knex.Transaction
+    trx: Knex.Transaction
   ): Promise<void> {
     try {
       this.logger.log(
         `Soft-deleting cashbook transactions for income ${incomeId}`
       )
 
-      const trxRequired = trx!
-
-      const rows = await this.transactionRepository.findAllActiveByIncomeId(
+      const rows = await this.transactionRepository.findAllByIncomeId(
         incomeId,
-        trxRequired
+        trx
       )
 
       if (!rows.length) return
@@ -482,28 +463,17 @@ export class CashbookTransactionService {
       }
 
       if (netShu !== 0) {
-        await this.balanceRepository.adjustBalance('shu', -netShu, trxRequired)
+        await this.balanceRepository.adjustBalance('shu', -netShu, trx)
       }
       if (netCapital !== 0) {
-        await this.balanceRepository.adjustBalance(
-          'capital',
-          -netCapital,
-          trxRequired
-        )
+        await this.balanceRepository.adjustBalance('capital', -netCapital, trx)
       }
       const netTotal = netShu + netCapital
       if (netTotal !== 0) {
-        await this.balanceRepository.adjustBalance(
-          'total',
-          -netTotal,
-          trxRequired
-        )
+        await this.balanceRepository.adjustBalance('total', -netTotal, trx)
       }
 
-      await this.transactionRepository.softDeleteByIncomeId(
-        incomeId,
-        trxRequired
-      )
+      await this.transactionRepository.softDeleteByIncomeId(incomeId, trx)
 
       this.logger.log(
         `Cashbook transactions soft-deleted for income ${incomeId}`

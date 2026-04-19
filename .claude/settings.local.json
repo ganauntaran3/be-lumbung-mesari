@@ -1,10 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(gh pr:*)"
-    ],
-    "additionalDirectories": [
-      "/home/igustingurahganauntaran/lectures/code/js/fe-lumbung-mesari"
-    ]
+    "allow": ["Bash(gh pr:*)"],
+    "additionalDirectories": ["."]
   }
 }

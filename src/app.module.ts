@@ -27,7 +27,8 @@ import { UsersModule } from './users/users.module'
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      validationSchema: envValidationSchema
+      validationSchema:
+        process.env.NODE_ENV === 'test' ? undefined : envValidationSchema
     }),
     ThrottlerModule.forRoot([
       {

@@ -463,6 +463,17 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
     return query.where({ expense_id: expenseId }).whereNull('deleted_at')
   }
 
+  async findAllByExpenseId(
+    expenseId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable[]> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query.where({ expense_id: expenseId })
+  }
+
   async findAllActiveByIncomeId(
     incomeId: string,
     trx?: Knex.Transaction
@@ -472,6 +483,17 @@ export class CashbookTransactionRepository extends BaseRepository<CashbookTransa
       : this.knex('cashbook_transactions')
 
     return query.where({ income_id: incomeId }).whereNull('deleted_at')
+  }
+
+  async findAllByIncomeId(
+    incomeId: string,
+    trx?: Knex.Transaction
+  ): Promise<CashbookTransactionTable[]> {
+    const query = trx
+      ? trx('cashbook_transactions')
+      : this.knex('cashbook_transactions')
+
+    return query.where({ income_id: incomeId })
   }
 
   async softDeleteById(id: string, trx?: Knex.Transaction): Promise<void> {

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { Knex } from 'knex'
 
 import { BaseRepository } from '../database/base.repository'
 import { DatabaseService } from '../database/database.service'
@@ -321,7 +322,7 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
   async updateMandatorySavings(
     id: string,
     updateData: UpdateMandatorySavings,
-    trx?: any
+    trx?: Knex.Transaction
   ): Promise<MandatorySavingsTable> {
     try {
       this.logger.debug(
@@ -346,7 +347,7 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
     }
   }
 
-  async findMandatorySavingsById(id: string, trx?: any) {
+  async findMandatorySavingsById(id: string, trx?: Knex.Transaction) {
     this.logger.debug(`Finding mandatory savings by ID ${id}`)
 
     const query = trx

@@ -12,7 +12,6 @@ describe('UsersService', () => {
     findAll: jest.fn(),
     create: jest.fn(),
     findByEmail: jest.fn(),
-    findByEmailWithRole: jest.fn(),
     findByIdentifierWithRole: jest.fn(),
     findAllWithRoles: jest.fn()
   }
@@ -74,21 +73,6 @@ describe('UsersService', () => {
 
       expect(repository.findByEmail).toHaveBeenCalledWith('test@example.com')
       expect(result).toEqual(mockUser)
-    })
-  })
-
-  describe('findByEmailWithRole', () => {
-    it('should return user with role when found by email', async () => {
-      mockUsersRepository.findByEmailWithRole.mockResolvedValue(
-        mockUserWithRole
-      )
-
-      const result = await service.findByEmailWithRole('test@example.com')
-
-      expect(repository.findByEmailWithRole).toHaveBeenCalledWith(
-        'test@example.com'
-      )
-      expect(result).toEqual(mockUserWithRole)
     })
   })
 

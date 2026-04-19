@@ -76,6 +76,23 @@ export class ExpensesService {
           )
         }
         return { shuAmount: 0, capitalAmount: totalAmount }
+      case 'total': {
+        if (shuBalance + capitalBalance < totalAmount) {
+          throw new InsufficientFundsError(
+            totalAmount,
+            shuBalance + capitalBalance,
+            'total'
+          )
+        }
+        if (capitalBalance >= totalAmount) {
+          return { shuAmount: 0, capitalAmount: totalAmount }
+        }
+
+        return {
+          shuAmount: totalAmount - capitalBalance,
+          capitalAmount: capitalBalance
+        }
+      }
       case ExpenseSource.AUTO: {
         if (capitalBalance >= totalAmount) {
           return { shuAmount: 0, capitalAmount: totalAmount }
@@ -91,7 +108,9 @@ export class ExpensesService {
         }
       }
       default:
-        return { shuAmount: 0, capitalAmount: totalAmount }
+        throw new ExpenseValidationError(
+          `Unsupported expense source: ${source}`
+        )
     }
   }
 

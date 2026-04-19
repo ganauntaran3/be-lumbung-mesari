@@ -20,19 +20,12 @@ export async function up(knex: Knex): Promise<void> {
       .uuid('income_id')
       .references('id')
       .inTable('incomes')
-      .onDelete('SET NULL')
-      .nullable()
+      .onDelete('CASCADE')
     table
       .uuid('expense_id')
       .references('id')
       .inTable('expenses')
-      .onDelete('SET NULL')
-      .nullable()
-
-    // Immutable ledger support
-    table.boolean('is_reversal').notNullable().defaultTo(false)
-    table.uuid('reversal_of').nullable() // points to the original row being reversed
-    table.timestamp('deleted_at').nullable()
+      .onDelete('CASCADE')
 
     table.timestamps(true, true)
 
