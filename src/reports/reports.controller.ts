@@ -97,4 +97,79 @@ export class ReportsController {
       throw error
     }
   }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @Get('monthly-loans')
+  @ApiOperation({
+    summary: 'Generate monthly loan Excel report',
+    description:
+      'Generate an Excel report showing loan payment status for all active members for a specific month and year. Includes principal, installment, interest, remaining balance, and a financial summary.'
+  })
+  @ApiQuery({
+    name: 'month',
+    required: false,
+    type: Number,
+    description: 'Month for the report (1-12, default: current month)',
+    example: 6
+  })
+  @ApiQuery({
+    name: 'year',
+    required: false,
+    type: Number,
+    description: 'Year for the report (default: current year)',
+    example: 2025
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Excel file generated successfully',
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        schema: {
+          type: 'string',
+          format: 'binary'
+        }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing token',
+    schema: createUnauthorizedSchema('Authentication required')
+  })
+  async generateMonthlyLoanReport(
+    @Res() res: Response,
+    @Query('month', new ParseIntPipe({ optional: true })) month?: number,
+    @Query('year', new ParseIntPipe({ optional: true })) year?: number
+  ) {
+    try {
+      const now = new Date()
+      const reportMonth = month || now.getMonth() + 1
+      const reportYear = year || now.getFullYear()
+
+      this.logger.log(
+        `Generating monthly loan report for ${reportMonth}/${reportYear}`
+      )
+
+      const buffer = await this.reportsService.generateMonthlyLoanReport(
+        reportMonth,
+        reportYear
+      )
+
+      const filename = `Laporan_Pinjaman_${reportMonth}_${reportYear}.xlsx`
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      )
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+      res.setHeader('Content-Length', buffer.length)
+
+      this.logger.log(`Successfully generated report: ${filename}`)
+
+      res.send(buffer)
+    } catch (error) {
+      this.logger.error('Error generating monthly loan report:', error)
+      throw error
+    }
+  }
 }
