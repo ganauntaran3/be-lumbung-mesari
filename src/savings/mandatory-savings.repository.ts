@@ -557,6 +557,67 @@ export class MandatorySavingsRepository extends BaseRepository<MandatorySavingsT
     }
   }
 
+  async findPaidMandatorySavingsByMonthYear(
+    month: number,
+    year: number,
+    page: number = 1,
+    limit: number = 100
+  ): Promise<
+    PaginationResult<{
+      user_id: string
+      fullname: string
+      period_date: Date
+      amount: string
+    }>
+  > {
+    try {
+      const startDate = new Date(Date.UTC(year, month - 1, 1))
+      const endDate = new Date(
+        Date.UTC(year, month - 1 + 1, 0, 23, 59, 59, 999)
+      )
+      const offset = (page - 1) * limit
+
+      this.logger.debug(
+        `Fetching paid mandatory savings for ${month}/${year}, page ${page}, limit ${limit}`
+      )
+
+      const [{ count }] = await this.knex('mandatory_savings as ms')
+        .join('users as u', 'ms.user_id', 'u.id')
+        .where('ms.status', 'paid')
+        .whereBetween('ms.period_date', [startDate, endDate])
+        .count('ms.id as count')
+
+      const totalData = parseInt(count as string, 10)
+
+      const data = await this.knex('mandatory_savings as ms')
+        .join('users as u', 'ms.user_id', 'u.id')
+        .where('ms.status', 'paid')
+        .whereBetween('ms.period_date', [startDate, endDate])
+        .select(['ms.user_id', 'u.fullname', 'ms.period_date', 'ms.amount'])
+        .orderBy('u.fullname', 'asc')
+        .orderBy('ms.period_date', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      this.logger.debug(
+        `Found ${data.length} paid savings records for ${month}/${year} (page ${page}/${pagination.totalPage})`
+      )
+
+      return {
+        data,
+        ...pagination
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to find paid mandatory savings for ${month}/${year}:`,
+        error
+      )
+      throw error
+    }
+  }
+
   async findByUserIdAndYear(
     userId: string,
     year: number

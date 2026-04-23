@@ -422,4 +422,176 @@ export class LoansRepository extends BaseRepository<LoanTable> {
 
     return result as Installment
   }
+
+  async findActiveLoansWithUsers(
+    page: number = 1,
+    limit: number = 100
+  ): Promise<PaginationResult<LoanWithUser>> {
+    try {
+      const offset = (page - 1) * limit
+
+      let query = this.knex('loans')
+        .join('users', 'users.id', 'loans.user_id')
+        .join('loan_periods', 'loan_periods.id', 'loans.loan_period_id')
+        .whereIn('loans.status', ['active', 'completed'])
+
+      const countQuery = query.clone()
+      const [{ count }] = await countQuery.count('loans.id as count')
+      const totalData = Number.parseInt(count as string, 10)
+
+      const data = await query
+        .select([
+          'loans.*',
+          'users.fullname as fullname',
+          'users.email as user_email',
+          'loan_periods.tenor',
+          'loan_periods.interest_rate'
+        ])
+        .orderBy('users.fullname', 'asc')
+        .orderBy('loans.created_at', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      return {
+        data: data as LoanWithUser[],
+        ...pagination
+      }
+    } catch (error) {
+      this.logger.error('Error fetching active loans with users:', error)
+      throw error
+    }
+  }
+
+  async findInstallmentsPaidInMonth(
+    month: number,
+    year: number,
+    page: number = 1,
+    limit: number = 100
+  ): Promise<
+    PaginationResult<{
+      loan_id: string
+      principal_amount: string
+      interest_amount: string
+      paid_amount: string
+      paid_at: Date
+      loan_principal: string
+      user_id: string
+      fullname: string
+    }>
+  > {
+    try {
+      const offset = (page - 1) * limit
+      const startDate = new Date(Date.UTC(year, month - 1, 1))
+      const endDate = new Date(
+        Date.UTC(year, month - 1 + 1, 0, 23, 59, 59, 999)
+      )
+
+      let query = this.knex('installments as i')
+        .join('loans as l', 'l.id', 'i.loan_id')
+        .join('users as u', 'u.id', 'l.user_id')
+        .where('i.status', 'paid')
+        .whereBetween('i.paid_at', [startDate, endDate])
+
+      const [{ count }] = await query.clone().count('i.id as count')
+      const totalData = Number.parseInt(count as string, 10)
+
+      const data = await query
+        .select([
+          'i.loan_id',
+          'i.principal_amount',
+          'i.interest_amount',
+          'i.paid_amount',
+          'i.paid_at',
+          'l.principal_amount as loan_principal',
+          'u.id as user_id',
+          'u.fullname'
+        ])
+        .orderBy('u.fullname', 'asc')
+        .orderBy('i.paid_at', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      return {
+        data,
+        ...pagination
+      }
+    } catch (error) {
+      this.logger.error('Error fetching paid installments for month:', error)
+      throw error
+    }
+  }
+
+  async findAllPaidInstallmentsByLoanIds(loanIds: string[]): Promise<
+    {
+      loan_id: string
+      principal_amount: string
+    }[]
+  > {
+    if (loanIds.length === 0) {
+      return []
+    }
+
+    try {
+      const results = await this.knex('installments')
+        .whereIn('loan_id', loanIds)
+        .where('status', 'paid')
+        .select(['loan_id', 'principal_amount'])
+        .orderBy('loan_id', 'asc')
+        .orderBy('installment_number', 'asc')
+
+      return results
+    } catch (error) {
+      this.logger.error('Error fetching paid installments by loan ids:', error)
+      throw error
+    }
+  }
+
+  async findLoansDisbursedInMonth(
+    month: number,
+    year: number,
+    page: number = 1,
+    limit: number = 100
+  ): Promise<
+    PaginationResult<{
+      principal_amount: string
+      fullname: string
+    }>
+  > {
+    try {
+      const offset = (page - 1) * limit
+      const startDate = new Date(Date.UTC(year, month - 1, 1))
+      const endDate = new Date(
+        Date.UTC(year, month - 1 + 1, 0, 23, 59, 59, 999)
+      )
+
+      let query = this.knex('loans as l')
+        .join('users as u', 'u.id', 'l.user_id')
+        .whereNotNull('l.disbursed_at')
+        .whereBetween('l.disbursed_at', [startDate, endDate])
+
+      const [{ count }] = await query.clone().count('l.id as count')
+      const totalData = Number.parseInt(count as string, 10)
+
+      const data = await query
+        .select(['l.principal_amount', 'u.fullname'])
+        .orderBy('u.fullname', 'asc')
+        .orderBy('l.disbursed_at', 'asc')
+        .limit(limit)
+        .offset(offset)
+
+      const pagination = this.createPaginationMetadata(page, limit, totalData)
+
+      return {
+        data,
+        ...pagination
+      }
+    } catch (error) {
+      this.logger.error('Error fetching loans disbursed in month:', error)
+      throw error
+    }
+  }
 }
